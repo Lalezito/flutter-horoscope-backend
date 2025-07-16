@@ -2,13 +2,10 @@ const express = require("express");
 const router = express.Router();
 const coachingController = require("../controllers/coachingController");
 
-// Devuelve 1 horóscopo según signo e idioma
-router.get("/getDailyHoroscope", coachingController.getDailyHoroscope);
-
-// Devuelve los 72 horóscopos del día actual
+// Endpoint para todos los horóscopos
 router.get("/getAllHoroscopes", coachingController.getAllHoroscopes);
 
-// Recibe los datos desde n8n
-router.post("/notifyHoroscope", coachingController.notifyHoroscope);
+// Ya deberías tener esto también
+router.get("/getDailyHoroscope", coachingController.getDailyHoroscope);
 
 module.exports = router;
