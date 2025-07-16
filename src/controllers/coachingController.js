@@ -42,6 +42,13 @@ class CoachingController {
       res.status(500).json({ error: "Internal server error" });
     }
   }
+
+  // 👉 Esta función faltaba para que el webhook ande
+  notifyHoroscope(req, res) {
+    const horoscopeData = req.body;
+    console.log("✅ Recibido desde n8n:", horoscopeData);
+    res.status(200).send("✅ Notificación recibida correctamente");
+  }
 }
 
 module.exports = new CoachingController();
