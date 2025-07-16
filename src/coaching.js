@@ -1,16 +1,10 @@
 const express = require("express");
-const CoachingController = require("../controllers/coachingController");
+const coachingController = require("../controllers/coachingController"); // ✅ Importamos la instancia directamente
 
 const router = express.Router();
-const coachingController = new CoachingController(); // ✅ ahora sí
 
-router.get(
-  "/coaching",
-  coachingController.getDailyHoroscope.bind(coachingController)
-);
-router.post(
-  "/coaching/notify",
-  coachingController.notifyHoroscope.bind(coachingController)
-);
+// ✅ Ya no usamos "new", porque coachingController ya es una instancia
+router.get("/", coachingController.getDailyHoroscope);
+router.post("/notify", coachingController.notifyHoroscope);
 
 module.exports = router;

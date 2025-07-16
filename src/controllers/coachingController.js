@@ -6,15 +6,16 @@ class CoachingController {
       sign,
       lang,
       date,
-      horoscope: "This is your daily horoscope.",
+      horoscope: "Este es tu horóscopo diario.",
     });
   }
 
   notifyHoroscope(req, res) {
     const horoscopeData = req.body;
-    console.log("Received horoscope data:", horoscopeData);
-    res.status(200).send("Notification received");
+    console.log("✅ Recibido desde n8n:", horoscopeData);
+    res.status(200).send("Notificación recibida");
   }
 }
 
-module.exports = new CoachingController(); // ✅ Instancia
+// ❗ Exportamos la instancia directamente (NO la clase)
+module.exports = new CoachingController();
