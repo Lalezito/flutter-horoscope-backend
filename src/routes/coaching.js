@@ -1,9 +1,8 @@
 const express = require("express");
-const coachingController = require("../controllers/coachingController"); // ✅ Importamos instancia
-
 const router = express.Router();
+const coachingController = require("../controllers/coachingController");
 
-router.get("/", coachingController.getDailyHoroscope);
-router.post("/notify", coachingController.notifyHoroscope);
+router.get("/api/coaching/daily", coachingController.getDailyHoroscopes);
+router.post("/api/coaching/notify", coachingController.notifyHoroscope);
 
 module.exports = router;
