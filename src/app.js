@@ -1,16 +1,9 @@
-const express = require('express');
-const cors = require('./middleware/cors');
-const coachingRoutes = require('./routes/coaching');
+const express = require("express");
+const coachingController = require("../controllers/coachingController"); // ✅ ya es instancia
 
-const app = express();
+const router = express.Router();
 
-app.use(express.json());
-app.use(cors);
+router.get("/coaching", coachingController.getDailyHoroscope);
+router.post("/coaching/notify", coachingController.notifyHoroscope);
 
-app.use('/api/coaching', coachingRoutes);
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+module.exports = router;
