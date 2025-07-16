@@ -1,0 +1,22 @@
+{
+  "name": "flutter-horoscope-backend",
+  "version": "1.0.0",
+  "description": "A basic backend for connecting a Flutter app to a PostgreSQL database hosted on Railway.",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "pg": "^8.7.1",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
