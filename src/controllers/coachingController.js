@@ -17,4 +17,4 @@ class CoachingController {
   }
 }
 
-module.exports = new CoachingController(); // ✅ exportás la instancia directamente
+module.exports = new CoachingController(); // ✅ Instancia
