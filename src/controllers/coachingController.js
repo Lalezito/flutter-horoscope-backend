@@ -11,11 +11,10 @@ class CoachingController {
   }
 
   notifyHoroscope(req, res) {
-    const horoscopeData = req.body;
-    console.log("✅ Recibido desde n8n:", horoscopeData);
-    res.status(200).send("Notificación recibida");
+    const data = req.body;
+    console.log("📩 Recibido desde n8n:", data);
+    res.status(200).send("Recibido");
   }
 }
 
-// ❗ Exportamos la instancia directamente (NO la clase)
-module.exports = new CoachingController();
+module.exports = new CoachingController(); // ✅ Instancia exportada
