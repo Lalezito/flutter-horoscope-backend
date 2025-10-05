@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm start"
+
+# Environment variables are managed in Railway Dashboard
+# DO NOT add secrets here - configure them in Railway UI instead

@@ -16,31 +16,53 @@ class FirebaseService {
    */
   async initialize() {
     if (this.initialized) {
-      logger.info('Firebase Admin already initialized');
+      logger.getLogger().info('Firebase Admin already initialized');
       return;
     }
 
     try {
-      // Check if running in production with service account key
-      if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      // OPTION 1: Individual environment variables (RECOMMENDED for Railway)
+      if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+        const serviceAccount = {
+          type: "service_account",
+          project_id: process.env.FIREBASE_PROJECT_ID,
+          private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+          private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          client_email: process.env.FIREBASE_CLIENT_EMAIL,
+          client_id: process.env.FIREBASE_CLIENT_ID,
+          auth_uri: "https://accounts.google.com/o/oauth2/auth",
+          token_uri: "https://oauth2.googleapis.com/token",
+          auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+          client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(process.env.FIREBASE_CLIENT_EMAIL)}`,
+          universe_domain: "googleapis.com"
+        };
+
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          databaseURL: process.env.FIREBASE_DATABASE_URL,
+        });
+        logger.getLogger().info('🔥 Firebase Admin initialized with individual env vars');
+      }
+      // OPTION 2: Check if running in production with service account JSON
+      else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
           databaseURL: process.env.FIREBASE_DATABASE_URL,
         });
-        logger.info('🔥 Firebase Admin initialized with service account');
-      } 
-      // Check for service account key file
+        logger.getLogger().info('🔥 Firebase Admin initialized with service account JSON');
+      }
+      // OPTION 3: Check for service account key file
       else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
         admin.initializeApp({
           credential: admin.credential.applicationDefault(),
           databaseURL: process.env.FIREBASE_DATABASE_URL,
         });
-        logger.info('🔥 Firebase Admin initialized with credentials file');
+        logger.getLogger().info('🔥 Firebase Admin initialized with credentials file');
       }
       // Development mode - use mock implementation
       else {
-        logger.warn('🔧 Firebase Admin running in development mode (no credentials found)');
+        logger.getLogger().warn('🔧 Firebase Admin running in development mode (no credentials found)');
         this.initializeMockMode();
         return;
       }
@@ -48,9 +70,9 @@ class FirebaseService {
       this.messaging = admin.messaging();
       this.initialized = true;
       
-      logger.info('✅ Firebase Admin Service initialized successfully');
+      logger.getLogger().info('✅ Firebase Admin Service initialized successfully');
     } catch (error) {
-      logger.error('❌ Failed to initialize Firebase Admin:', error);
+      logger.logError(error, { service: 'firebase', operation: 'initialize' });
       // Fall back to mock mode if initialization fails
       this.initializeMockMode();
     }
@@ -63,11 +85,11 @@ class FirebaseService {
     this.initialized = true;
     this.messaging = {
       send: async (message) => {
-        logger.info('📱 [MOCK] Sending push notification:', message);
+        logger.getLogger().info('📱 [MOCK] Sending push notification:', message);
         return { messageId: `mock_${Date.now()}` };
       },
       sendMulticast: async (message) => {
-        logger.info('📱 [MOCK] Sending multicast notification:', message);
+        logger.getLogger().info('📱 [MOCK] Sending multicast notification:', message);
         return { 
           successCount: message.tokens?.length || 0,
           failureCount: 0,
@@ -75,15 +97,15 @@ class FirebaseService {
         };
       },
       subscribeToTopic: async (tokens, topic) => {
-        logger.info(`📱 [MOCK] Subscribing ${tokens.length} tokens to topic: ${topic}`);
+        logger.getLogger().info(`📱 [MOCK] Subscribing ${tokens.length} tokens to topic: ${topic}`);
         return { successCount: tokens.length, failureCount: 0 };
       },
       unsubscribeFromTopic: async (tokens, topic) => {
-        logger.info(`📱 [MOCK] Unsubscribing ${tokens.length} tokens from topic: ${topic}`);
+        logger.getLogger().info(`📱 [MOCK] Unsubscribing ${tokens.length} tokens from topic: ${topic}`);
         return { successCount: tokens.length, failureCount: 0 };
       }
     };
-    logger.info('🔧 Firebase Admin running in mock mode');
+    logger.getLogger().info('🔧 Firebase Admin running in mock mode');
   }
 
   /**
@@ -125,7 +147,7 @@ class FirebaseService {
       logger.info(`✅ Notification sent successfully: ${response.messageId}`);
       return { success: true, messageId: response.messageId };
     } catch (error) {
-      logger.error('❌ Failed to send notification:', error);
+      logger.logError(error, { service: 'firebase', operation: 'send_notification' });
       return { success: false, error: error.message };
     }
   }
@@ -174,7 +196,7 @@ class FirebaseService {
         responses: response.responses,
       };
     } catch (error) {
-      logger.error('❌ Failed to send multicast notification:', error);
+      logger.logError(error, { service: 'firebase', operation: 'send_multicast' });
       return { success: false, error: error.message };
     }
   }
@@ -218,7 +240,7 @@ class FirebaseService {
       logger.info(`✅ Topic notification sent to ${topic}: ${response.messageId}`);
       return { success: true, messageId: response.messageId };
     } catch (error) {
-      logger.error(`❌ Failed to send topic notification to ${topic}:`, error);
+      logger.logError(error, { service: 'firebase', operation: 'send_topic', topic });
       return { success: false, error: error.message };
     }
   }
@@ -238,7 +260,7 @@ class FirebaseService {
         failureCount: response.failureCount,
       };
     } catch (error) {
-      logger.error(`❌ Failed to subscribe to topic ${topic}:`, error);
+      logger.logError(error, { service: 'firebase', operation: 'subscribe', topic });
       return { success: false, error: error.message };
     }
   }
@@ -258,7 +280,7 @@ class FirebaseService {
         failureCount: response.failureCount,
       };
     } catch (error) {
-      logger.error(`❌ Failed to unsubscribe from topic ${topic}:`, error);
+      logger.logError(error, { service: 'firebase', operation: 'unsubscribe', topic });
       return { success: false, error: error.message };
     }
   }
@@ -285,7 +307,7 @@ class FirebaseService {
         );
         results.push({ sign: horoscope.sign, ...result });
       } catch (error) {
-        logger.error(`Failed to send horoscope for ${horoscope.sign}:`, error);
+        logger.logError(error, { service: 'firebase', operation: 'daily_horoscope', sign: horoscope.sign });
         results.push({ sign: horoscope.sign, success: false, error: error.message });
       }
     }
@@ -316,7 +338,7 @@ class FirebaseService {
         );
         results.push({ sign: horoscope.sign, ...result });
       } catch (error) {
-        logger.error(`Failed to send weekly horoscope for ${horoscope.sign}:`, error);
+        logger.logError(error, { service: 'firebase', operation: 'weekly_horoscope', sign: horoscope.sign });
         results.push({ sign: horoscope.sign, success: false, error: error.message });
       }
     }
