@@ -1,7 +1,7 @@
 {
   "name": "flutter-horoscope-backend",
-  "version": "1.0.1",
-  "description": "A basic backend for connecting a Flutter app to a PostgreSQL database hosted on Railway.",
+  "version": "2.1.0",
+  "description": "Zodiac Backend API - Production ready with Firebase integration",
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
