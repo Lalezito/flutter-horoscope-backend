@@ -163,6 +163,7 @@ loadRoute('/api/compatibility', './routes/compatibility', 'Compatibility routes'
 loadRoute('/api/receipts', './routes/receipts', 'Receipt validation routes');
 loadRoute('/api/admin', './routes/admin', 'Admin routes');
 loadRoute('/api/monitoring', './routes/monitoring', 'Monitoring routes');
+loadRoute('/api/notifications', './routes/notification', 'Notification routes');
 
 // Routes status endpoint
 app.get('/api/routes', (req, res) => {
