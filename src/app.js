@@ -361,7 +361,7 @@ app.use((error, req, res, next) => {
 
 // Initialize cron jobs for automatic horoscope generation
 const cronJobs = require("./services/cronJobs");
-cronJobs.init();
+// cronJobs.init() is called after services are initialized (see server startup below)
 
 // Automated monitoring setup (legacy - now handled by cron jobs)
 if (process.env.NODE_ENV === 'production') {
@@ -390,34 +390,32 @@ async function gracefulShutdown(signal) {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Start server with service initialization
-async function startServer() {
-  try {
-    // Initialize all services first
-    await initializeServices();
-    
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      logger.getLogger().info(`🚀 Enhanced Zodiac Backend v2.0 running on port ${PORT}`);
-      logger.getLogger().info(`📊 Health check: http://localhost:${PORT}/health`);
-      logger.getLogger().info(`📖 API docs: http://localhost:${PORT}/api/docs`);
-      logger.getLogger().info(`🔒 Security: Helmet, Rate limiting, Circuit breakers enabled`);
-      logger.getLogger().info(`🔥 Firebase: ${firebaseService.getStatus().initialized ? 'Initialized ✅' : 'Mock mode ⚠️'}`);
-      logger.getLogger().info(`💾 Cache: ${cacheService.getStats().mode} mode`);
-      logger.getLogger().info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'Configured ✅' : 'Not configured ❌'}`);
-      logger.getLogger().info(`⚡ Features: Automated Daily + Weekly horoscopes with Circuit Breakers`);
-      logger.getLogger().info(`🎯 Manual generation: /api/generate endpoints with enhanced reliability`);
-      
-      console.log(`\\n🚀 Enhanced Zodiac Backend v2.0 running on port ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`🔒 Security: PRODUCTION-READY with zero vulnerabilities`);
-      console.log(`⚡ Features: Circuit breakers, Redis caching, Firebase integration`);
-    });
-  } catch (error) {
-    logger.logError(error, { phase: 'server_startup' });
-    process.exit(1);
-  }
-}
+// Start server immediately, initialize services in background
+const PORT = process.env.PORT || 3000;
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Enhanced Zodiac Backend v2.0 running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔒 Security: PRODUCTION-READY with zero vulnerabilities`);
+  console.log(`⚡ Initializing services in background...`);
 
-// Start the server
-startServer();
+  // Initialize services after server is listening
+  initializeServices().then(() => {
+    logger.getLogger().info(`🚀 Enhanced Zodiac Backend v2.0 running on port ${PORT}`);
+    logger.getLogger().info(`📊 Health check: http://localhost:${PORT}/health`);
+    logger.getLogger().info(`📖 API docs: http://localhost:${PORT}/api/docs`);
+    logger.getLogger().info(`🔒 Security: Helmet, Rate limiting, Circuit breakers enabled`);
+    logger.getLogger().info(`🔥 Firebase: ${firebaseService.getStatus().initialized ? 'Initialized ✅' : 'Mock mode ⚠️'}`);
+    logger.getLogger().info(`💾 Cache: ${cacheService.getStats().mode} mode`);
+    logger.getLogger().info(`🤖 OpenAI: ${process.env.OPENAI_API_KEY ? 'Configured ✅' : 'Not configured ❌'}`);
+    logger.getLogger().info(`⚡ Features: Automated Daily + Weekly horoscopes with Circuit Breakers`);
+    logger.getLogger().info(`🎯 Manual generation: /api/generate endpoints with enhanced reliability`);
+
+    console.log(`✅ All services initialized successfully`);
+
+    // Initialize cron jobs after services are ready
+    cronJobs.init();
+  }).catch(error => {
+    logger.logError(error, { phase: 'service_initialization' });
+    console.error('⚠️ Services initialization failed, running in degraded mode');
+  });
+});
