@@ -1,6 +1,7 @@
 const logger = require('../services/loggingService');
 const cacheService = require('../services/cacheService');
 const neuralCacheService = require('../services/neuralCacheService');
+const neuralMLService = require('../services/neuralMLService');
 const compatibilityController = require('./compatibilityController');
 
 /**
@@ -325,27 +326,54 @@ class NeuralCompatibilityController {
   }
 
   /**
-   * 🧠 GENERATE NEURAL ANALYSIS
+   * 🧠 GENERATE NEURAL ANALYSIS (Enhanced with ML)
    */
   async generateNeuralAnalysis(sign1, sign2, userBirthData, partnerBirthData, language, analysisLevel) {
-    // Get base compatibility using existing controller
-    const baseCompatibility = compatibilityController.calculateCompatibility(sign1, sign2, language);
+    try {
+      // Get base compatibility using existing controller (this is synchronous)
+      const baseCompatibility = compatibilityController.calculateCompatibility(sign1, sign2, language);
 
-    // Neural enhancement factors
-    const neuralFactors = this.calculateNeuralFactors(sign1, sign2, userBirthData, partnerBirthData);
-    
-    // Apply neural weighting
-    const neuralCompatibility = this.applyNeuralWeighting(baseCompatibility, neuralFactors, analysisLevel, language);
+      // Ensure baseCompatibility has the expected structure
+      if (!baseCompatibility || typeof baseCompatibility !== 'object') {
+        throw new Error('Base compatibility calculation failed');
+      }
 
-    return {
-      base_compatibility: baseCompatibility,
-      neural_factors: neuralFactors,
-      enhanced_compatibility: neuralCompatibility,
-      neural_insights: this.generateAdvancedInsights(sign1, sign2, neuralFactors, language),
-      analysis_level: analysisLevel,
-      confidence_score: this.calculateConfidenceScore(neuralFactors),
-      generated_at: new Date().toISOString()
-    };
+      // Enhanced ML-powered neural analysis
+      const mlAnalysis = await neuralMLService.enhancedNeuralAnalysis(
+        sign1, sign2, userBirthData, partnerBirthData, analysisLevel
+      );
+
+      // Legacy neural factors for backward compatibility
+      const neuralFactors = this.calculateNeuralFactors(sign1, sign2, userBirthData, partnerBirthData);
+      
+      // Apply enhanced neural weighting with ML insights
+      const neuralCompatibility = this.applyEnhancedNeuralWeighting(
+        baseCompatibility, neuralFactors, mlAnalysis, analysisLevel, language
+      );
+
+      return {
+        base_compatibility: baseCompatibility,
+        neural_factors: neuralFactors,
+        ml_enhanced_analysis: mlAnalysis,
+        enhanced_compatibility: neuralCompatibility,
+        neural_insights: this.generateAdvancedInsights(sign1, sign2, neuralFactors, language),
+        ml_insights: this.generateMLInsights(mlAnalysis, language),
+        analysis_level: analysisLevel,
+        confidence_score: Math.max(this.calculateConfidenceScore(neuralFactors), mlAnalysis.confidence_score),
+        performance_metrics: {
+          ml_processing_time: mlAnalysis.processing_time_ms,
+          model_version: mlAnalysis.model_version
+        },
+        generated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      logger.logError(error, {
+        operation: 'generateNeuralAnalysis',
+        signs: [sign1, sign2],
+        analysisLevel
+      });
+      throw error;
+    }
   }
 
   /**
@@ -372,44 +400,187 @@ class NeuralCompatibilityController {
   }
 
   /**
-   * ⚖️ APPLY NEURAL WEIGHTING
+   * ⚖️ APPLY ENHANCED NEURAL WEIGHTING (ML-Enhanced)
+   */
+  applyEnhancedNeuralWeighting(baseCompatibility, neuralFactors, mlAnalysis, analysisLevel, language = 'en') {
+    try {
+      const weights = {
+        standard: { base: 0.4, neural: 0.3, ml: 0.3 },
+        advanced: { base: 0.3, neural: 0.3, ml: 0.4 },
+        deep: { base: 0.2, neural: 0.3, ml: 0.5 }
+      };
+
+      const weight = weights[analysisLevel] || weights.standard;
+      
+      // Validate inputs
+      if (!neuralFactors || typeof neuralFactors !== 'object') {
+        throw new Error('Invalid neuralFactors object');
+      }
+      
+      if (!mlAnalysis || typeof mlAnalysis !== 'object') {
+        logger.getLogger().warn('ML analysis missing, falling back to legacy weighting');
+        return this.applyNeuralWeighting(baseCompatibility, neuralFactors, analysisLevel, language);
+      }
+      
+      const factorValues = Object.values(neuralFactors);
+      if (factorValues.length === 0) {
+        throw new Error('No neural factors to process');
+      }
+      
+      // Helper function to safely extract factor value
+      const getFactorValue = (factor) => {
+        if (typeof factor === 'object' && factor.score !== undefined) {
+          return typeof factor.score === 'number' ? factor.score : 0;
+        }
+        return typeof factor === 'number' ? factor : 0;
+      };
+      
+      // Calculate component scores
+      const neuralScore = factorValues.reduce((sum, factor) => {
+        return sum + getFactorValue(factor);
+      }, 0) / factorValues.length;
+
+      const mlScore = mlAnalysis.ml_enhanced_score?.overall_score || 6.0;
+
+      // Enhanced weighted scoring with ML integration
+      const enhancedOverall = Math.round(
+        (baseCompatibility.overall * weight.base) + 
+        (neuralScore * weight.neural) + 
+        (mlScore * weight.ml)
+      );
+
+      // Safely extract specific factors for detailed scoring
+      const intimacy = getFactorValue(neuralFactors.intimacy_compatibility);
+      const emotional = getFactorValue(neuralFactors.emotional_alignment);
+      const communication = getFactorValue(neuralFactors.communication_style);
+      const energy = getFactorValue(neuralFactors.energy_compatibility);
+      const conflict = getFactorValue(neuralFactors.conflict_resolution);
+      const growth = getFactorValue(neuralFactors.growth_potential);
+
+      // Incorporate ML temporal and personality insights
+      const temporalBoost = mlAnalysis.temporal_compatibility?.score || 0;
+      const personalityBoost = mlAnalysis.personality_alignment?.score || 0;
+
+      return {
+        overall: Math.max(1, Math.min(10, enhancedOverall)),
+        love: Math.max(1, Math.min(10, Math.round(
+          (baseCompatibility.love * weight.base) + 
+          ((intimacy + emotional + temporalBoost) / 3 * (weight.neural + weight.ml))
+        ))),
+        friendship: Math.max(1, Math.min(10, Math.round(
+          (baseCompatibility.friendship * weight.base) + 
+          ((communication + energy + personalityBoost) / 3 * (weight.neural + weight.ml))
+        ))),
+        business: Math.max(1, Math.min(10, Math.round(
+          (baseCompatibility.business * weight.base) + 
+          ((conflict + growth) / 2 * weight.neural) +
+          (mlScore * weight.ml * 0.8) // Slight discount for business context
+        ))),
+        percentage: Math.round(enhancedOverall * 10),
+        rating: this.getNeuralRating(enhancedOverall, language),
+        neural_confidence: this.calculateConfidenceScore(neuralFactors),
+        ml_confidence: mlAnalysis.confidence_score,
+        composite_confidence: Math.round((this.calculateConfidenceScore(neuralFactors) + mlAnalysis.confidence_score) / 2)
+      };
+    } catch (error) {
+      logger.logError(error, {
+        operation: 'applyEnhancedNeuralWeighting',
+        analysisLevel,
+        baseCompatibility: baseCompatibility ? 'present' : 'missing',
+        neuralFactors: neuralFactors ? Object.keys(neuralFactors) : 'missing',
+        mlAnalysis: mlAnalysis ? 'present' : 'missing'
+      });
+      
+      // Fallback to legacy weighting
+      return this.applyNeuralWeighting(baseCompatibility, neuralFactors, analysisLevel, language);
+    }
+  }
+
+  /**
+   * ⚖️ APPLY NEURAL WEIGHTING (Legacy)
    */
   applyNeuralWeighting(baseCompatibility, neuralFactors, analysisLevel, language = 'en') {
-    const weights = {
-      standard: { neural: 0.3, base: 0.7 },
-      advanced: { neural: 0.5, base: 0.5 },
-      deep: { neural: 0.7, base: 0.3 }
-    };
+    try {
+      const weights = {
+        standard: { neural: 0.3, base: 0.7 },
+        advanced: { neural: 0.5, base: 0.5 },
+        deep: { neural: 0.7, base: 0.3 }
+      };
 
-    const weight = weights[analysisLevel] || weights.standard;
-    
-    // Calculate neural-weighted scores
-    const neuralScore = Object.values(neuralFactors).reduce((sum, factor) => {
-      return sum + (factor.score || factor);
-    }, 0) / Object.keys(neuralFactors).length;
+      const weight = weights[analysisLevel] || weights.standard;
+      
+      // Validate neuralFactors
+      if (!neuralFactors || typeof neuralFactors !== 'object') {
+        throw new Error('Invalid neuralFactors object');
+      }
+      
+      const factorValues = Object.values(neuralFactors);
+      if (factorValues.length === 0) {
+        throw new Error('No neural factors to process');
+      }
+      
+      // Helper function to safely extract factor value
+      const getFactorValue = (factor) => {
+        if (typeof factor === 'object' && factor.score !== undefined) {
+          return typeof factor.score === 'number' ? factor.score : 0;
+        }
+        return typeof factor === 'number' ? factor : 0;
+      };
+      
+      // Calculate neural-weighted scores
+      const neuralScore = factorValues.reduce((sum, factor) => {
+        return sum + getFactorValue(factor);
+      }, 0) / factorValues.length;
 
-    const enhancedOverall = Math.round(
-      (baseCompatibility.overall * weight.base) + (neuralScore * weight.neural)
-    );
+      const enhancedOverall = Math.round(
+        (baseCompatibility.overall * weight.base) + (neuralScore * weight.neural)
+      );
 
-    return {
-      overall: Math.max(1, Math.min(10, enhancedOverall)),
-      love: Math.max(1, Math.min(10, Math.round(
-        (baseCompatibility.love * weight.base) + 
-        ((neuralFactors.intimacy_compatibility + neuralFactors.emotional_alignment) / 2 * weight.neural)
-      ))),
-      friendship: Math.max(1, Math.min(10, Math.round(
-        (baseCompatibility.friendship * weight.base) + 
-        ((neuralFactors.communication_style + neuralFactors.energy_compatibility) / 2 * weight.neural)
-      ))),
-      business: Math.max(1, Math.min(10, Math.round(
-        (baseCompatibility.business * weight.base) + 
-        ((neuralFactors.conflict_resolution + neuralFactors.growth_potential) / 2 * weight.neural)
-      ))),
-      percentage: Math.round(enhancedOverall * 10),
-      rating: this.getNeuralRating(enhancedOverall, language),
-      neural_confidence: this.calculateConfidenceScore(neuralFactors)
-    };
+      // Safely extract specific neural factors for detailed scoring
+      const intimacy = getFactorValue(neuralFactors.intimacy_compatibility);
+      const emotional = getFactorValue(neuralFactors.emotional_alignment);
+      const communication = getFactorValue(neuralFactors.communication_style);
+      const energy = getFactorValue(neuralFactors.energy_compatibility);
+      const conflict = getFactorValue(neuralFactors.conflict_resolution);
+      const growth = getFactorValue(neuralFactors.growth_potential);
+
+      return {
+        overall: Math.max(1, Math.min(10, enhancedOverall)),
+        love: Math.max(1, Math.min(10, Math.round(
+          (baseCompatibility.love * weight.base) + 
+          ((intimacy + emotional) / 2 * weight.neural)
+        ))),
+        friendship: Math.max(1, Math.min(10, Math.round(
+          (baseCompatibility.friendship * weight.base) + 
+          ((communication + energy) / 2 * weight.neural)
+        ))),
+        business: Math.max(1, Math.min(10, Math.round(
+          (baseCompatibility.business * weight.base) + 
+          ((conflict + growth) / 2 * weight.neural)
+        ))),
+        percentage: Math.round(enhancedOverall * 10),
+        rating: this.getNeuralRating(enhancedOverall, language),
+        neural_confidence: this.calculateConfidenceScore(neuralFactors)
+      };
+    } catch (error) {
+      logger.logError(error, {
+        operation: 'applyNeuralWeighting',
+        analysisLevel,
+        baseCompatibility: baseCompatibility ? 'present' : 'missing',
+        neuralFactors: neuralFactors ? Object.keys(neuralFactors) : 'missing'
+      });
+      
+      // Return fallback scoring based on base compatibility only
+      return {
+        overall: baseCompatibility?.overall || 5,
+        love: baseCompatibility?.love || 5,
+        friendship: baseCompatibility?.friendship || 5,
+        business: baseCompatibility?.business || 5,
+        percentage: Math.round((baseCompatibility?.overall || 5) * 10),
+        rating: this.getNeuralRating(baseCompatibility?.overall || 5, language),
+        neural_confidence: 50 // Low confidence due to error
+      };
+    }
   }
 
   /**
@@ -550,16 +721,40 @@ class NeuralCompatibilityController {
    * 🎯 CALCULATE CONFIDENCE SCORE
    */
   calculateConfidenceScore(neuralFactors) {
-    const factorCount = Object.keys(neuralFactors).length;
-    const averageScore = Object.values(neuralFactors).reduce((sum, factor) => {
-      return sum + (factor.score || factor);
-    }, 0) / factorCount;
-    
-    // Confidence based on factor consistency and count
-    const consistency = 1 - (Math.abs(averageScore - 7.5) / 7.5);
-    const completeness = factorCount / 8; // Assuming 8 base factors
-    
-    return Math.round((consistency * 0.6 + completeness * 0.4) * 100);
+    try {
+      if (!neuralFactors || typeof neuralFactors !== 'object') {
+        return 0;
+      }
+      
+      const factorCount = Object.keys(neuralFactors).length;
+      if (factorCount === 0) {
+        return 0;
+      }
+      
+      // Helper function to safely extract factor value
+      const getFactorValue = (factor) => {
+        if (typeof factor === 'object' && factor.score !== undefined) {
+          return typeof factor.score === 'number' ? factor.score : 0;
+        }
+        return typeof factor === 'number' ? factor : 0;
+      };
+      
+      const averageScore = Object.values(neuralFactors).reduce((sum, factor) => {
+        return sum + getFactorValue(factor);
+      }, 0) / factorCount;
+      
+      // Confidence based on factor consistency and count
+      const consistency = Math.max(0, 1 - (Math.abs(averageScore - 7.5) / 7.5));
+      const completeness = Math.min(1, factorCount / 8); // Assuming 8 base factors
+      
+      return Math.round((consistency * 0.6 + completeness * 0.4) * 100);
+    } catch (error) {
+      logger.logError(error, {
+        operation: 'calculateConfidenceScore',
+        neuralFactors: neuralFactors ? Object.keys(neuralFactors) : 'missing'
+      });
+      return 50; // Default confidence score
+    }
   }
 
   /**
@@ -602,6 +797,199 @@ class NeuralCompatibilityController {
     };
 
     return insights[language] || insights.en;
+  }
+
+  /**
+   * 🤖 GENERATE ML INSIGHTS
+   * Generate insights from machine learning analysis
+   */
+  generateMLInsights(mlAnalysis, language = 'en') {
+    try {
+      if (!mlAnalysis || typeof mlAnalysis !== 'object') {
+        return this.getDefaultMLInsights(language);
+      }
+
+      const insights = {
+        en: {
+          temporal_insight: this.generateTemporalInsight(mlAnalysis.temporal_compatibility, 'en'),
+          personality_insight: this.generatePersonalityInsight(mlAnalysis.personality_alignment, 'en'),
+          predictive_insight: this.generatePredictiveInsight(mlAnalysis.predictive_insights, 'en'),
+          pattern_insight: this.generatePatternInsight(mlAnalysis.pattern_recognition, 'en'),
+          optimization_recommendations: mlAnalysis.predictive_insights?.optimization_suggestions || [
+            'Focus on shared values and goals',
+            'Practice active communication',
+            'Embrace individual differences as strengths'
+          ],
+          ml_confidence_explanation: this.explainMLConfidence(mlAnalysis.confidence_score, 'en')
+        },
+        es: {
+          temporal_insight: this.generateTemporalInsight(mlAnalysis.temporal_compatibility, 'es'),
+          personality_insight: this.generatePersonalityInsight(mlAnalysis.personality_alignment, 'es'),
+          predictive_insight: this.generatePredictiveInsight(mlAnalysis.predictive_insights, 'es'),
+          pattern_insight: this.generatePatternInsight(mlAnalysis.pattern_recognition, 'es'),
+          optimization_recommendations: [
+            'Enfócate en valores y objetivos compartidos',
+            'Practica la comunicación activa',
+            'Abraza las diferencias individuales como fortalezas'
+          ],
+          ml_confidence_explanation: this.explainMLConfidence(mlAnalysis.confidence_score, 'es')
+        }
+      };
+
+      return insights[language] || insights.en;
+    } catch (error) {
+      logger.logError(error, {
+        operation: 'generateMLInsights',
+        language
+      });
+      return this.getDefaultMLInsights(language);
+    }
+  }
+
+  /**
+   * 🕰️ GENERATE TEMPORAL INSIGHT
+   */
+  generateTemporalInsight(temporalData, language) {
+    if (!temporalData) return '';
+
+    const insights = {
+      en: {
+        high: `Strong temporal synchronicity detected (${temporalData.confidence?.toFixed(0)}% confidence). Birth time alignment suggests excellent timing compatibility.`,
+        medium: `Moderate temporal alignment identified. Some timing adjustments may enhance relationship harmony.`,
+        low: `Temporal analysis suggests different life rhythms. Focus on understanding each other's natural timing preferences.`
+      },
+      es: {
+        high: `Fuerte sincronicidad temporal detectada (${temporalData.confidence?.toFixed(0)}% confianza). La alineación del tiempo de nacimiento sugiere excelente compatibilidad temporal.`,
+        medium: `Alineación temporal moderada identificada. Algunos ajustes de tiempo pueden mejorar la armonía de la relación.`,
+        low: `El análisis temporal sugiere diferentes ritmos de vida. Enfócate en entender las preferencias naturales de tiempo del otro.`
+      }
+    };
+
+    const score = temporalData.score || 0;
+    const level = score >= 8 ? 'high' : score >= 6 ? 'medium' : 'low';
+    
+    return insights[language]?.[level] || insights.en[level];
+  }
+
+  /**
+   * 🧬 GENERATE PERSONALITY INSIGHT
+   */
+  generatePersonalityInsight(personalityData, language) {
+    if (!personalityData) return '';
+
+    const insights = {
+      en: {
+        high: `Exceptional personality alignment discovered through deep learning analysis. Core traits show strong complementary patterns.`,
+        medium: `Good personality compatibility with growth opportunities. Key traits align well with minor areas for development.`,
+        low: `Personality analysis reveals significant differences. Focus on appreciating diverse perspectives and communication styles.`
+      },
+      es: {
+        high: `Alineación excepcional de personalidad descubierta a través del análisis de aprendizaje profundo. Los rasgos centrales muestran patrones complementarios fuertes.`,
+        medium: `Buena compatibilidad de personalidad con oportunidades de crecimiento. Los rasgos clave se alinean bien con áreas menores para el desarrollo.`,
+        low: `El análisis de personalidad revela diferencias significativas. Enfócate en apreciar perspectivas diversas y estilos de comunicación.`
+      }
+    };
+
+    const score = personalityData.score || 0;
+    const level = score >= 8 ? 'high' : score >= 6 ? 'medium' : 'low';
+    
+    return insights[language]?.[level] || insights.en[level];
+  }
+
+  /**
+   * 🔮 GENERATE PREDICTIVE INSIGHT
+   */
+  generatePredictiveInsight(predictiveData, language) {
+    if (!predictiveData) return '';
+
+    const successRate = predictiveData.success_probability || 70;
+    
+    const insights = {
+      en: {
+        high: `Predictive modeling shows ${successRate}% relationship success probability. Long-term compatibility indicators are very positive.`,
+        medium: `Machine learning predicts ${successRate}% success rate with good growth potential. Focus on identified optimization areas.`,
+        low: `Predictive analysis suggests ${successRate}% compatibility with significant growth opportunities. Addressing challenge areas will be key.`
+      },
+      es: {
+        high: `El modelado predictivo muestra ${successRate}% de probabilidad de éxito en la relación. Los indicadores de compatibilidad a largo plazo son muy positivos.`,
+        medium: `El aprendizaje automático predice una tasa de éxito del ${successRate}% con buen potencial de crecimiento. Enfócate en las áreas de optimización identificadas.`,
+        low: `El análisis predictivo sugiere ${successRate}% de compatibilidad con oportunidades significativas de crecimiento. Abordar las áreas desafiantes será clave.`
+      }
+    };
+
+    const level = successRate >= 85 ? 'high' : successRate >= 70 ? 'medium' : 'low';
+    
+    return insights[language]?.[level] || insights.en[level];
+  }
+
+  /**
+   * 🔍 GENERATE PATTERN INSIGHT
+   */
+  generatePatternInsight(patternData, language) {
+    if (!patternData || !patternData.patterns_identified) return '';
+
+    const insights = {
+      en: `Pattern recognition identified: ${patternData.patterns_identified.join(', ')}. These patterns suggest strong foundational compatibility.`,
+      es: `Reconocimiento de patrones identificado: ${patternData.patterns_identified.join(', ')}. Estos patrones sugieren una fuerte compatibilidad fundamental.`
+    };
+
+    return insights[language] || insights.en;
+  }
+
+  /**
+   * 📊 EXPLAIN ML CONFIDENCE
+   */
+  explainMLConfidence(confidence, language) {
+    const insights = {
+      en: {
+        high: `ML confidence of ${confidence}% indicates highly reliable predictions based on extensive pattern analysis.`,
+        medium: `ML confidence of ${confidence}% suggests good reliability with room for additional data refinement.`,
+        low: `ML confidence of ${confidence}% indicates preliminary analysis. More data points would enhance prediction accuracy.`
+      },
+      es: {
+        high: `La confianza ML del ${confidence}% indica predicciones altamente confiables basadas en análisis extenso de patrones.`,
+        medium: `La confianza ML del ${confidence}% sugiere buena confiabilidad con espacio para refinamiento de datos adicionales.`,
+        low: `La confianza ML del ${confidence}% indica análisis preliminar. Más puntos de datos mejorarían la precisión de la predicción.`
+      }
+    };
+
+    const level = confidence >= 85 ? 'high' : confidence >= 70 ? 'medium' : 'low';
+    
+    return insights[language]?.[level] || insights.en[level];
+  }
+
+  /**
+   * 🔧 GET DEFAULT ML INSIGHTS
+   */
+  getDefaultMLInsights(language) {
+    const defaults = {
+      en: {
+        temporal_insight: 'Temporal analysis processing...',
+        personality_insight: 'Personality patterns being analyzed...',
+        predictive_insight: 'Predictive modeling in progress...',
+        pattern_insight: 'Pattern recognition active...',
+        optimization_recommendations: [
+          'Continue building strong communication',
+          'Focus on shared experiences',
+          'Maintain individual growth'
+        ],
+        ml_confidence_explanation: 'Machine learning models are processing compatibility data.'
+      },
+      es: {
+        temporal_insight: 'Análisis temporal procesando...',
+        personality_insight: 'Patrones de personalidad siendo analizados...',
+        predictive_insight: 'Modelado predictivo en progreso...',
+        pattern_insight: 'Reconocimiento de patrones activo...',
+        optimization_recommendations: [
+          'Continúa construyendo comunicación fuerte',
+          'Enfócate en experiencias compartidas',
+          'Mantén el crecimiento individual'
+        ],
+        ml_confidence_explanation: 'Los modelos de aprendizaje automático están procesando datos de compatibilidad.'
+      }
+    };
+
+    return defaults[language] || defaults.en;
   }
 
   /**
