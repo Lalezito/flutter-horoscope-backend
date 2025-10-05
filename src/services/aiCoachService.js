@@ -21,7 +21,9 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const OpenAI = require('openai');
-const { v4: uuidv4 } = require('uuid');
+// Use Node.js crypto.randomUUID() instead of uuid package (ES module compatibility)
+const { randomUUID } = require('crypto');
+const uuidv4 = randomUUID;
 const db = require('../config/db');
 const redisService = require('./redisService');
 const receiptValidationService = require('./receiptValidationService');
