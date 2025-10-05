@@ -7,6 +7,15 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Import Firebase service
+let firebaseService;
+try {
+  firebaseService = require("./services/firebaseService");
+} catch (error) {
+  console.error('Firebase service import failed:', error.message);
+  firebaseService = null;
+}
+
 // Trust proxy for Railway
 app.set('trust proxy', true);
 
@@ -15,9 +24,22 @@ app.use(express.json());
 
 // Basic health endpoint
 app.get('/health', (req, res) => {
+  let firebaseStatus = { error: 'Firebase service not loaded' };
+
+  if (firebaseService) {
+    try {
+      firebaseStatus = firebaseService.getStatus();
+    } catch (error) {
+      firebaseStatus = { error: error.message };
+    }
+  }
+
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
+    services: {
+      firebase: firebaseStatus
+    },
     env: {
       nodeEnv: process.env.NODE_ENV,
       hasDatabase: !!process.env.DATABASE_URL,
@@ -25,7 +47,7 @@ app.get('/health', (req, res) => {
       hasFirebase: !!process.env.FIREBASE_PROJECT_ID
     },
     uptime: process.uptime(),
-    version: '2.0.0-safe'
+    version: '2.0.1-safe-firebase'
   });
 });
 
@@ -60,8 +82,22 @@ app.use((error, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`✅ Safe Zodiac Backend running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Health: http://localhost:${PORT}/health`);
+
+  // Initialize Firebase after server is listening
+  if (firebaseService) {
+    try {
+      await firebaseService.initialize();
+      const status = firebaseService.getStatus();
+      console.log(`🔥 Firebase: ${status.initialized ? 'Initialized ✅' : 'Mock mode ⚠️'}`);
+      console.log(`📋 Firebase config: ${JSON.stringify(status)}`);
+    } catch (error) {
+      console.error('⚠️ Firebase initialization failed:', error.message);
+    }
+  } else {
+    console.error('❌ Firebase service not available');
+  }
 });
