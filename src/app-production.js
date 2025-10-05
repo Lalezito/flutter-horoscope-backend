@@ -138,54 +138,41 @@ app.get('/', (req, res) => {
   });
 });
 
-// API routes - load conditionally
-try {
-  const coachingRoutes = require("./routes/coaching");
-  app.use("/api/coaching", coachingRoutes);
-  console.log('✅ Coaching routes loaded');
-} catch (e) {
-  console.log('⚠️ Coaching routes not available:', e.message);
+// Load API routes before defining error handlers
+const loadedRoutes = [];
+
+// Helper function to load routes safely
+function loadRoute(path, routePath, description) {
+  try {
+    const route = require(routePath);
+    app.use(path, route);
+    loadedRoutes.push({ path, description, status: 'loaded' });
+    console.log(`✅ ${description} loaded`);
+    return true;
+  } catch (e) {
+    loadedRoutes.push({ path, description, status: 'failed', error: e.message });
+    console.log(`⚠️ ${description} not available:`, e.message);
+    return false;
+  }
 }
 
-try {
-  const weeklyRoutes = require("./routes/weekly");
-  app.use("/api/weekly", weeklyRoutes);
-  console.log('✅ Weekly routes loaded');
-} catch (e) {
-  console.log('⚠️ Weekly routes not available:', e.message);
-}
+// Load all routes
+loadRoute('/api/coaching', './routes/coaching', 'Coaching routes');
+loadRoute('/api/weekly', './routes/weekly', 'Weekly routes');
+loadRoute('/api/compatibility', './routes/compatibility', 'Compatibility routes');
+loadRoute('/api/receipts', './routes/receipts', 'Receipt validation routes');
+loadRoute('/api/admin', './routes/admin', 'Admin routes');
+loadRoute('/api/monitoring', './routes/monitoring', 'Monitoring routes');
 
-try {
-  const compatibilityRoutes = require("./routes/compatibility");
-  app.use("/api/compatibility", compatibilityRoutes);
-  console.log('✅ Compatibility routes loaded');
-} catch (e) {
-  console.log('⚠️ Compatibility routes not available:', e.message);
-}
-
-try {
-  const receiptRoutes = require("./routes/receipts");
-  app.use("/api/receipts", receiptRoutes);
-  console.log('✅ Receipt validation routes loaded');
-} catch (e) {
-  console.log('⚠️ Receipt routes not available:', e.message);
-}
-
-try {
-  const adminRoutes = require("./routes/admin");
-  app.use("/api/admin", adminRoutes);
-  console.log('✅ Admin routes loaded');
-} catch (e) {
-  console.log('⚠️ Admin routes not available:', e.message);
-}
-
-try {
-  const monitoringRoutes = require("./routes/monitoring");
-  app.use("/api/monitoring", monitoringRoutes);
-  console.log('✅ Monitoring routes loaded');
-} catch (e) {
-  console.log('⚠️ Monitoring routes not available:', e.message);
-}
+// Routes status endpoint
+app.get('/api/routes', (req, res) => {
+  res.json({
+    total: loadedRoutes.length,
+    loaded: loadedRoutes.filter(r => r.status === 'loaded').length,
+    failed: loadedRoutes.filter(r => r.status === 'failed').length,
+    routes: loadedRoutes
+  });
+});
 
 // 404 handler
 app.use('*', (req, res) => {
