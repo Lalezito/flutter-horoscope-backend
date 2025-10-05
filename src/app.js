@@ -175,8 +175,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Apply adaptive rate limiting to all routes
-app.use(adaptiveRateLimit(200)); // 200 requests per minute base limit
+// Apply adaptive rate limiting to all routes - disabled for Railway stability
+// app.use(adaptiveRateLimit(200)); // 200 requests per minute base limit
 
 // Enhanced health check endpoints - simplified for Railway
 app.get('/health', (req, res) => {
