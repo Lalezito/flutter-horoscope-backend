@@ -24,6 +24,7 @@ const compatibilityRoutes = require("./routes/compatibility");
 const neuralCompatibilityRoutes = require("./routes/neuralCompatibility");
 const aiCoachRoutes = require("./routes/aiCoach");
 const personalizationRoutes = require("./routes/personalization");
+const goalPlannerRoutes = require("./routes/goalPlanner");
 // Temporarily disabled predictions routes due to middleware issues
 // const predictionsRoutes = require("./routes/predictions");
 // const verifiablePredictionsRoutes = require("./routes/verifiablePredictions");
@@ -228,6 +229,7 @@ app.use("/api/compatibility", endpointLimits.api, compatibilityRoutes);
 app.use("/api/neural-compatibility", neuralCompatibilityRoutes); // Neural-enhanced compatibility analysis with custom rate limiting
 app.use("/api/ai-coach", aiCoachRoutes); // AI Coach real-time chat functionality with premium validation
 app.use("/api/personalization", personalizationRoutes); // Hiperpersonal horoscope system with Swiss Ephemeris calculations
+app.use("/api/ai/goals", goalPlannerRoutes); // AI-powered Goal Planner for Stellar tier with SMART goals and progress tracking
 // app.use("/api/predictions", predictionsRoutes); // Basic predictions system - temporarily disabled  
 // app.use("/api/verifiable-predictions", verifiablePredictionsRoutes); // AI-powered verifiable predictions with astrological timing and accuracy tracking
 // app.use("/api/timing", astrologicalTimingRoutes); // Advanced astrological timing intelligence with planetary hours, lunar cycles, and personalized recommendations
