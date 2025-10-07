@@ -224,7 +224,7 @@ class WeeklyController {
    * Generate all weekly horoscopes using OpenAI
    */
   async generateWeeklyHoroscopes(req, res) {
-    const { admin_key, force } = req.query;
+    const { admin_key, force, fill_missing } = req.query;
 
     // Security check
     if (admin_key !== process.env.ADMIN_KEY) {
@@ -236,14 +236,14 @@ class WeeklyController {
       const weekEnd = moment().endOf('isoWeek').format('YYYY-MM-DD');
 
       // Check if horoscopes already exist for this week
-      if (!force) {
+      if (!force && !fill_missing) {
         const checkQuery = `SELECT COUNT(*) FROM weekly_horoscopes WHERE week_start = $1`;
         const checkResult = await db.query(checkQuery, [weekStart]);
 
         if (parseInt(checkResult.rows[0].count) > 0) {
           return res.status(400).json({
             error: 'Horoscopes already exist for this week',
-            message: 'Use force=true to regenerate',
+            message: 'Use force=true to regenerate or fill_missing=true to complete',
             week: `${weekStart} to ${weekEnd}`,
             existing_count: parseInt(checkResult.rows[0].count)
           });
@@ -269,6 +269,7 @@ class WeeklyController {
       const results = {
         success: 0,
         errors: 0,
+        skipped: 0,
         week: `${weekStart} to ${weekEnd}`,
         details: []
       };
@@ -277,6 +278,19 @@ class WeeklyController {
       for (const sign of signs) {
         for (const [langCode, langName] of Object.entries(languages)) {
           try {
+            // If fill_missing mode, check if this specific horoscope already exists
+            if (fill_missing && !force) {
+              const existsQuery = `
+                SELECT COUNT(*) FROM weekly_horoscopes
+                WHERE week_start = $1 AND sign = $2 AND language_code = $3
+              `;
+              const existsResult = await db.query(existsQuery, [weekStart, sign, langCode]);
+
+              if (parseInt(existsResult.rows[0].count) > 0) {
+                results.skipped++;
+                continue; // Skip this one, already exists
+              }
+            }
             console.log(`Generating weekly horoscope for ${sign} in ${langName}...`);
 
             const prompt = `Generate a detailed weekly horoscope for ${sign} for the week of ${weekStart} to ${weekEnd}.
@@ -352,6 +366,7 @@ Keep the total length around 200-250 words.`;
         week: `${weekStart} to ${weekEnd}`,
         total_expected: 72,
         success: results.success,
+        skipped: results.skipped,
         errors: results.errors,
         completion_rate: `${Math.round((results.success / 72) * 100)}%`,
         details: results.details
