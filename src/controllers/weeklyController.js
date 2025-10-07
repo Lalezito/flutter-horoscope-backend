@@ -255,8 +255,9 @@ class WeeklyController {
         apiKey: process.env.OPENAI_API_KEY
       });
 
-      const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
-                     'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+      // Use Spanish sign names to match database
+      const signs = ['Aries', 'Tauro', 'Géminis', 'Cáncer', 'Leo', 'Virgo',
+                     'Libra', 'Escorpio', 'Sagitario', 'Capricornio', 'Acuario', 'Piscis'];
       const languages = {
         'en': 'English',
         'es': 'Spanish',
