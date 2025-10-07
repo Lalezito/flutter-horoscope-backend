@@ -1,0 +1,292 @@
+-- Migration: Create receipt validation and subscription tracking tables
+-- Created: 2025-08-28
+-- Description: Tables for App Store receipt validation, subscription tracking, and purchase audit
+
+-- Receipt validation logs for audit and debugging
+CREATE TABLE IF NOT EXISTS receipt_validations (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(100),  -- Can be device ID, Apple ID, or app-specific user ID
+  receipt_data_hash VARCHAR(64) NOT NULL, -- SHA256 hash of receipt data (for privacy)
+  validation_status INTEGER NOT NULL, -- Apple's status code (0 = valid, 21xxx = errors)
+  validation_message TEXT,
+  environment VARCHAR(20) CHECK (environment IN ('production', 'sandbox')),
+  
+  -- Receipt details (from Apple response)
+  bundle_id VARCHAR(100),
+  application_version VARCHAR(50),
+  original_application_version VARCHAR(50),
+  
+  -- Timing information
+  validated_at TIMESTAMP DEFAULT NOW(),
+  apple_response_time_ms INTEGER,
+  
+  -- Request context
+  user_ip INET,
+  user_agent TEXT,
+  
+  -- Success/failure tracking
+  validation_successful BOOLEAN GENERATED ALWAYS AS (validation_status = 0) STORED,
+  
+  -- Metadata
+  metadata JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Subscription status tracking
+CREATE TABLE IF NOT EXISTS user_subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(100) NOT NULL,
+  product_id VARCHAR(100) NOT NULL, -- zodiac_monthly_premium, zodiac_yearly_premium
+  transaction_id VARCHAR(50) UNIQUE, -- Apple's transaction ID
+  original_transaction_id VARCHAR(50), -- For renewals
+  
+  -- Subscription timing
+  purchase_date TIMESTAMP NOT NULL,
+  expires_date TIMESTAMP NOT NULL,
+  cancellation_date TIMESTAMP,
+  
+  -- Subscription status (removed GENERATED column - NOW() is not immutable)
+  -- is_active should be computed in application logic
+  auto_renew_status BOOLEAN DEFAULT TRUE,
+  
+  -- Price information
+  price_currency_code CHAR(3), -- USD, EUR, etc.
+  price_amount_micros BIGINT,  -- Price in micros (e.g., $4.99 = 4990000)
+  
+  -- Receipt validation reference
+  receipt_validation_id INTEGER REFERENCES receipt_validations(id),
+  
+  -- Apple receipt fields
+  web_order_line_item_id VARCHAR(50),
+  is_trial_period BOOLEAN DEFAULT FALSE,
+  is_in_intro_offer_period BOOLEAN DEFAULT FALSE,
+  subscription_group_identifier VARCHAR(50),
+  
+  -- Status tracking
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled', 'refunded', 'paused')),
+  
+  -- Timing
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  
+  -- Ensure user can only have one active subscription per product
+  UNIQUE(user_id, product_id, expires_date)
+);
+
+-- Subscription renewal events
+CREATE TABLE IF NOT EXISTS subscription_renewals (
+  id SERIAL PRIMARY KEY,
+  user_subscription_id INTEGER REFERENCES user_subscriptions(id),
+  user_id VARCHAR(100) NOT NULL,
+  product_id VARCHAR(100) NOT NULL,
+  
+  -- Renewal details
+  renewal_date TIMESTAMP NOT NULL,
+  previous_expires_date TIMESTAMP NOT NULL,
+  new_expires_date TIMESTAMP NOT NULL,
+  
+  -- Billing information
+  price_currency_code CHAR(3),
+  price_amount_micros BIGINT,
+  
+  -- Apple transaction details
+  transaction_id VARCHAR(50),
+  web_order_line_item_id VARCHAR(50),
+  
+  -- Renewal context
+  renewal_type VARCHAR(20) CHECK (renewal_type IN ('automatic', 'manual', 'restore')),
+  was_successful BOOLEAN DEFAULT TRUE,
+  failure_reason TEXT,
+  
+  -- Receipt validation reference
+  receipt_validation_id INTEGER REFERENCES receipt_validations(id),
+  
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Premium feature usage tracking (for analytics)
+CREATE TABLE IF NOT EXISTS premium_feature_usage (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(100) NOT NULL,
+  feature_name VARCHAR(100) NOT NULL, -- 'weekly_horoscope', 'premium_coaching', etc.
+  usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  usage_count INTEGER DEFAULT 1,
+  
+  -- User subscription status at time of usage
+  user_was_premium BOOLEAN NOT NULL,
+  active_subscription_product_id VARCHAR(100),
+  
+  -- Usage metadata
+  metadata JSONB,
+  
+  -- Unique constraint to prevent duplicate daily counts
+  UNIQUE(user_id, feature_name, usage_date),
+  
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Subscription cancellation tracking
+CREATE TABLE IF NOT EXISTS subscription_cancellations (
+  id SERIAL PRIMARY KEY,
+  user_subscription_id INTEGER REFERENCES user_subscriptions(id),
+  user_id VARCHAR(100) NOT NULL,
+  product_id VARCHAR(100) NOT NULL,
+  
+  -- Cancellation details
+  cancelled_at TIMESTAMP NOT NULL,
+  cancellation_reason VARCHAR(50), -- 'user_requested', 'payment_failed', 'refund', etc.
+  cancellation_source VARCHAR(30), -- 'app_store', 'app', 'support', etc.
+  
+  -- Timing context
+  subscription_start_date TIMESTAMP,
+  subscription_end_date TIMESTAMP,
+  days_subscribed INTEGER,
+  
+  -- Financial impact
+  total_revenue_micros BIGINT,
+  refund_amount_micros BIGINT DEFAULT 0,
+  
+  -- Feedback (optional)
+  user_feedback TEXT,
+  cancellation_survey_response JSONB,
+  
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for performance and common queries
+
+-- Receipt validation indexes
+CREATE INDEX IF NOT EXISTS idx_receipt_validations_user_id ON receipt_validations(user_id);
+CREATE INDEX IF NOT EXISTS idx_receipt_validations_date ON receipt_validations(validated_at);
+CREATE INDEX IF NOT EXISTS idx_receipt_validations_status ON receipt_validations(validation_successful);
+CREATE INDEX IF NOT EXISTS idx_receipt_validations_bundle ON receipt_validations(bundle_id);
+
+-- Subscription indexes
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_product ON user_subscriptions(product_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_active ON user_subscriptions(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_expires ON user_subscriptions(expires_date);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status ON user_subscriptions(status);
+
+-- Renewal indexes
+CREATE INDEX IF NOT EXISTS idx_subscription_renewals_user_id ON subscription_renewals(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_renewals_date ON subscription_renewals(renewal_date);
+CREATE INDEX IF NOT EXISTS idx_subscription_renewals_product ON subscription_renewals(product_id);
+
+-- Premium usage indexes
+CREATE INDEX IF NOT EXISTS idx_premium_usage_user_date ON premium_feature_usage(user_id, usage_date);
+CREATE INDEX IF NOT EXISTS idx_premium_usage_feature ON premium_feature_usage(feature_name, usage_date);
+CREATE INDEX IF NOT EXISTS idx_premium_usage_premium ON premium_feature_usage(user_was_premium, usage_date);
+
+-- Cancellation indexes
+CREATE INDEX IF NOT EXISTS idx_cancellations_user_id ON subscription_cancellations(user_id);
+CREATE INDEX IF NOT EXISTS idx_cancellations_date ON subscription_cancellations(cancelled_at);
+CREATE INDEX IF NOT EXISTS idx_cancellations_reason ON subscription_cancellations(cancellation_reason);
+
+-- Useful views for monitoring and analytics
+
+-- Active subscriptions overview
+CREATE OR REPLACE VIEW v_active_subscriptions AS
+SELECT 
+    user_id,
+    product_id,
+    purchase_date,
+    expires_date,
+    EXTRACT(EPOCH FROM (expires_date - NOW()))::INTEGER / 86400 as days_until_expiry,
+    auto_renew_status,
+    price_currency_code,
+    price_amount_micros / 1000000.0 as price_amount,
+    is_trial_period,
+    created_at
+FROM user_subscriptions 
+WHERE is_active = true
+ORDER BY expires_date;
+
+-- Daily subscription metrics
+CREATE OR REPLACE VIEW v_subscription_metrics_daily AS
+SELECT 
+    DATE(created_at) as metric_date,
+    product_id,
+    COUNT(*) as new_subscriptions,
+    SUM(price_amount_micros) as total_revenue_micros,
+    COUNT(*) FILTER (WHERE is_trial_period = true) as trial_subscriptions,
+    COUNT(*) FILTER (WHERE auto_renew_status = true) as auto_renew_enabled
+FROM user_subscriptions
+WHERE created_at > CURRENT_DATE - INTERVAL '90 days'
+GROUP BY DATE(created_at), product_id
+ORDER BY metric_date DESC, product_id;
+
+-- Subscription health overview
+CREATE OR REPLACE VIEW v_subscription_health AS
+SELECT 
+    product_id,
+    COUNT(*) FILTER (WHERE is_active = true) as active_subscribers,
+    COUNT(*) FILTER (WHERE status = 'expired') as expired_subscribers,
+    COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_subscribers,
+    AVG(EXTRACT(EPOCH FROM (expires_date - purchase_date)))::INTEGER / 86400 as avg_subscription_length_days,
+    COUNT(*) FILTER (WHERE auto_renew_status = true AND is_active = true) as auto_renew_enabled,
+    SUM(price_amount_micros) FILTER (WHERE is_active = true) as active_monthly_recurring_revenue_micros
+FROM user_subscriptions
+GROUP BY product_id;
+
+-- Premium feature usage summary
+CREATE OR REPLACE VIEW v_premium_usage_summary AS
+SELECT 
+    feature_name,
+    usage_date,
+    COUNT(*) FILTER (WHERE user_was_premium = true) as premium_users,
+    COUNT(*) FILTER (WHERE user_was_premium = false) as free_users,
+    SUM(usage_count) FILTER (WHERE user_was_premium = true) as premium_usage_count,
+    SUM(usage_count) FILTER (WHERE user_was_premium = false) as free_usage_count,
+    COUNT(DISTINCT user_id) as unique_users
+FROM premium_feature_usage
+WHERE usage_date > CURRENT_DATE - INTERVAL '30 days'
+GROUP BY feature_name, usage_date
+ORDER BY usage_date DESC, feature_name;
+
+-- Receipt validation success rate
+CREATE OR REPLACE VIEW v_receipt_validation_stats AS
+SELECT 
+    DATE(validated_at) as validation_date,
+    environment,
+    COUNT(*) as total_validations,
+    COUNT(*) FILTER (WHERE validation_successful = true) as successful_validations,
+    COUNT(*) FILTER (WHERE validation_successful = false) as failed_validations,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE validation_successful = true) / COUNT(*), 2) as success_rate_percent,
+    AVG(apple_response_time_ms)::INTEGER as avg_response_time_ms
+FROM receipt_validations
+WHERE validated_at > CURRENT_DATE - INTERVAL '30 days'
+GROUP BY DATE(validated_at), environment
+ORDER BY validation_date DESC, environment;
+
+-- Triggers for updating timestamps
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_user_subscriptions_updated_at 
+    BEFORE UPDATE ON user_subscriptions 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Comments for documentation
+COMMENT ON TABLE receipt_validations IS 'Audit log of all App Store receipt validations for debugging and compliance';
+COMMENT ON TABLE user_subscriptions IS 'Current subscription status for all users with active or past subscriptions';
+COMMENT ON TABLE subscription_renewals IS 'Log of all subscription renewal events for revenue tracking';
+COMMENT ON TABLE premium_feature_usage IS 'Track premium feature usage for analytics and conversion optimization';
+COMMENT ON TABLE subscription_cancellations IS 'Track subscription cancellations for churn analysis';
+
+COMMENT ON VIEW v_active_subscriptions IS 'All currently active subscriptions with expiry information';
+COMMENT ON VIEW v_subscription_metrics_daily IS 'Daily subscription and revenue metrics';
+COMMENT ON VIEW v_subscription_health IS 'Overall subscription health metrics by product';
+COMMENT ON VIEW v_premium_usage_summary IS 'Premium vs free feature usage comparison';
+COMMENT ON VIEW v_receipt_validation_stats IS 'Receipt validation success rates and performance metrics';
+
+-- Grant permissions for application user (adjust username as needed)
+-- GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO your_app_user;
+-- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO your_app_user;
+-- GRANT SELECT ON ALL VIEWS IN SCHEMA public TO your_app_user;

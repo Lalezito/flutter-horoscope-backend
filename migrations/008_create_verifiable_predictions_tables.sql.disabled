@@ -1,0 +1,287 @@
+-- Migration: Create Verifiable Predictions System Tables
+-- Created: 2025-09-13
+-- Description: Creates database tables for AI-powered verifiable prediction system
+
+-- Main predictions table
+CREATE TABLE IF NOT EXISTS verifiable_predictions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(255) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    category_name VARCHAR(100) NOT NULL,
+    prediction_statement TEXT NOT NULL,
+    specific_details TEXT,
+    timeframe VARCHAR(100) NOT NULL,
+    measurable_outcome TEXT NOT NULL,
+    confidence_score DECIMAL(3,2) NOT NULL CHECK (confidence_score >= 0.0 AND confidence_score <= 1.0),
+    astrology_strength DECIMAL(3,2) NOT NULL CHECK (astrology_strength >= 0.0 AND astrology_strength <= 1.0),
+    timing_precision DECIMAL(3,2) NOT NULL CHECK (timing_precision >= 0.0 AND timing_precision <= 1.0),
+    verification_criteria TEXT NOT NULL,
+    astrology_basis JSONB NOT NULL DEFAULT '{}',
+    astrology_context JSONB NOT NULL DEFAULT '{}',
+    validation_scores JSONB NOT NULL DEFAULT '{}',
+    
+    -- Outcome tracking
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'completed', 'cancelled')),
+    outcome VARCHAR(20) CHECK (outcome IN ('verified', 'false', 'partial', 'unclear', 'pending')),
+    accuracy_score DECIMAL(3,2) CHECK (accuracy_score >= 0.0 AND accuracy_score <= 1.0),
+    user_feedback TEXT,
+    verified_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Indexes for performance
+    CONSTRAINT unique_user_prediction_time UNIQUE (user_id, prediction_statement, created_at)
+);
+
+-- Learning data table for AI improvement
+CREATE TABLE IF NOT EXISTS prediction_learning_data (
+    id SERIAL PRIMARY KEY,
+    category VARCHAR(50) NOT NULL,
+    astrology_factors JSONB NOT NULL DEFAULT '{}',
+    predicted_confidence DECIMAL(3,2) NOT NULL,
+    actual_outcome VARCHAR(20) NOT NULL,
+    accuracy_score DECIMAL(3,2) NOT NULL,
+    timeframe_precision DECIMAL(3,2) NOT NULL,
+    learning_weight DECIMAL(3,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Category accuracy statistics
+CREATE TABLE IF NOT EXISTS category_accuracy_stats (
+    category VARCHAR(50) PRIMARY KEY,
+    total_predictions INTEGER NOT NULL DEFAULT 1,
+    total_accuracy DECIMAL(10,2) NOT NULL DEFAULT 0,
+    average_accuracy DECIMAL(3,2) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- User prediction preferences
+CREATE TABLE IF NOT EXISTS user_prediction_preferences (
+    user_id VARCHAR(255) PRIMARY KEY,
+    preferred_categories TEXT[] NOT NULL DEFAULT '{}',
+    timeframe_preference VARCHAR(50) DEFAULT 'balanced',
+    specificity_level VARCHAR(20) DEFAULT 'high' CHECK (specificity_level IN ('low', 'medium', 'high')),
+    feedback_notifications BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Prediction feedback and ratings
+CREATE TABLE IF NOT EXISTS prediction_feedback (
+    id SERIAL PRIMARY KEY,
+    prediction_id UUID NOT NULL REFERENCES verifiable_predictions(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) NOT NULL,
+    feedback_type VARCHAR(20) NOT NULL CHECK (feedback_type IN ('accuracy', 'relevance', 'timing', 'general')),
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    feedback_text TEXT,
+    is_helpful BOOLEAN,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Performance indexes for optimization
+CREATE INDEX IF NOT EXISTS idx_verifiable_predictions_user_id ON verifiable_predictions(user_id);
+CREATE INDEX IF NOT EXISTS idx_verifiable_predictions_category ON verifiable_predictions(category);
+CREATE INDEX IF NOT EXISTS idx_verifiable_predictions_status ON verifiable_predictions(status);
+CREATE INDEX IF NOT EXISTS idx_verifiable_predictions_created_at ON verifiable_predictions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_verifiable_predictions_expires_at ON verifiable_predictions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_verifiable_predictions_confidence ON verifiable_predictions(confidence_score DESC);
+
+-- Composite indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_predictions_user_status_created ON verifiable_predictions(user_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_predictions_category_confidence ON verifiable_predictions(category, confidence_score DESC);
+CREATE INDEX IF NOT EXISTS idx_predictions_user_category_active ON verifiable_predictions(user_id, category) WHERE status = 'active';
+
+-- JSONB indexes for astrology data queries
+CREATE INDEX IF NOT EXISTS idx_predictions_astrology_basis_gin ON verifiable_predictions USING GIN (astrology_basis);
+CREATE INDEX IF NOT EXISTS idx_predictions_astrology_context_gin ON verifiable_predictions USING GIN (astrology_context);
+CREATE INDEX IF NOT EXISTS idx_predictions_validation_scores_gin ON verifiable_predictions USING GIN (validation_scores);
+
+-- Learning data indexes
+CREATE INDEX IF NOT EXISTS idx_learning_data_category ON prediction_learning_data(category);
+CREATE INDEX IF NOT EXISTS idx_learning_data_created_at ON prediction_learning_data(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_learning_data_accuracy ON prediction_learning_data(accuracy_score DESC);
+
+-- Feedback indexes
+CREATE INDEX IF NOT EXISTS idx_prediction_feedback_prediction_id ON prediction_feedback(prediction_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_feedback_user_id ON prediction_feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_feedback_type ON prediction_feedback(feedback_type);
+
+-- Views for common queries
+CREATE OR REPLACE VIEW v_active_predictions AS
+SELECT 
+    id,
+    user_id,
+    category,
+    category_name,
+    prediction_statement,
+    timeframe,
+    confidence_score,
+    astrology_strength,
+    expires_at,
+    created_at,
+    EXTRACT(EPOCH FROM (expires_at - NOW())) / 86400.0 AS days_remaining
+FROM verifiable_predictions
+WHERE status = 'active' AND expires_at > NOW()
+ORDER BY confidence_score DESC, created_at DESC;
+
+CREATE OR REPLACE VIEW v_prediction_accuracy_summary AS
+SELECT 
+    category,
+    COUNT(*) as total_predictions,
+    AVG(confidence_score) as avg_confidence,
+    COUNT(CASE WHEN outcome = 'verified' THEN 1 END) as verified_count,
+    COUNT(CASE WHEN outcome = 'false' THEN 1 END) as false_count,
+    COUNT(CASE WHEN outcome = 'partial' THEN 1 END) as partial_count,
+    COUNT(CASE WHEN outcome IS NOT NULL THEN 1 END) as completed_count,
+    AVG(CASE WHEN outcome IS NOT NULL THEN accuracy_score END) as avg_accuracy,
+    MAX(created_at) as last_prediction
+FROM verifiable_predictions
+WHERE created_at > NOW() - INTERVAL '30 days'
+GROUP BY category
+ORDER BY avg_accuracy DESC NULLS LAST;
+
+CREATE OR REPLACE VIEW v_user_prediction_stats AS
+SELECT 
+    user_id,
+    COUNT(*) as total_predictions,
+    COUNT(CASE WHEN status = 'active' THEN 1 END) as active_predictions,
+    COUNT(CASE WHEN outcome = 'verified' THEN 1 END) as verified_predictions,
+    AVG(confidence_score) as avg_confidence,
+    AVG(CASE WHEN outcome IS NOT NULL THEN accuracy_score END) as personal_accuracy,
+    MAX(created_at) as last_prediction_date,
+    MIN(created_at) as first_prediction_date
+FROM verifiable_predictions
+GROUP BY user_id;
+
+-- Trigger to auto-update prediction status when expired
+CREATE OR REPLACE FUNCTION update_expired_predictions()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Mark predictions as expired when they pass their expiration date
+    UPDATE verifiable_predictions 
+    SET status = 'expired', updated_at = NOW()
+    WHERE status = 'active' AND expires_at < NOW();
+    
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to run daily
+CREATE OR REPLACE FUNCTION create_expiration_trigger()
+RETURNS void AS $$
+BEGIN
+    -- Drop trigger if exists
+    DROP TRIGGER IF EXISTS trigger_expire_predictions ON verifiable_predictions;
+    
+    -- Create new trigger
+    CREATE TRIGGER trigger_expire_predictions
+        AFTER INSERT OR UPDATE ON verifiable_predictions
+        FOR EACH STATEMENT
+        EXECUTE FUNCTION update_expired_predictions();
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT create_expiration_trigger();
+
+-- Function to calculate category performance trends
+CREATE OR REPLACE FUNCTION get_category_trends(category_name VARCHAR(50), days_back INTEGER DEFAULT 30)
+RETURNS TABLE(
+    date DATE,
+    predictions_count INTEGER,
+    avg_confidence DECIMAL(3,2),
+    accuracy_rate DECIMAL(3,2)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        DATE(created_at) as date,
+        COUNT(*)::INTEGER as predictions_count,
+        AVG(confidence_score)::DECIMAL(3,2) as avg_confidence,
+        COALESCE(AVG(CASE WHEN outcome IS NOT NULL THEN accuracy_score END), 0)::DECIMAL(3,2) as accuracy_rate
+    FROM verifiable_predictions
+    WHERE category = category_name 
+        AND created_at > NOW() - INTERVAL '1 day' * days_back
+    GROUP BY DATE(created_at)
+    ORDER BY date DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get personalized prediction recommendations
+CREATE OR REPLACE FUNCTION get_user_prediction_recommendations(target_user_id VARCHAR(255))
+RETURNS TABLE(
+    recommended_category VARCHAR(50),
+    success_rate DECIMAL(3,2),
+    last_prediction_date TIMESTAMP WITH TIME ZONE,
+    reason TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH user_stats AS (
+        SELECT 
+            category,
+            COUNT(*) as prediction_count,
+            AVG(accuracy_score) as user_accuracy,
+            MAX(created_at) as last_prediction
+        FROM verifiable_predictions
+        WHERE user_id = target_user_id AND outcome IS NOT NULL
+        GROUP BY category
+    ),
+    global_stats AS (
+        SELECT 
+            category,
+            AVG(accuracy_score) as global_accuracy
+        FROM verifiable_predictions
+        WHERE outcome IS NOT NULL
+        GROUP BY category
+    )
+    SELECT 
+        COALESCE(us.category, gs.category) as recommended_category,
+        COALESCE(us.user_accuracy, gs.global_accuracy, 0.5)::DECIMAL(3,2) as success_rate,
+        us.last_prediction as last_prediction_date,
+        CASE 
+            WHEN us.category IS NULL THEN 'New category with good global success rate'
+            WHEN us.user_accuracy > gs.global_accuracy THEN 'Strong personal success in this category'
+            WHEN us.last_prediction < NOW() - INTERVAL '7 days' THEN 'Time for update in this category'
+            ELSE 'Recommended based on overall performance'
+        END as reason
+    FROM global_stats gs
+    FULL OUTER JOIN user_stats us ON gs.category = us.category
+    WHERE COALESCE(us.user_accuracy, gs.global_accuracy, 0) > 0.4
+    ORDER BY success_rate DESC, last_prediction_date ASC NULLS FIRST
+    LIMIT 5;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Comments for documentation
+COMMENT ON TABLE verifiable_predictions IS 'Stores AI-generated verifiable predictions with astrological timing';
+COMMENT ON TABLE prediction_learning_data IS 'Machine learning data to improve prediction accuracy over time';
+COMMENT ON TABLE category_accuracy_stats IS 'Aggregated statistics for prediction category performance';
+COMMENT ON TABLE user_prediction_preferences IS 'User preferences for prediction generation and delivery';
+COMMENT ON TABLE prediction_feedback IS 'User feedback and ratings on prediction quality and accuracy';
+
+COMMENT ON VIEW v_active_predictions IS 'Currently active predictions with time remaining calculations';
+COMMENT ON VIEW v_prediction_accuracy_summary IS 'Summary of prediction accuracy by category over last 30 days';
+COMMENT ON VIEW v_user_prediction_stats IS 'Individual user statistics and performance metrics';
+
+-- Insert initial category accuracy data
+INSERT INTO category_accuracy_stats (category, total_predictions, total_accuracy, average_accuracy) VALUES
+('communication', 0, 0, 0.75),
+('socialInteractions', 0, 0, 0.70),
+('opportunities', 0, 0, 0.65),
+('discoveries', 0, 0, 0.72),
+('emotional', 0, 0, 0.68),
+('practical', 0, 0, 0.78)
+ON CONFLICT (category) DO NOTHING;
+
+-- Final verification query
+SELECT 
+    table_name,
+    column_name,
+    data_type,
+    is_nullable
+FROM information_schema.columns
+WHERE table_name IN ('verifiable_predictions', 'prediction_learning_data', 'category_accuracy_stats')
+ORDER BY table_name, ordinal_position;

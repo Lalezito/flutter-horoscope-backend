@@ -1,0 +1,203 @@
+# Artillery Load Test Configuration
+# Tests the Zodiac Backend API under various load conditions
+
+config:
+  target: "{{ $processEnvironment.TARGET_URL || 'http://localhost:3000' }}"
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up"
+    
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp-up"
+    
+    # Sustained load
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained Load"
+    
+    # Peak load simulation
+    - duration: 120
+      arrivalRate: 20
+      rampTo: 50
+      name: "Peak Load"
+    
+    # Stress test
+    - duration: 60
+      arrivalRate: 50
+      name: "Stress Test"
+    
+    # Cool down
+    - duration: 60
+      arrivalRate: 50
+      rampTo: 5
+      name: "Cool Down"
+
+  # Global configuration
+  timeout: 30000
+  
+  # Custom variables
+  variables:
+    zodiac_signs:
+      - "aries"
+      - "taurus" 
+      - "gemini"
+      - "cancer"
+      - "leo"
+      - "virgo"
+      - "libra"
+      - "scorpio"
+      - "sagittarius"
+      - "capricorn"
+      - "aquarius"
+      - "pisces"
+    
+    languages:
+      - "en"
+      - "es"
+      - "fr"
+      - "de"
+      - "it"
+      - "pt"
+
+  # Plugins for enhanced metrics
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+    
+    # Custom metrics
+    publish-metrics:
+      - type: "cloudwatch"
+        region: "us-east-1"
+        namespace: "ZodiacBackend/LoadTest"
+      
+    # Real-time monitoring
+    hdrhistogram: {}
+
+# Test scenarios
+scenarios:
+  # Health check scenario (high frequency, low impact)
+  - name: "Health Check"
+    weight: 20
+    flow:
+      - get:
+          url: "/health"
+          name: "Health Check"
+          expect:
+            - statusCode: 200
+            - hasHeader: "content-type"
+
+  # Daily horoscope requests (most common user flow)
+  - name: "Daily Horoscope API"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/coaching/getDailyHoroscope"
+          qs:
+            sign: "{{ zodiac_signs.$randomChoice }}"
+            lang: "{{ languages.$randomChoice }}"
+          name: "Get Daily Horoscope"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+          capture:
+            - json: "$.horoscope"
+              as: "horoscope_content"
+      
+      # Follow-up request to test caching
+      - think: 1
+      - get:
+          url: "/api/coaching/getDailyHoroscope"
+          qs:
+            sign: "{{ zodiac_signs.$randomChoice }}"
+            lang: "{{ languages.$randomChoice }}"
+          name: "Get Daily Horoscope (Cached)"
+
+  # Weekly horoscope requests
+  - name: "Weekly Horoscope API"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/weekly/getWeeklyHoroscope"
+          qs:
+            sign: "{{ zodiac_signs.$randomChoice }}"
+            lang: "{{ languages.$randomChoice }}"
+          name: "Get Weekly Horoscope"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+
+  # Bulk horoscope requests (testing database performance)
+  - name: "Bulk Data Requests"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/coaching/getAllHoroscopes"
+          qs:
+            lang: "{{ languages.$randomChoice }}"
+          name: "Get All Daily Horoscopes"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+      
+      - think: 2
+      
+      - get:
+          url: "/api/weekly/getAllWeeklyHoroscopes"
+          qs:
+            lang: "{{ languages.$randomChoice }}"
+          name: "Get All Weekly Horoscopes"
+          expect:
+            - statusCode: 200
+
+  # API documentation and static content
+  - name: "Static Content"
+    weight: 3
+    flow:
+      - get:
+          url: "/api/docs"
+          name: "API Documentation"
+          expect:
+            - statusCode: 200
+      
+      - get:
+          url: "/static/monitoring-dashboard.html"
+          name: "Monitoring Dashboard"
+          expect:
+            - statusCode: 200
+
+  # Monitoring endpoints (admin access)
+  - name: "Monitoring Endpoints"
+    weight: 2
+    flow:
+      - get:
+          url: "/api/monitoring/health"
+          name: "Comprehensive Health Check"
+          expect:
+            - statusCode: 200
+      
+      - get:
+          url: "/api/monitoring/metrics/realtime"
+          qs:
+            admin_key: "{{ $processEnvironment.ADMIN_KEY }}"
+          name: "Real-time Metrics"
+          ifTrue: "{{ $processEnvironment.ADMIN_KEY }}"
+
+# Custom functions for advanced testing
+processor: "./tests/load-test-processor.js"
+
+# Performance expectations
+expect:
+  # Response time expectations
+  p95: 1000  # 95th percentile should be under 1 second
+  p99: 2000  # 99th percentile should be under 2 seconds
+  
+  # Error rate expectations  
+  maxErrorRate: 1  # Less than 1% error rate
+  
+  # Minimum throughput
+  minRps: 10  # At least 10 requests per second during sustained load

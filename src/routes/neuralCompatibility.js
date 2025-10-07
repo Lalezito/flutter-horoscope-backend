@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const neuralCompatibilityController = require("../controllers/neuralCompatibilityController");
+const neuralAnalyticsService = require("../services/neuralAnalyticsService");
+const neuralGroupCompatibilityService = require("../services/neuralGroupCompatibilityService");
 const { endpointLimits, rateLimit } = require("../middleware/rateLimiter");
 
 /**
@@ -34,7 +36,7 @@ const historyRateLimit = rateLimit(60000, 100, {
  * Enhanced compatibility analysis with neural network processing
  * Supports multiple analysis levels: standard, advanced, deep
  */
-router.post("/calculate", neuralRateLimit, neuralCompatibilityController.calculateNeuralCompatibility);
+router.post("/calculate", neuralRateLimit, neuralCompatibilityController.calculateNeuralCompatibility.bind(neuralCompatibilityController));
 
 /**
  * 📊 USER NEURAL COMPATIBILITY HISTORY  
@@ -43,7 +45,7 @@ router.post("/calculate", neuralRateLimit, neuralCompatibilityController.calcula
  * Retrieve paginated neural compatibility analysis history for a user
  * Includes GDPR compliance and privacy controls
  */
-router.get("/history/:userId", historyRateLimit, neuralCompatibilityController.getUserNeuralHistory);
+router.get("/history/:userId", historyRateLimit, neuralCompatibilityController.getUserNeuralHistory.bind(neuralCompatibilityController));
 
 /**
  * 🎯 NEURAL COMPATIBILITY INSIGHTS
@@ -52,7 +54,7 @@ router.get("/history/:userId", historyRateLimit, neuralCompatibilityController.g
  * Generate contextual insights based on relationship type and personality traits
  * Supports romantic, friendship, and business relationship contexts
  */
-router.post("/insights", neuralRateLimit, neuralCompatibilityController.getNeuralInsights);
+router.post("/insights", neuralRateLimit, neuralCompatibilityController.getNeuralInsights.bind(neuralCompatibilityController));
 
 /**
  * 📈 NEURAL COMPATIBILITY STATISTICS
@@ -61,7 +63,7 @@ router.post("/insights", neuralRateLimit, neuralCompatibilityController.getNeura
  * Comprehensive neural service statistics and performance metrics
  * Admin-only endpoint for monitoring and optimization
  */
-router.get("/stats", neuralCompatibilityController.getNeuralStats);
+router.get("/stats", neuralCompatibilityController.getNeuralStats.bind(neuralCompatibilityController));
 
 /**
  * 🔬 DEEP NEURAL ANALYSIS (Premium Feature)
@@ -79,7 +81,7 @@ router.post("/deep-analysis", deepAnalysisLimit, async (req, res) => {
     req.body.premium = true;
     
     // Call the main neural calculation with enhanced parameters
-    await neuralCompatibilityController.calculateNeuralCompatibility(req, res);
+    await neuralCompatibilityController.calculateNeuralCompatibility.call(neuralCompatibilityController, req, res);
     
   } catch (error) {
     res.status(500).json({
@@ -365,6 +367,496 @@ router.get("/docs", (req, res) => {
     
     last_updated: new Date().toISOString()
   });
+});
+
+/**
+ * 📊 NEURAL ANALYTICS DASHBOARD ROUTES
+ * Advanced analytics, trend analysis, and predictive modeling endpoints
+ */
+
+// Analytics rate limiting (more restrictive for intensive operations)
+const analyticsRateLimit = rateLimit(60000, 30, {
+  message: 'Neural analytics rate limit exceeded',
+  skipSuccessfulRequests: false
+});
+
+/**
+ * 📈 COMPREHENSIVE TREND ANALYSIS
+ * POST /api/neural-compatibility/analytics/trends
+ * 
+ * Deep trend analysis across compatibility patterns, seasonal variations, and demographic insights
+ */
+router.post("/analytics/trends", analyticsRateLimit, async (req, res) => {
+  try {
+    const { 
+      timeframe = '30days',
+      sign_combinations = null,
+      analysis_levels = ['standard', 'advanced', 'deep'],
+      languages = ['en', 'es'] 
+    } = req.body;
+
+    const adminKey = req.query.admin_key || req.headers['x-admin-key'];
+    const expectedAdminKey = process.env.ADMIN_KEY;
+
+    // Admin authentication for detailed analytics
+    if (!adminKey || !expectedAdminKey || adminKey !== expectedAdminKey) {
+      return res.status(401).json({
+        success: false,
+        error: 'Admin authentication required for analytics access',
+        code: 'UNAUTHORIZED'
+      });
+    }
+
+    const trends = await neuralAnalyticsService.comprehensiveTrendAnalysis({
+      timeframe,
+      sign_combinations,
+      analysis_levels,
+      languages
+    });
+
+    res.json({
+      success: true,
+      trend_analysis: trends,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Trend analysis failed',
+      code: 'TREND_ANALYSIS_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 🔮 PREDICTIVE RELATIONSHIP MODELING
+ * POST /api/neural-compatibility/analytics/predictions
+ * 
+ * Advanced predictive modeling for relationship success rates and longevity predictions
+ */
+router.post("/analytics/predictions", analyticsRateLimit, async (req, res) => {
+  try {
+    const { 
+      sign_combinations = null,
+      relationship_contexts = ['romantic', 'friendship', 'business'],
+      prediction_horizon = '1year',
+      confidence_threshold = 80 
+    } = req.body;
+
+    const adminKey = req.query.admin_key || req.headers['x-admin-key'];
+    const expectedAdminKey = process.env.ADMIN_KEY;
+
+    if (!adminKey || !expectedAdminKey || adminKey !== expectedAdminKey) {
+      return res.status(401).json({
+        success: false,
+        error: 'Admin authentication required for predictive modeling',
+        code: 'UNAUTHORIZED'
+      });
+    }
+
+    const predictions = await neuralAnalyticsService.predictiveRelationshipModeling({
+      sign_combinations,
+      relationship_contexts,
+      prediction_horizon,
+      confidence_threshold
+    });
+
+    res.json({
+      success: true,
+      predictive_modeling: predictions,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Predictive modeling failed',
+      code: 'PREDICTION_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 🔍 NEURAL PATTERN RECOGNITION REPORTS
+ * POST /api/neural-compatibility/analytics/patterns
+ * 
+ * Comprehensive pattern recognition reports with deep insights
+ */
+router.post("/analytics/patterns", analyticsRateLimit, async (req, res) => {
+  try {
+    const { 
+      analysis_depth = 'comprehensive',
+      pattern_types = ['elemental', 'planetary', 'temporal', 'behavioral'],
+      report_format = 'detailed' 
+    } = req.body;
+
+    const adminKey = req.query.admin_key || req.headers['x-admin-key'];
+    const expectedAdminKey = process.env.ADMIN_KEY;
+
+    if (!adminKey || !expectedAdminKey || adminKey !== expectedAdminKey) {
+      return res.status(401).json({
+        success: false,
+        error: 'Admin authentication required for pattern analysis',
+        code: 'UNAUTHORIZED'
+      });
+    }
+
+    const report = await neuralAnalyticsService.neuralPatternRecognitionReports({
+      analysis_depth,
+      pattern_types,
+      report_format
+    });
+
+    res.json({
+      success: true,
+      pattern_recognition_report: report,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Pattern recognition report failed',
+      code: 'PATTERN_REPORT_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 📊 REAL-TIME ANALYTICS DASHBOARD
+ * GET /api/neural-compatibility/analytics/dashboard
+ * 
+ * Live analytics dashboard with real-time metrics and insights
+ */
+router.get("/analytics/dashboard", analyticsRateLimit, async (req, res) => {
+  try {
+    const { 
+      refresh_interval = 300000, // 5 minutes
+      widgets = ['overview', 'trends', 'predictions', 'patterns', 'performance'],
+      time_range = '24hours' 
+    } = req.query;
+
+    const adminKey = req.query.admin_key || req.headers['x-admin-key'];
+    const expectedAdminKey = process.env.ADMIN_KEY;
+
+    if (!adminKey || !expectedAdminKey || adminKey !== expectedAdminKey) {
+      return res.status(401).json({
+        success: false,
+        error: 'Admin authentication required for analytics dashboard',
+        code: 'UNAUTHORIZED'
+      });
+    }
+
+    const dashboard = await neuralAnalyticsService.realTimeAnalyticsDashboard({
+      refresh_interval: parseInt(refresh_interval),
+      widgets: Array.isArray(widgets) ? widgets : widgets.split(','),
+      time_range
+    });
+
+    res.json({
+      success: true,
+      analytics_dashboard: dashboard,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Analytics dashboard failed',
+      code: 'DASHBOARD_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 📊 ANALYTICS SERVICE METRICS
+ * GET /api/neural-compatibility/analytics/metrics
+ * 
+ * Service performance metrics and operational statistics
+ */
+router.get("/analytics/metrics", async (req, res) => {
+  try {
+    const adminKey = req.query.admin_key || req.headers['x-admin-key'];
+    const expectedAdminKey = process.env.ADMIN_KEY;
+
+    if (!adminKey || !expectedAdminKey || adminKey !== expectedAdminKey) {
+      return res.status(401).json({
+        success: false,
+        error: 'Admin authentication required for service metrics',
+        code: 'UNAUTHORIZED'
+      });
+    }
+
+    const metrics = neuralAnalyticsService.getServiceMetrics();
+
+    res.json({
+      success: true,
+      service_metrics: metrics,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Service metrics retrieval failed',
+      code: 'METRICS_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 👥 NEURAL GROUP COMPATIBILITY ROUTES
+ * Multi-person compatibility analysis and evolution tracking
+ */
+
+// Group analysis rate limiting (more intensive operations)
+const groupAnalysisRateLimit = rateLimit(60000, 20, {
+  message: 'Group compatibility analysis rate limit exceeded',
+  skipSuccessfulRequests: false
+});
+
+/**
+ * 👥 GROUP COMPATIBILITY ANALYSIS (3+ People)
+ * POST /api/neural-compatibility/group/analyze
+ * 
+ * Multi-person compatibility analysis with group dynamics assessment
+ */
+router.post("/group/analyze", groupAnalysisRateLimit, async (req, res) => {
+  try {
+    const {
+      group_members = [],
+      relationship_context = 'mixed',
+      analysis_depth = 'comprehensive',
+      include_evolution = true,
+      language = 'en'
+    } = req.body;
+
+    // Validate group members
+    if (!Array.isArray(group_members) || group_members.length < 3) {
+      return res.status(400).json({
+        success: false,
+        error: 'Group analysis requires at least 3 members',
+        code: 'INSUFFICIENT_GROUP_SIZE'
+      });
+    }
+
+    if (group_members.length > 12) {
+      return res.status(400).json({
+        success: false,
+        error: 'Group analysis limited to maximum 12 members',
+        code: 'GROUP_SIZE_EXCEEDED'
+      });
+    }
+
+    const analysis = await neuralGroupCompatibilityService.groupCompatibilityAnalysis(
+      { group_members },
+      {
+        relationship_context,
+        analysis_depth,
+        include_evolution,
+        language
+      }
+    );
+
+    res.json({
+      success: true,
+      group_compatibility_analysis: analysis,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Group compatibility analysis failed',
+      code: 'GROUP_ANALYSIS_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 📈 COMPATIBILITY EVOLUTION TRACKING
+ * POST /api/neural-compatibility/group/evolution
+ * 
+ * Track compatibility changes over time with trend analysis
+ */
+router.post("/group/evolution", groupAnalysisRateLimit, async (req, res) => {
+  try {
+    const {
+      group_id,
+      individual_ids = [],
+      tracking_period = '6months',
+      evolution_type = 'comprehensive',
+      include_predictions = true
+    } = req.body;
+
+    if (!group_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Group ID is required for evolution tracking',
+        code: 'MISSING_GROUP_ID'
+      });
+    }
+
+    const evolution = await neuralGroupCompatibilityService.compatibilityEvolutionTracking({
+      group_id,
+      individual_ids,
+      tracking_period,
+      evolution_type,
+      include_predictions
+    });
+
+    res.json({
+      success: true,
+      compatibility_evolution: evolution,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Evolution tracking failed',
+      code: 'EVOLUTION_TRACKING_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 🌟 ASTROLOGICAL EVENT IMPACT ANALYSIS
+ * POST /api/neural-compatibility/group/event-impact
+ * 
+ * Analyze how astrological events affect group compatibility
+ */
+router.post("/group/event-impact", groupAnalysisRateLimit, async (req, res) => {
+  try {
+    const {
+      group_id,
+      event_types = ['mercury_retrograde', 'full_moon', 'eclipse'],
+      impact_window = '30days',
+      analysis_depth = 'detailed'
+    } = req.body;
+
+    if (!group_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Group ID is required for event impact analysis',
+        code: 'MISSING_GROUP_ID'
+      });
+    }
+
+    const impact = await neuralGroupCompatibilityService.astrologicalEventImpactAnalysis({
+      group_id,
+      event_types,
+      impact_window,
+      analysis_depth
+    });
+
+    res.json({
+      success: true,
+      astrological_event_impact: impact,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Event impact analysis failed',
+      code: 'EVENT_IMPACT_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 🎯 NEURAL RELATIONSHIP COACHING
+ * POST /api/neural-compatibility/group/coaching
+ * 
+ * AI-powered relationship coaching recommendations
+ */
+router.post("/group/coaching", groupAnalysisRateLimit, async (req, res) => {
+  try {
+    const {
+      group_id,
+      coaching_focus = 'overall',
+      relationship_challenges = [],
+      coaching_style = 'supportive',
+      session_type = 'group'
+    } = req.body;
+
+    if (!group_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Group ID is required for coaching session',
+        code: 'MISSING_GROUP_ID'
+      });
+    }
+
+    const coaching = await neuralGroupCompatibilityService.neuralRelationshipCoaching({
+      group_id,
+      coaching_focus,
+      relationship_challenges,
+      coaching_style,
+      session_type
+    });
+
+    res.json({
+      success: true,
+      neural_relationship_coaching: coaching,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Neural coaching session failed',
+      code: 'COACHING_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * 📊 GROUP SERVICE METRICS
+ * GET /api/neural-compatibility/group/metrics
+ * 
+ * Service metrics and operational statistics for group compatibility
+ */
+router.get("/group/metrics", async (req, res) => {
+  try {
+    const adminKey = req.query.admin_key || req.headers['x-admin-key'];
+    const expectedAdminKey = process.env.ADMIN_KEY;
+
+    if (!adminKey || !expectedAdminKey || adminKey !== expectedAdminKey) {
+      return res.status(401).json({
+        success: false,
+        error: 'Admin authentication required for group service metrics',
+        code: 'UNAUTHORIZED'
+      });
+    }
+
+    const metrics = neuralGroupCompatibilityService.getServiceMetrics();
+
+    res.json({
+      success: true,
+      group_service_metrics: metrics,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Group service metrics retrieval failed',
+      code: 'GROUP_METRICS_ERROR',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 module.exports = router;

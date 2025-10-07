@@ -1,0 +1,286 @@
+-- Migration: User Birth Data and Personalization Tables
+-- Created: 2025-09-13
+-- Description: Creates tables for storing user birth data and personalized horoscopes
+
+-- Create users table for authentication and basic user data
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    firebase_uid VARCHAR(255) UNIQUE,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255), -- For non-Firebase users
+    role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'premium_user', 'admin', 'super_admin')),
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
+    subscription_status VARCHAR(50) DEFAULT 'free' CHECK (subscription_status IN ('free', 'premium', 'premium_plus')),
+    subscription_expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMPTZ
+);
+
+-- Create user_birth_data table for precise astrological calculations
+CREATE TABLE IF NOT EXISTS user_birth_data (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- Birth time data (required for accurate calculations)
+    birth_date DATE NOT NULL,
+    birth_time TIME, -- Can be null if unknown
+    birth_timezone VARCHAR(100) NOT NULL, -- IANA timezone (e.g., 'America/New_York')
+    -- Birth location data
+    birth_city VARCHAR(255) NOT NULL,
+    birth_country VARCHAR(100) NOT NULL,
+    birth_latitude DECIMAL(10, 8) NOT NULL, -- High precision for astrological accuracy
+    birth_longitude DECIMAL(11, 8) NOT NULL,
+    birth_elevation INTEGER DEFAULT 0, -- In meters above sea level
+    -- Calculated data for caching
+    utc_birth_datetime TIMESTAMPTZ, -- Birth time converted to UTC
+    julian_day_number DECIMAL(15, 8), -- Julian Day Number for ephemeris calculations
+    sidereal_time DECIMAL(15, 8), -- Local Sidereal Time at birth
+    -- User preferences
+    house_system VARCHAR(20) DEFAULT 'placidus' CHECK (house_system IN ('placidus', 'koch', 'campanus', 'regiomontanus', 'equal', 'whole_sign')),
+    ayanamsa VARCHAR(30) DEFAULT 'lahiri' CHECK (ayanamsa IN ('lahiri', 'raman', 'krishnamurti', 'fagan_bradley')),
+    tropical_or_sidereal VARCHAR(20) DEFAULT 'tropical' CHECK (tropical_or_sidereal IN ('tropical', 'sidereal')),
+    -- Metadata
+    data_source VARCHAR(50) DEFAULT 'user_input' CHECK (data_source IN ('user_input', 'imported', 'calculated')),
+    accuracy_level VARCHAR(20) DEFAULT 'medium' CHECK (accuracy_level IN ('high', 'medium', 'low')), -- Based on time precision
+    verified_birth_time BOOLEAN DEFAULT false, -- User confirms exact birth time is known
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(user_id) -- One birth data record per user
+);
+
+-- Create user_birth_chart table for caching calculated birth charts
+CREATE TABLE IF NOT EXISTS user_birth_chart (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    birth_data_id UUID NOT NULL REFERENCES user_birth_data(id) ON DELETE CASCADE,
+    -- Planetary positions at birth (in degrees, 0-359.999999)
+    sun_position DECIMAL(12, 6) NOT NULL,
+    moon_position DECIMAL(12, 6) NOT NULL,
+    mercury_position DECIMAL(12, 6) NOT NULL,
+    venus_position DECIMAL(12, 6) NOT NULL,
+    mars_position DECIMAL(12, 6) NOT NULL,
+    jupiter_position DECIMAL(12, 6) NOT NULL,
+    saturn_position DECIMAL(12, 6) NOT NULL,
+    uranus_position DECIMAL(12, 6) NOT NULL,
+    neptune_position DECIMAL(12, 6) NOT NULL,
+    pluto_position DECIMAL(12, 6) NOT NULL,
+    north_node_position DECIMAL(12, 6) NOT NULL,
+    chiron_position DECIMAL(12, 6),
+    -- House cusps (12 houses)
+    house_cusps DECIMAL(12, 6)[] CHECK (array_length(house_cusps, 1) = 12),
+    -- Ascendant, MC, and other important points
+    ascendant DECIMAL(12, 6) NOT NULL,
+    midheaven DECIMAL(12, 6) NOT NULL,
+    descendant DECIMAL(12, 6) NOT NULL,
+    ic DECIMAL(12, 6) NOT NULL,
+    -- Additional calculated points
+    vertex DECIMAL(12, 6),
+    east_point DECIMAL(12, 6),
+    -- Chart metadata
+    chart_calculation_method VARCHAR(100) DEFAULT 'swiss_ephemeris',
+    calculation_accuracy DECIMAL(10, 8), -- Accuracy in arc seconds
+    calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    -- Full chart data as JSONB for complex queries and storage
+    full_chart_data JSONB NOT NULL, -- Complete chart data including aspects, patterns, etc.
+    
+    UNIQUE(user_id) -- One birth chart per user (recalculated if birth data changes)
+);
+
+-- Create personalized_horoscopes table for storing user-specific horoscopes
+CREATE TABLE IF NOT EXISTS personalized_horoscopes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    birth_chart_id UUID NOT NULL REFERENCES user_birth_chart(id) ON DELETE CASCADE,
+    -- Date and type
+    horoscope_date DATE NOT NULL,
+    horoscope_type VARCHAR(20) DEFAULT 'daily' CHECK (horoscope_type IN ('daily', 'weekly', 'monthly')),
+    -- Current planetary positions for this date
+    current_planetary_positions JSONB NOT NULL,
+    -- Transit aspects to natal planets
+    transit_aspects JSONB NOT NULL,
+    -- Generated content
+    content JSONB NOT NULL, -- Structured horoscope content
+    personalization_factors JSONB NOT NULL, -- What made this personalized vs generic
+    -- AI generation metadata
+    model VARCHAR(50) DEFAULT 'gpt-4',
+    tokens_used INTEGER DEFAULT 0,
+    generation_prompt TEXT,
+    personalization_level DECIMAL(3, 2) DEFAULT 0.5 CHECK (personalization_level >= 0 AND personalization_level <= 1),
+    -- Ratings and data
+    love_rating INTEGER CHECK (love_rating >= 1 AND love_rating <= 5),
+    work_rating INTEGER CHECK (work_rating >= 1 AND work_rating <= 5),
+    health_rating INTEGER CHECK (health_rating >= 1 AND health_rating <= 5),
+    money_rating INTEGER CHECK (money_rating >= 1 AND money_rating <= 5),
+    overall_rating INTEGER CHECK (overall_rating >= 1 AND overall_rating <= 5),
+    lucky_numbers INTEGER[],
+    lucky_colors VARCHAR(100)[],
+    mood VARCHAR(100),
+    advice TEXT,
+    keywords VARCHAR(100)[],
+    -- Metadata
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP + INTERVAL '7 days'), -- Cache for 7 days
+    
+    UNIQUE(user_id, horoscope_date, horoscope_type) -- One horoscope per user per date per type
+);
+
+-- Create user_horoscope_preferences table for personalization settings
+CREATE TABLE IF NOT EXISTS user_horoscope_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- Content preferences
+    focus_areas VARCHAR(50)[] DEFAULT ARRAY['love', 'career', 'health', 'money'], -- What to focus on
+    detail_level VARCHAR(20) DEFAULT 'medium' CHECK (detail_level IN ('brief', 'medium', 'detailed')),
+    tone VARCHAR(20) DEFAULT 'balanced' CHECK (tone IN ('optimistic', 'realistic', 'balanced', 'cautious')),
+    language_code VARCHAR(10) DEFAULT 'en',
+    -- Astrological preferences
+    include_transits BOOLEAN DEFAULT true,
+    include_progressions BOOLEAN DEFAULT false,
+    include_solar_return BOOLEAN DEFAULT false,
+    focus_on_major_aspects BOOLEAN DEFAULT true,
+    aspect_orbs JSONB DEFAULT '{"conjunction": 8, "opposition": 8, "trine": 6, "square": 6, "sextile": 4}',
+    -- Notification preferences
+    daily_notification BOOLEAN DEFAULT true,
+    weekly_notification BOOLEAN DEFAULT true,
+    monthly_notification BOOLEAN DEFAULT false,
+    major_transit_alerts BOOLEAN DEFAULT true,
+    preferred_notification_time TIME DEFAULT '09:00:00',
+    notification_timezone VARCHAR(100),
+    -- Metadata
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(user_id) -- One preference record per user
+);
+
+-- Create indexes for performance optimization
+-- User tables
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_firebase_uid ON users(firebase_uid);
+CREATE INDEX IF NOT EXISTS idx_users_subscription ON users(subscription_status, subscription_expires_at);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+-- Birth data indexes
+CREATE INDEX IF NOT EXISTS idx_user_birth_data_user_id ON user_birth_data(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_birth_data_location ON user_birth_data(birth_latitude, birth_longitude);
+CREATE INDEX IF NOT EXISTS idx_user_birth_data_date ON user_birth_data(birth_date);
+CREATE INDEX IF NOT EXISTS idx_user_birth_data_timezone ON user_birth_data(birth_timezone);
+
+-- Birth chart indexes
+CREATE INDEX IF NOT EXISTS idx_user_birth_chart_user_id ON user_birth_chart(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_birth_chart_birth_data_id ON user_birth_chart(birth_data_id);
+CREATE INDEX IF NOT EXISTS idx_user_birth_chart_sun_sign ON user_birth_chart(((sun_position / 30)::INTEGER)); -- Sun sign calculation
+CREATE INDEX IF NOT EXISTS idx_user_birth_chart_calculated_at ON user_birth_chart(calculated_at);
+
+-- Personalized horoscopes indexes
+CREATE INDEX IF NOT EXISTS idx_personalized_horoscopes_user_id ON personalized_horoscopes(user_id);
+CREATE INDEX IF NOT EXISTS idx_personalized_horoscopes_date ON personalized_horoscopes(horoscope_date);
+CREATE INDEX IF NOT EXISTS idx_personalized_horoscopes_type ON personalized_horoscopes(horoscope_type);
+CREATE INDEX IF NOT EXISTS idx_personalized_horoscopes_expires ON personalized_horoscopes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_personalized_horoscopes_composite ON personalized_horoscopes(user_id, horoscope_date, horoscope_type);
+
+-- GIN indexes for JSONB columns
+CREATE INDEX IF NOT EXISTS idx_user_birth_chart_full_data_gin ON user_birth_chart USING GIN (full_chart_data);
+CREATE INDEX IF NOT EXISTS idx_personalized_horoscopes_content_gin ON personalized_horoscopes USING GIN (content);
+CREATE INDEX IF NOT EXISTS idx_personalized_horoscopes_transits_gin ON personalized_horoscopes USING GIN (transit_aspects);
+CREATE INDEX IF NOT EXISTS idx_personalized_horoscopes_positions_gin ON personalized_horoscopes USING GIN (current_planetary_positions);
+
+-- User preferences indexes
+CREATE INDEX IF NOT EXISTS idx_user_horoscope_preferences_user_id ON user_horoscope_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_horoscope_preferences_notifications ON user_horoscope_preferences(daily_notification, weekly_notification) WHERE daily_notification = true OR weekly_notification = true;
+
+-- Add table comments for documentation
+COMMENT ON TABLE users IS 'Main users table with authentication and subscription data';
+COMMENT ON TABLE user_birth_data IS 'Precise birth data for astrological calculations';
+COMMENT ON TABLE user_birth_chart IS 'Calculated birth charts cached for performance';
+COMMENT ON TABLE personalized_horoscopes IS 'User-specific horoscopes based on birth chart and transits';
+COMMENT ON TABLE user_horoscope_preferences IS 'User preferences for horoscope personalization';
+
+-- Add column comments
+COMMENT ON COLUMN user_birth_data.julian_day_number IS 'Julian Day Number for precise ephemeris calculations';
+COMMENT ON COLUMN user_birth_data.sidereal_time IS 'Local Sidereal Time at birth for house calculations';
+COMMENT ON COLUMN user_birth_data.accuracy_level IS 'Accuracy level based on birth time precision';
+COMMENT ON COLUMN user_birth_chart.full_chart_data IS 'Complete chart data including aspects, patterns, and derived information';
+COMMENT ON COLUMN personalized_horoscopes.transit_aspects IS 'Current planetary transits affecting the natal chart';
+COMMENT ON COLUMN personalized_horoscopes.personalization_factors IS 'Factors that make this horoscope personalized vs generic';
+
+-- Create functions for automatic timestamp updates
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Add triggers for automatic timestamp updates
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_user_birth_data_updated_at ON user_birth_data;
+CREATE TRIGGER update_user_birth_data_updated_at BEFORE UPDATE ON user_birth_data 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_user_horoscope_preferences_updated_at ON user_horoscope_preferences;
+CREATE TRIGGER update_user_horoscope_preferences_updated_at BEFORE UPDATE ON user_horoscope_preferences 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Create views for common queries
+CREATE OR REPLACE VIEW v_user_profiles AS
+SELECT 
+    u.id,
+    u.username,
+    u.email,
+    u.role,
+    u.subscription_status,
+    u.subscription_expires_at,
+    ubd.birth_date,
+    ubd.birth_city,
+    ubd.birth_country,
+    ubd.birth_timezone,
+    CASE 
+        WHEN ubd.birth_time IS NOT NULL AND ubd.verified_birth_time = true THEN 'high'
+        WHEN ubd.birth_time IS NOT NULL THEN 'medium'
+        ELSE 'low'
+    END as profile_completeness,
+    u.created_at,
+    u.last_login
+FROM users u
+LEFT JOIN user_birth_data ubd ON u.id = ubd.user_id;
+
+CREATE OR REPLACE VIEW v_active_premium_users AS
+SELECT *
+FROM v_user_profiles
+WHERE subscription_status IN ('premium', 'premium_plus')
+AND (subscription_expires_at IS NULL OR subscription_expires_at > CURRENT_TIMESTAMP);
+
+-- Create cleanup function for expired horoscopes
+CREATE OR REPLACE FUNCTION cleanup_expired_personalized_horoscopes()
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    DELETE FROM personalized_horoscopes 
+    WHERE expires_at < CURRENT_TIMESTAMP;
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Comments for views and functions
+COMMENT ON VIEW v_user_profiles IS 'Complete user profiles with birth data completeness';
+COMMENT ON VIEW v_active_premium_users IS 'Active premium users eligible for personalized horoscopes';
+COMMENT ON FUNCTION cleanup_expired_personalized_horoscopes() IS 'Cleanup function to remove expired personalized horoscopes';
+
+-- Insert default admin user if not exists (this should integrate with existing auth system)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin') THEN
+        INSERT INTO users (username, email, role, status) 
+        VALUES ('admin', 'admin@zodiac-system.local', 'super_admin', 'active');
+    END IF;
+END $$;

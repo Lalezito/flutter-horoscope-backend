@@ -1,0 +1,78 @@
+# 🚂 Railway Environment Variables Template
+# Copy these variables to your Railway project dashboard
+
+# ════════════════════════════════════════════════════════════════
+# 🔑 CRITICAL - REQUIRED FOR OPERATION
+# ════════════════════════════════════════════════════════════════
+
+# OpenAI API Key (REQUIRED for horoscope generation)
+# Get from: https://platform.openai.com/api-keys
+# SECURITY WARNING: Replace with your actual OpenAI API key
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
+
+# Admin Access Key (REQUIRED for admin endpoints)
+# Generate a strong 64+ character key
+ADMIN_KEY=your_super_strong_admin_key_64_characters_minimum_for_security_please_change_this
+
+# ════════════════════════════════════════════════════════════════
+# 🏭 APPLICATION CONFIGURATION
+# ════════════════════════════════════════════════════════════════
+
+NODE_ENV=production
+TZ=America/New_York
+ENABLE_CRON_JOBS=true
+ENABLE_MONITORING=true
+
+# ════════════════════════════════════════════════════════════════
+# 🔒 SECURITY CONFIGURATION
+# ════════════════════════════════════════════════════════════════
+
+# CORS Origins (comma-separated, NO wildcards in production)
+ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+
+# ════════════════════════════════════════════════════════════════
+# 📊 MONITORING AND ALERTS (OPTIONAL)
+# ════════════════════════════════════════════════════════════════
+
+# Slack/Discord webhook for alerts
+WEBHOOK_ALERT_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# ════════════════════════════════════════════════════════════════
+# 📝 NOTES FOR RAILWAY SETUP
+# ════════════════════════════════════════════════════════════════
+
+# 1. DATABASE_URL - Automatically provided by Railway PostgreSQL service
+# 2. PORT - Automatically provided by Railway
+# 3. Add these variables one by one in Railway Dashboard → Variables
+# 4. Replace placeholder values with actual production values
+# 5. Never commit actual values to version control
+# 6. Test each variable after setting by checking health endpoints
+
+# ════════════════════════════════════════════════════════════════
+# 🧪 TESTING AFTER SETUP
+# ════════════════════════════════════════════════════════════════
+
+# After setting variables, test with:
+# curl https://your-app.railway.app/health
+# curl -X POST "https://your-app.railway.app/api/generate/test?admin_key=YOUR_ADMIN_KEY"
+# curl -X POST "https://your-app.railway.app/api/generate/daily?admin_key=YOUR_ADMIN_KEY"
+
+# ════════════════════════════════════════════════════════════════
+# 💰 COST ESTIMATION
+# ════════════════════════════════════════════════════════════════
+
+# OpenAI: ~$45-60/month (72 daily + 72 weekly horoscopes)
+# Railway: $5-20/month (Hobby to Pro plan)
+# Total: ~$50-80/month for full automation
+
+# ════════════════════════════════════════════════════════════════
+# ⚡ EXPECTED OPERATIONS
+# ════════════════════════════════════════════════════════════════
+
+# Daily: 6:00 AM - Generate 72 horoscopes (12 signs × 6 languages)
+# Weekly: 5:30 AM Mondays - Generate 72 horoscopes
+# Health: Every 10 minutes - System monitoring
+# Cleanup: 2:00 AM - Clean old data
+# Analytics: 3:00 AM Sundays - Cleanup analytics
+
+# Your backend will run autonomously 24/7 with zero intervention! 🚀

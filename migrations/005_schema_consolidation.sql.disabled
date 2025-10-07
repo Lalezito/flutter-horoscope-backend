@@ -1,0 +1,168 @@
+-- Migration: Database Schema Consolidation and Constraint Fixes
+-- Created: 2025-09-08
+-- Description: Consolidates schema inconsistencies and fixes constraint issues
+
+-- Fix 1: Add missing columns to daily_horoscopes to match enhanced generator usage
+ALTER TABLE daily_horoscopes 
+ADD COLUMN IF NOT EXISTS model VARCHAR(50) DEFAULT 'enhanced-gpt4',
+ADD COLUMN IF NOT EXISTS tokens_used INTEGER DEFAULT 0;
+
+-- Fix 2: Add missing columns to weekly_horoscopes to match enhanced generator usage  
+ALTER TABLE weekly_horoscopes 
+ADD COLUMN IF NOT EXISTS model VARCHAR(50) DEFAULT 'enhanced-gpt4',
+ADD COLUMN IF NOT EXISTS tokens_used INTEGER DEFAULT 0;
+
+-- Fix 3: Create proper content column structure for JSONB compatibility
+-- Update daily_horoscopes to use JSONB content structure
+ALTER TABLE daily_horoscopes 
+ALTER COLUMN content TYPE JSONB USING 
+  CASE 
+    WHEN content IS NULL THEN '{}'::jsonb
+    WHEN content::text ~ '^[{\[].*[}\]]$' THEN content::jsonb
+    ELSE json_build_object('text', content)::jsonb
+  END;
+
+-- Update weekly_horoscopes to use JSONB content structure
+ALTER TABLE weekly_horoscopes 
+ALTER COLUMN content TYPE JSONB USING 
+  CASE 
+    WHEN content IS NULL THEN '{}'::jsonb
+    WHEN content::text ~ '^[{\[].*[}\]]$' THEN content::jsonb
+    ELSE json_build_object('text', content)::jsonb
+  END;
+
+-- Fix 4: Ensure proper indexes for performance optimization
+CREATE INDEX IF NOT EXISTS idx_daily_horoscopes_model ON daily_horoscopes(model);
+CREATE INDEX IF NOT EXISTS idx_daily_horoscopes_tokens ON daily_horoscopes(tokens_used);
+CREATE INDEX IF NOT EXISTS idx_daily_horoscopes_content_gin ON daily_horoscopes USING GIN (content);
+
+CREATE INDEX IF NOT EXISTS idx_weekly_horoscopes_model ON weekly_horoscopes(model);
+CREATE INDEX IF NOT EXISTS idx_weekly_horoscopes_tokens ON weekly_horoscopes(tokens_used);
+CREATE INDEX IF NOT EXISTS idx_weekly_horoscopes_content_gin ON weekly_horoscopes USING GIN (content);
+
+-- Fix 5: Add comprehensive analytical indexes for query optimization
+CREATE INDEX IF NOT EXISTS idx_daily_horoscopes_created_at_desc ON daily_horoscopes(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_weekly_horoscopes_created_at_desc ON weekly_horoscopes(created_at DESC);
+
+-- Fix 6: Add compound indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_daily_composite_query ON daily_horoscopes(date, sign, language_code, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_weekly_composite_query ON weekly_horoscopes(week_start, week_end, sign, language_code, created_at DESC);
+
+-- Fix 7: Performance optimization for date range queries
+CREATE INDEX IF NOT EXISTS idx_daily_date_range ON daily_horoscopes(date, created_at);
+CREATE INDEX IF NOT EXISTS idx_weekly_date_range ON weekly_horoscopes(week_start, week_end, created_at);
+
+-- Fix 8: Add table comments for documentation
+COMMENT ON TABLE daily_horoscopes IS 'Consolidated daily horoscope data with enhanced schema support';
+COMMENT ON TABLE weekly_horoscopes IS 'Consolidated weekly horoscope data with enhanced schema support';
+
+COMMENT ON COLUMN daily_horoscopes.model IS 'AI model used for generation (e.g., enhanced-gpt4)';
+COMMENT ON COLUMN daily_horoscopes.tokens_used IS 'Number of tokens consumed during generation';
+COMMENT ON COLUMN daily_horoscopes.content IS 'JSONB structured horoscope content';
+
+COMMENT ON COLUMN weekly_horoscopes.model IS 'AI model used for generation (e.g., enhanced-gpt4)';
+COMMENT ON COLUMN weekly_horoscopes.tokens_used IS 'Number of tokens consumed during generation';
+COMMENT ON COLUMN weekly_horoscopes.content IS 'JSONB structured horoscope content';
+
+-- Fix 9: Create optimized views for common access patterns
+CREATE OR REPLACE VIEW v_latest_daily_horoscopes AS
+SELECT 
+    sign,
+    language_code,
+    date,
+    content,
+    model,
+    tokens_used,
+    created_at,
+    love_rating,
+    work_rating,
+    health_rating,
+    money_rating,
+    overall_rating,
+    lucky_number,
+    lucky_color,
+    mood,
+    advice,
+    keywords
+FROM daily_horoscopes
+WHERE date = CURRENT_DATE
+ORDER BY sign, language_code;
+
+CREATE OR REPLACE VIEW v_current_weekly_horoscopes AS
+SELECT 
+    sign,
+    language_code,
+    week_start,
+    week_end,
+    content,
+    model,
+    tokens_used,
+    created_at,
+    love_rating,
+    work_rating,
+    health_rating,
+    money_rating,
+    overall_rating,
+    lucky_numbers,
+    lucky_colors,
+    advice,
+    keywords
+FROM weekly_horoscopes
+WHERE week_start <= CURRENT_DATE AND week_end >= CURRENT_DATE
+ORDER BY sign, language_code;
+
+-- Fix 10: Performance statistics and monitoring
+CREATE OR REPLACE VIEW v_schema_performance_stats AS
+SELECT 
+    'daily_horoscopes' as table_name,
+    COUNT(*) as total_records,
+    COUNT(DISTINCT sign) as unique_signs,
+    COUNT(DISTINCT language_code) as unique_languages,
+    MAX(created_at) as latest_update,
+    AVG(tokens_used) as avg_tokens,
+    SUM(tokens_used) as total_tokens
+FROM daily_horoscopes
+UNION ALL
+SELECT 
+    'weekly_horoscopes' as table_name,
+    COUNT(*) as total_records,
+    COUNT(DISTINCT sign) as unique_signs,
+    COUNT(DISTINCT language_code) as unique_languages,
+    MAX(created_at) as latest_update,
+    AVG(tokens_used) as avg_tokens,
+    SUM(tokens_used) as total_tokens
+FROM weekly_horoscopes;
+
+-- Comments for views
+COMMENT ON VIEW v_latest_daily_horoscopes IS 'Current day horoscopes optimized for frontend consumption';
+COMMENT ON VIEW v_current_weekly_horoscopes IS 'Current week horoscopes optimized for frontend consumption';
+COMMENT ON VIEW v_schema_performance_stats IS 'Database performance and usage statistics';
+
+-- Final verification: Update table constraints to ensure data integrity
+DO $$
+BEGIN
+    -- Verify unique constraints exist and are properly named
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE table_name = 'daily_horoscopes' 
+        AND constraint_type = 'UNIQUE' 
+        AND constraint_name LIKE '%sign%language_code%date%'
+    ) THEN
+        -- Drop existing constraint if it exists with wrong name
+        ALTER TABLE daily_horoscopes DROP CONSTRAINT IF EXISTS daily_horoscopes_sign_language_code_date_key;
+        -- Add with proper name
+        ALTER TABLE daily_horoscopes ADD CONSTRAINT uq_daily_horoscopes_sign_lang_date UNIQUE (sign, language_code, date);
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE table_name = 'weekly_horoscopes' 
+        AND constraint_type = 'UNIQUE' 
+        AND constraint_name LIKE '%sign%language_code%week_start%'
+    ) THEN
+        -- Drop existing constraint if it exists with wrong name
+        ALTER TABLE weekly_horoscopes DROP CONSTRAINT IF EXISTS weekly_horoscopes_sign_language_code_week_start_key;
+        -- Add with proper name
+        ALTER TABLE weekly_horoscopes ADD CONSTRAINT uq_weekly_horoscopes_sign_lang_week UNIQUE (sign, language_code, week_start);
+    END IF;
+END $$;

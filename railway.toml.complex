@@ -1,0 +1,36 @@
+# Railway Production Configuration for Zodiac Backend
+# Optimized for single-instance deployment with PostgreSQL
+
+[build]
+builder = "nixpacks"
+buildCommand = "npm ci --production"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[nixpacks]
+# Ensure we use a compatible Node.js version
+providers = ["node"]
+
+[nixpacks.node]
+version = "18"
+
+# Environment variables (will be set in Railway dashboard)
+[variables]
+NODE_ENV = "production"
+TZ = "America/New_York"
+ENABLE_CRON_JOBS = "true"
+ENABLE_MONITORING = "true"
+PORT = "3000"
+HOST = "0.0.0.0"
+
+# Note: Sensitive variables should be set in Railway dashboard:
+# - DATABASE_URL (automatically provided by Railway PostgreSQL)
+# - OPENAI_API_KEY (required for horoscope generation)
+# - ADMIN_KEY (for admin endpoints)
+# - WEBHOOK_ALERT_URL (optional, for alerts)
+# - ALLOWED_ORIGINS (for CORS configuration)

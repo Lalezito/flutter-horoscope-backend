@@ -1,0 +1,42 @@
+# Railway Configuration for Backup System
+# This creates a separate service for backup management alongside the main app
+
+[[deploy]]
+# Main application service (existing)
+name = "zodiac-backend"
+path = "."
+dockerfile = "Dockerfile"
+
+# Environment variables for main app
+[deploy.env]
+NODE_ENV = "production"
+TZ = "America/New_York"
+ENABLE_CRON_JOBS = "true"
+ENABLE_MONITORING = "true"
+
+[[deploy]]
+# Backup service (new dedicated service)
+name = "zodiac-backup"
+path = "."
+dockerfile = "docker/backup-scheduler.dockerfile"
+
+# Environment variables for backup service
+[deploy.env]
+NODE_ENV = "production"
+TZ = "America/New_York"
+BACKUP_SCHEDULE_ENABLED = "true"
+
+# Shared environment variables (set in Railway dashboard)
+# DATABASE_URL - Shared with main app
+# OPENAI_API_KEY - Shared with main app  
+# ADMIN_KEY - Shared with main app
+# WEBHOOK_ALERT_URL - Shared with main app
+# BACKUP_ENCRYPTION_KEY - Backup service only
+# BACKUP_S3_BUCKET - Optional for cross-region replication
+# BACKUP_REPLICA_REGIONS - Optional comma-separated list
+
+# Volume mounting for backup storage
+[[volumes]]
+name = "backup-data"
+mount_path = "/data/backups"
+size = "50GB" # Adjust based on backup retention requirements

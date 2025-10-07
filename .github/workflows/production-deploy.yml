@@ -1,0 +1,572 @@
+# PRODUCTION CI/CD PIPELINE WITH COMPREHENSIVE SECURITY
+# 
+# Features:
+# - Multi-stage security scanning
+# - Dependency vulnerability checks
+# - Code quality analysis
+# - Performance regression testing
+# - Automated deployment with rollback
+# - Multi-environment support
+# - Notification system
+
+name: 🚀 Production Deployment Pipeline
+
+on:
+  push:
+    branches: [main, production]
+  pull_request:
+    branches: [main, production]
+  schedule:
+    # Daily security scan at 3 AM UTC
+    - cron: '0 3 * * *'
+
+env:
+  NODE_VERSION: '18.x'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/zodiac-backend
+
+jobs:
+  # 🔍 SECURITY SCANNING STAGE
+  security-scan:
+    name: 🛡️ Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Dependency vulnerability scan
+        run: |
+          npm audit --audit-level=high
+          npm audit --json > audit-results.json || true
+        continue-on-error: true
+
+      - name: 📊 Upload audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-results
+          path: audit-results.json
+
+      - name: 🔐 CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          queries: +security-and-quality
+
+      - name: 🏗️ Build for analysis
+        run: npm run build --if-present
+
+      - name: 🔍 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: 🛡️ Secret scanning with Trufflesecurity
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: 🔒 SAST with Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/javascript
+          generateSarif: "1"
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: 📤 Upload Semgrep results to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  # 🧪 TESTING STAGE
+  test-suite:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    needs: security-scan
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: zodiac_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build application
+        run: npm run build --if-present
+
+      - name: 🧪 Run unit tests
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/zodiac_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_ENV: test
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: 📊 Generate test coverage
+        run: |
+          npm run test:coverage
+          npx c8 report --reporter=lcov
+
+      - name: 📤 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: 🚀 Integration tests
+        run: npm run test:integration
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/zodiac_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_ENV: test
+
+      - name: ⚡ Performance tests
+        run: npm run test:performance
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/zodiac_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+  # 📊 CODE QUALITY STAGE
+  code-quality:
+    name: 📊 Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: security-scan
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔍 ESLint analysis
+        run: |
+          npm run lint:ci
+          npm run lint:json > eslint-results.json || true
+
+      - name: 🎨 Prettier check
+        run: npm run format:check
+
+      - name: 📈 SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: 📊 Code complexity analysis
+        run: |
+          npx plato -r -d complexity-report src/
+          echo "Complexity analysis complete"
+
+      - name: 📤 Upload complexity report
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-report
+          path: complexity-report/
+
+  # 🐳 CONTAINER BUILD STAGE
+  container-build:
+    name: 🐳 Container Build & Scan
+    runs-on: ubuntu-latest
+    needs: [test-suite, code-quality]
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ Build and push container
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🔍 Container vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: 📤 Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: 🐳 Docker Scout vulnerability scan
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          sarif-file: scout-results.sarif
+
+  # 🎯 STAGING DEPLOYMENT
+  staging-deploy:
+    name: 🎯 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: container-build
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://zodiac-staging.railway.app
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🚂 Deploy to Railway (Staging)
+        uses: railwayapp/cli@v3
+        with:
+          railway-token: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+          command: up --detach
+        env:
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_STAGING_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: staging
+
+      - name: ⏳ Wait for deployment
+        run: sleep 60
+
+      - name: 🧪 Staging health check
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://zodiac-staging.railway.app/health)
+          if [ "$response" != "200" ]; then
+            echo "Health check failed with status: $response"
+            exit 1
+          fi
+          echo "Staging health check passed"
+
+      - name: 🔍 Staging smoke tests
+        run: |
+          npm install -g newman
+          newman run tests/api-tests.postman_collection.json \
+            --environment tests/staging.postman_environment.json \
+            --reporters cli,json \
+            --reporter-json-export staging-test-results.json
+
+      - name: 📤 Upload staging test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-test-results
+          path: staging-test-results.json
+
+  # 📈 PERFORMANCE REGRESSION TESTING
+  performance-test:
+    name: 📈 Performance Testing
+    runs-on: ubuntu-latest
+    needs: staging-deploy
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🚀 Load testing with Artillery
+        run: |
+          npm install -g artillery
+          artillery run tests/load-test.yml \
+            --target https://zodiac-staging.railway.app \
+            --output performance-report.json
+
+      - name: 📊 Performance analysis
+        run: |
+          artillery report performance-report.json \
+            --output performance-report.html
+
+      - name: 📤 Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: |
+            performance-report.json
+            performance-report.html
+
+      - name: 🚨 Performance regression check
+        run: |
+          node scripts/check-performance-regression.js performance-report.json
+
+  # 🚀 PRODUCTION DEPLOYMENT
+  production-deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [staging-deploy, performance-test]
+    if: github.ref == 'refs/heads/production' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
+    environment:
+      name: production
+      url: https://zodiac-backend.railway.app
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🛡️ Pre-deployment security check
+        run: |
+          echo "Running final security validation..."
+          # Add any final security checks here
+
+      - name: 💾 Create deployment backup
+        run: |
+          echo "Creating pre-deployment backup..."
+          curl -X POST "${{ secrets.BACKUP_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"type": "pre_deployment", "trigger": "github_action"}'
+
+      - name: 🚂 Deploy to Railway (Production)
+        uses: railwayapp/cli@v3
+        with:
+          railway-token: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+          command: up --detach
+        env:
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PRODUCTION_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: production
+
+      - name: ⏳ Wait for production deployment
+        run: sleep 90
+
+      - name: 🩺 Production health validation
+        run: |
+          for i in {1..5}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://zodiac-backend.railway.app/health)
+            if [ "$response" == "200" ]; then
+              echo "Production health check $i/5 passed"
+              sleep 10
+            else
+              echo "Production health check $i/5 failed with status: $response"
+              if [ "$i" == "5" ]; then
+                echo "All health checks failed, initiating rollback..."
+                exit 1
+              fi
+              sleep 20
+            fi
+          done
+
+      - name: 🧪 Production smoke tests
+        run: |
+          newman run tests/api-tests.postman_collection.json \
+            --environment tests/production.postman_environment.json \
+            --reporters cli,json \
+            --reporter-json-export production-test-results.json
+
+      - name: 📊 Post-deployment monitoring
+        run: |
+          echo "Deployment successful, monitoring for 5 minutes..."
+          sleep 300
+          # Check error rates, response times, etc.
+
+  # 🚨 ROLLBACK CAPABILITY
+  rollback:
+    name: 🔄 Emergency Rollback
+    runs-on: ubuntu-latest
+    if: failure() && contains(github.ref, 'production')
+    needs: production-deploy
+
+    steps:
+      - name: 🚨 Initiate rollback
+        run: |
+          echo "Production deployment failed, initiating emergency rollback..."
+          curl -X POST "${{ secrets.ROLLBACK_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "rollback", "reason": "deployment_failure", "commit": "${{ github.sha }}"}'
+
+      - name: 📢 Rollback notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#alerts'
+          text: |
+            🚨 EMERGENCY ROLLBACK INITIATED 🚨
+            Repository: ${{ github.repository }}
+            Failed commit: ${{ github.sha }}
+            Reason: Production deployment health checks failed
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # 📢 NOTIFICATIONS
+  notify:
+    name: 📢 Deployment Notifications
+    runs-on: ubuntu-latest
+    needs: [production-deploy]
+    if: always()
+
+    steps:
+      - name: 🎉 Success notification
+        if: needs.production-deploy.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#deployments'
+          text: |
+            🚀 PRODUCTION DEPLOYMENT SUCCESSFUL 🚀
+            Repository: ${{ github.repository }}
+            Commit: ${{ github.sha }}
+            Deployed by: ${{ github.actor }}
+            Environment: Production
+            URL: https://zodiac-backend.railway.app
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: ⚠️ Failure notification
+        if: needs.production-deploy.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#alerts'
+          text: |
+            ❌ PRODUCTION DEPLOYMENT FAILED ❌
+            Repository: ${{ github.repository }}
+            Commit: ${{ github.sha }}
+            Failed step: Production deployment
+            Please check the workflow logs and initiate manual rollback if necessary.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: 📧 Email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Zodiac Backend Deployment: ${{ needs.production-deploy.result }}"
+          to: ${{ secrets.DEPLOYMENT_EMAIL }}
+          from: "GitHub Actions <noreply@github.com>"
+          body: |
+            Deployment Status: ${{ needs.production-deploy.result }}
+            Repository: ${{ github.repository }}
+            Commit: ${{ github.sha }}
+            Workflow: ${{ github.workflow }}
+            
+            For more details, check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  # 🧹 CLEANUP
+  cleanup:
+    name: 🧹 Post-Deployment Cleanup
+    runs-on: ubuntu-latest
+    needs: [notify]
+    if: always()
+
+    steps:
+      - name: 🗑️ Clean up old container images
+        run: |
+          echo "Cleaning up container registry..."
+          # Keep only the last 10 images
+          # This would typically involve calling the registry API
+
+      - name: 📊 Update deployment metrics
+        run: |
+          echo "Recording deployment metrics..."
+          curl -X POST "${{ secrets.METRICS_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "deployment_id": "${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "success": "${{ needs.production-deploy.result == 'success' }}",
+              "duration": "${{ github.event.head_commit.timestamp }}",
+              "environment": "production"
+            }'

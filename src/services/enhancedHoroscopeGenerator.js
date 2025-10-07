@@ -481,9 +481,9 @@ Tone: inspiring, detailed, practical. Maximum 200 words.
    */
   async storeDailyHoroscope(horoscope) {
     const query = `
-      INSERT INTO daily_horoscopes (sign, date, content, language, created_at, model, tokens_used) 
+      INSERT INTO daily_horoscopes (sign, date, content, language_code, created_at, model, tokens_used) 
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (sign, date, language) 
+      ON CONFLICT (sign, date, language_code) 
       DO UPDATE SET 
         content = EXCLUDED.content,
         created_at = EXCLUDED.created_at,
@@ -515,9 +515,9 @@ Tone: inspiring, detailed, practical. Maximum 200 words.
    */
   async storeWeeklyHoroscope(horoscope) {
     const query = `
-      INSERT INTO weekly_horoscopes (sign, week_start, week_end, content, language, created_at, model, tokens_used) 
+      INSERT INTO weekly_horoscopes (sign, week_start, week_end, content, language_code, created_at, model, tokens_used) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      ON CONFLICT (sign, week_start, language) 
+      ON CONFLICT (sign, week_start, language_code) 
       DO UPDATE SET 
         content = EXCLUDED.content,
         week_end = EXCLUDED.week_end,

@@ -1,0 +1,91 @@
+# Railway Horizontal Scaling Configuration
+# This configures multiple instances with Redis for distributed operations
+
+# Main application instances
+[[services]]
+name = "zodiac-backend-primary"
+source = "."
+dockerfile = "Dockerfile"
+
+# Scaling configuration
+[services.scaling]
+min_replicas = 2
+max_replicas = 10
+target_cpu = 70
+target_memory = 80
+
+# Environment configuration
+[services.env]
+NODE_ENV = "production"
+INSTANCE_ID = "$RAILWAY_REPLICA_ID"
+ENABLE_REDIS = "true"
+ENABLE_LOAD_BALANCER = "true"
+
+# Health checks for scaling decisions
+[services.healthcheck]
+path = "/api/monitoring/health"
+interval = "30s"
+timeout = "10s"
+retries = 3
+
+# Redis service for distributed operations
+[[services]]
+name = "zodiac-redis"
+source = "redis:7-alpine"
+
+# Redis configuration
+[services.env]
+REDIS_MAXMEMORY = "256mb"
+REDIS_MAXMEMORY_POLICY = "allkeys-lru"
+
+# Redis persistence
+[services.volumes]
+mount_path = "/data"
+name = "redis-data"
+
+# Load balancer service (if using external load balancer)
+[[services]]
+name = "zodiac-load-balancer"
+source = "."
+dockerfile = "docker/load-balancer.dockerfile"
+
+[services.env]
+NODE_ENV = "production"
+LOAD_BALANCER_MODE = "true"
+BACKEND_INSTANCES = "$ZODIAC_BACKEND_URLS"
+
+# Monitoring service
+[[services]]
+name = "zodiac-monitoring"
+source = "."
+dockerfile = "docker/monitoring.dockerfile"
+
+[services.env]
+NODE_ENV = "production"
+MONITORING_MODE = "true"
+DASHBOARD_ENABLED = "true"
+
+# Shared environment variables (set in Railway dashboard)
+[shared_env]
+DATABASE_URL = "$DATABASE_URL"
+OPENAI_API_KEY = "$OPENAI_API_KEY"
+ADMIN_KEY = "$ADMIN_KEY"
+WEBHOOK_ALERT_URL = "$WEBHOOK_ALERT_URL"
+
+# Redis connection for all services
+REDIS_HOST = "zodiac-redis"
+REDIS_PORT = "6379"
+REDIS_DATABASE = "0"
+
+# Load balancer configuration
+LOAD_BALANCER_ALGORITHM = "health_based"
+HEALTH_CHECK_INTERVAL = "30000"
+MAX_FAILURES = "3"
+STICKY_SESSIONS = "true"
+
+# Auto-scaling configuration
+ENABLE_AUTO_SCALING = "true"
+SCALE_UP_THRESHOLD = "80"
+SCALE_DOWN_THRESHOLD = "20"
+MIN_INSTANCES = "2"
+MAX_INSTANCES = "10"

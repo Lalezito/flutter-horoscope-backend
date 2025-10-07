@@ -634,8 +634,9 @@ class RedisService {
    * UTILITY METHODS
    */
   isRedisRequired() {
-    // Redis is required in production or when explicitly enabled
-    return process.env.NODE_ENV === 'production' || 
+    // Redis is only required when explicitly configured
+    return process.env.REDIS_URL || 
+           process.env.REDIS_PRIVATE_URL ||
            process.env.REDIS_HOST || 
            process.env.ENABLE_REDIS === 'true';
   }

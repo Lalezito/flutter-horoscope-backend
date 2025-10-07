@@ -54,4 +54,63 @@ router.get("/checkMissing", async (req, res) => {
  */
 router.post("/generate", weeklyController.generateWeeklyHoroscopes);
 
+/**
+ * @route GET /api/weekly/testOpenAI
+ * @description Test OpenAI API connection (admin endpoint)
+ * @query {string} admin_key - Admin authentication key (required)
+ */
+router.get("/testOpenAI", async (req, res) => {
+  const { admin_key } = req.query;
+
+  if (admin_key !== process.env.ADMIN_KEY) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const OpenAI = require('openai');
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    // Test with a simple completion
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant."
+        },
+        {
+          role: "user",
+          content: "Say 'Hello, Zodiac!' in exactly 3 words."
+        }
+      ],
+      max_tokens: 10
+    });
+
+    res.json({
+      success: true,
+      message: 'OpenAI connection successful',
+      response: completion.choices[0].message.content,
+      apiKeyPresent: !!process.env.OPENAI_API_KEY,
+      apiKeyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 15) + '...' : 'not set',
+      model: completion.model,
+      usage: completion.usage
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      errorType: error.constructor.name,
+      apiKeyPresent: !!process.env.OPENAI_API_KEY,
+      apiKeyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 15) + '...' : 'not set',
+      details: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : 'No response details'
+    });
+  }
+});
+
 module.exports = router;

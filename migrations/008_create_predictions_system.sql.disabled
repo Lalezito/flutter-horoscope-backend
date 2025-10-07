@@ -1,0 +1,339 @@
+-- PREDICTIONS SYSTEM TABLES MIGRATION
+-- Creates comprehensive prediction tracking and verification system
+
+-- =============================================
+-- PREDICTIONS MAIN TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS predictions (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    prediction_type VARCHAR(50) NOT NULL,
+    prediction_content TEXT NOT NULL,
+    predicted_date TIMESTAMP NOT NULL, -- When the prediction should occur
+    confidence_score DECIMAL(3,2) NOT NULL DEFAULT 0.5 CHECK (confidence_score >= 0.0 AND confidence_score <= 1.0),
+    actual_outcome TEXT,
+    user_feedback TEXT,
+    verification_status VARCHAR(50) DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'failed', 'expired', 'user_confirmed', 'user_denied')),
+    prediction_category VARCHAR(50) NOT NULL,
+    astrological_basis JSONB, -- Store the astrological reasoning
+    specificity_score DECIMAL(3,2) DEFAULT 0.5, -- How specific/testable the prediction is
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified_at TIMESTAMP,
+    expires_at TIMESTAMP, -- When the prediction window expires
+    notification_sent BOOLEAN DEFAULT FALSE,
+    premium_required BOOLEAN DEFAULT TRUE,
+    
+    -- Indexes for performance
+    CONSTRAINT predictions_user_id_idx UNIQUE (id, user_id)
+);
+
+-- =============================================
+-- PREDICTION CATEGORIES TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS prediction_categories (
+    id SERIAL PRIMARY KEY,
+    category_name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    default_timeframe_hours INTEGER DEFAULT 48,
+    confidence_weight DECIMAL(3,2) DEFAULT 1.0,
+    premium_only BOOLEAN DEFAULT FALSE,
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Predefined categories
+    CHECK (category_name IN ('love', 'career', 'health', 'finance', 'social', 'travel', 'family', 'personal_growth', 'spiritual', 'creative'))
+);
+
+-- =============================================
+-- PREDICTION FEEDBACK TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS prediction_feedback (
+    id SERIAL PRIMARY KEY,
+    prediction_id INTEGER REFERENCES predictions(id) ON DELETE CASCADE,
+    user_id VARCHAR(255) NOT NULL,
+    accuracy_rating INTEGER CHECK (accuracy_rating >= 1 AND accuracy_rating <= 5),
+    outcome_description TEXT,
+    feedback_type VARCHAR(50) NOT NULL CHECK (feedback_type IN ('accurate', 'partially_accurate', 'inaccurate', 'too_vague', 'could_not_verify')),
+    details TEXT,
+    helpful_rating INTEGER CHECK (helpful_rating >= 1 AND helpful_rating <= 5),
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified_by_system BOOLEAN DEFAULT FALSE
+);
+
+-- =============================================
+-- PREDICTION ANALYTICS TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS prediction_analytics (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255),
+    category VARCHAR(50),
+    date DATE DEFAULT CURRENT_DATE,
+    total_predictions INTEGER DEFAULT 0,
+    verified_predictions INTEGER DEFAULT 0,
+    accurate_predictions INTEGER DEFAULT 0,
+    average_accuracy DECIMAL(5,2) DEFAULT 0.00,
+    average_confidence DECIMAL(3,2) DEFAULT 0.50,
+    premium_predictions INTEGER DEFAULT 0,
+    total_feedback_received INTEGER DEFAULT 0,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Composite index for efficient querying
+    UNIQUE(user_id, category, date)
+);
+
+-- =============================================
+-- PREDICTION ALERTS TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS prediction_alerts (
+    id SERIAL PRIMARY KEY,
+    prediction_id INTEGER REFERENCES predictions(id) ON DELETE CASCADE,
+    alert_type VARCHAR(50) NOT NULL CHECK (alert_type IN ('48hr_warning', '24hr_warning', '2hr_warning', 'verification_reminder', 'follow_up')),
+    alert_date TIMESTAMP NOT NULL,
+    sent BOOLEAN DEFAULT FALSE,
+    sent_at TIMESTAMP,
+    delivery_method VARCHAR(20) DEFAULT 'firebase' CHECK (delivery_method IN ('firebase', 'email', 'sms')),
+    firebase_token VARCHAR(500),
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- PREDICTION TEMPLATES TABLE (for generating specific predictions)
+-- =============================================
+CREATE TABLE IF NOT EXISTS prediction_templates (
+    id SERIAL PRIMARY KEY,
+    category VARCHAR(50) NOT NULL,
+    template_name VARCHAR(100) NOT NULL,
+    template_content TEXT NOT NULL,
+    astrological_conditions JSONB, -- When to use this template
+    specificity_level INTEGER DEFAULT 3 CHECK (specificity_level >= 1 AND specificity_level <= 5),
+    confidence_multiplier DECIMAL(3,2) DEFAULT 1.0,
+    timeframe_hours INTEGER DEFAULT 48,
+    active BOOLEAN DEFAULT TRUE,
+    usage_count INTEGER DEFAULT 0,
+    success_rate DECIMAL(5,2) DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- USER PREDICTION PREFERENCES TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS user_prediction_preferences (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) UNIQUE NOT NULL,
+    preferred_categories TEXT[] DEFAULT '{"love","career","finance"}',
+    notification_frequency VARCHAR(20) DEFAULT 'normal' CHECK (notification_frequency IN ('minimal', 'normal', 'frequent')),
+    alert_48hr BOOLEAN DEFAULT TRUE,
+    alert_24hr BOOLEAN DEFAULT TRUE,
+    alert_2hr BOOLEAN DEFAULT FALSE,
+    verification_reminders BOOLEAN DEFAULT TRUE,
+    feedback_reminders BOOLEAN DEFAULT TRUE,
+    preferred_timeframe_hours INTEGER DEFAULT 48,
+    min_confidence_threshold DECIMAL(3,2) DEFAULT 0.3,
+    timezone VARCHAR(50) DEFAULT 'UTC',
+    premium_subscriber BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- PREDICTION GENERATION LOG TABLE (for monitoring and debugging)
+-- =============================================
+CREATE TABLE IF NOT EXISTS prediction_generation_log (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    category VARCHAR(50),
+    generation_trigger VARCHAR(50), -- 'manual', 'scheduled', 'api_request'
+    astrological_data JSONB,
+    templates_considered INTEGER DEFAULT 0,
+    template_used INTEGER,
+    generation_time_ms INTEGER,
+    success BOOLEAN DEFAULT FALSE,
+    error_message TEXT,
+    prediction_id INTEGER REFERENCES predictions(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- INDEXES FOR PERFORMANCE
+-- =============================================
+
+-- Predictions table indexes
+CREATE INDEX IF NOT EXISTS idx_predictions_user_id ON predictions(user_id);
+CREATE INDEX IF NOT EXISTS idx_predictions_category ON predictions(prediction_category);
+CREATE INDEX IF NOT EXISTS idx_predictions_predicted_date ON predictions(predicted_date);
+CREATE INDEX IF NOT EXISTS idx_predictions_verification_status ON predictions(verification_status);
+CREATE INDEX IF NOT EXISTS idx_predictions_created_at ON predictions(created_at);
+CREATE INDEX IF NOT EXISTS idx_predictions_expires_at ON predictions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_predictions_composite ON predictions(user_id, verification_status, created_at);
+
+-- Prediction alerts indexes  
+CREATE INDEX IF NOT EXISTS idx_prediction_alerts_prediction_id ON prediction_alerts(prediction_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_alerts_alert_date ON prediction_alerts(alert_date);
+CREATE INDEX IF NOT EXISTS idx_prediction_alerts_sent ON prediction_alerts(sent);
+CREATE INDEX IF NOT EXISTS idx_prediction_alerts_composite ON prediction_alerts(sent, alert_date, alert_type);
+
+-- Feedback indexes
+CREATE INDEX IF NOT EXISTS idx_prediction_feedback_prediction_id ON prediction_feedback(prediction_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_feedback_user_id ON prediction_feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_feedback_submitted_at ON prediction_feedback(submitted_at);
+
+-- Analytics indexes
+CREATE INDEX IF NOT EXISTS idx_prediction_analytics_user_id ON prediction_analytics(user_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_analytics_date ON prediction_analytics(date);
+CREATE INDEX IF NOT EXISTS idx_prediction_analytics_category ON prediction_analytics(category);
+
+-- Templates indexes
+CREATE INDEX IF NOT EXISTS idx_prediction_templates_category ON prediction_templates(category);
+CREATE INDEX IF NOT EXISTS idx_prediction_templates_active ON prediction_templates(active);
+
+-- Generation log indexes
+CREATE INDEX IF NOT EXISTS idx_prediction_generation_log_user_id ON prediction_generation_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_generation_log_created_at ON prediction_generation_log(created_at);
+
+-- =============================================
+-- INSERT DEFAULT CATEGORIES
+-- =============================================
+INSERT INTO prediction_categories (category_name, description, default_timeframe_hours, confidence_weight, premium_only) 
+VALUES 
+('love', 'Romantic relationships and partnerships', 48, 1.0, true),
+('career', 'Professional opportunities and work-related events', 72, 0.9, true),
+('health', 'Physical and mental well-being predictions', 24, 0.8, true),
+('finance', 'Money, investments, and financial opportunities', 48, 0.9, true),
+('social', 'Friendships and social interactions', 36, 0.7, false),
+('travel', 'Journey and travel-related predictions', 96, 0.8, false),
+('family', 'Family relationships and domestic matters', 48, 0.8, false),
+('personal_growth', 'Self-development and spiritual growth', 168, 0.6, true),
+('spiritual', 'Spiritual insights and mystical experiences', 72, 0.5, true),
+('creative', 'Creative projects and artistic endeavors', 120, 0.7, false)
+ON CONFLICT (category_name) DO NOTHING;
+
+-- =============================================
+-- INSERT SAMPLE PREDICTION TEMPLATES
+-- =============================================
+INSERT INTO prediction_templates (category, template_name, template_content, astrological_conditions, specificity_level, confidence_multiplier, timeframe_hours) 
+VALUES 
+('love', 'Romantic Encounter', 'Within the next {timeframe}, you will have a meaningful romantic conversation with someone whose {sign_element} energy complements yours. This encounter will happen in a {venus_house} setting.', '{"venus_aspects": ["trine", "conjunction"], "moon_phase": "waxing"}', 4, 0.8, 48),
+('career', 'Professional Opportunity', 'A new professional opportunity involving {jupiter_house} themes will present itself within {timeframe} hours. This opportunity will align with your {sun_sign} strengths.', '{"jupiter_aspects": ["trine", "sextile"], "mercury_retrograde": false}', 4, 0.9, 72),
+('finance', 'Financial Gain', 'You will receive unexpected financial news or a small monetary gain of approximately {amount_range} within the next {timeframe}. This relates to {2nd_house} matters.', '{"venus_jupiter_aspects": ["trine", "sextile"], "2nd_house_activity": true}', 5, 0.85, 48),
+('health', 'Energy Boost', 'Your energy levels will significantly improve around {time_period}, particularly affecting your {mars_house} activities. Focus on {health_advice}.', '{"mars_aspects": ["trine", "conjunction"], "6th_house_activity": true}', 3, 0.7, 24),
+('social', 'New Connection', 'You will meet someone new who shares your interest in {mercury_house} topics. This connection will be initiated through {connection_method}.', '{"mercury_aspects": ["sextile", "trine"], "11th_house_activity": true}', 3, 0.75, 36)
+ON CONFLICT DO NOTHING;
+
+-- =============================================
+-- FUNCTIONS FOR PREDICTION ANALYTICS
+-- =============================================
+
+-- Function to update user analytics
+CREATE OR REPLACE FUNCTION update_prediction_analytics(
+    p_user_id VARCHAR(255),
+    p_category VARCHAR(50),
+    p_verified BOOLEAN DEFAULT FALSE,
+    p_accurate BOOLEAN DEFAULT FALSE,
+    p_confidence DECIMAL(3,2) DEFAULT 0.5
+) RETURNS VOID AS $$
+BEGIN
+    INSERT INTO prediction_analytics (
+        user_id, 
+        category, 
+        total_predictions, 
+        verified_predictions, 
+        accurate_predictions,
+        average_confidence
+    ) VALUES (
+        p_user_id, 
+        p_category, 
+        1, 
+        CASE WHEN p_verified THEN 1 ELSE 0 END,
+        CASE WHEN p_accurate THEN 1 ELSE 0 END,
+        p_confidence
+    )
+    ON CONFLICT (user_id, category, date) DO UPDATE SET
+        total_predictions = prediction_analytics.total_predictions + 1,
+        verified_predictions = prediction_analytics.verified_predictions + (CASE WHEN p_verified THEN 1 ELSE 0 END),
+        accurate_predictions = prediction_analytics.accurate_predictions + (CASE WHEN p_accurate THEN 1 ELSE 0 END),
+        average_confidence = (prediction_analytics.average_confidence + p_confidence) / 2,
+        last_updated = CURRENT_TIMESTAMP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to calculate user success rate
+CREATE OR REPLACE FUNCTION get_user_success_rate(p_user_id VARCHAR(255))
+RETURNS DECIMAL(5,2) AS $$
+DECLARE
+    success_rate DECIMAL(5,2);
+BEGIN
+    SELECT 
+        CASE 
+            WHEN SUM(verified_predictions) > 0 THEN
+                (SUM(accurate_predictions)::DECIMAL / SUM(verified_predictions) * 100)
+            ELSE 0.00
+        END INTO success_rate
+    FROM prediction_analytics 
+    WHERE user_id = p_user_id;
+    
+    RETURN COALESCE(success_rate, 0.00);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to automatically update analytics when prediction status changes
+CREATE OR REPLACE FUNCTION trigger_update_analytics()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Only update when verification status changes to verified
+    IF NEW.verification_status = 'verified' AND OLD.verification_status != 'verified' THEN
+        PERFORM update_prediction_analytics(
+            NEW.user_id,
+            NEW.prediction_category,
+            TRUE,
+            CASE WHEN NEW.verification_status IN ('verified', 'user_confirmed') THEN TRUE ELSE FALSE END,
+            NEW.confidence_score
+        );
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger
+DROP TRIGGER IF EXISTS predictions_analytics_trigger ON predictions;
+CREATE TRIGGER predictions_analytics_trigger
+    AFTER UPDATE ON predictions
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_update_analytics();
+
+-- =============================================
+-- VIEWS FOR EASY QUERYING
+-- =============================================
+
+-- View for active predictions with alerts
+CREATE OR REPLACE VIEW active_predictions_with_alerts AS
+SELECT 
+    p.*,
+    pa.alert_type,
+    pa.alert_date,
+    pa.sent as alert_sent,
+    pc.description as category_description
+FROM predictions p
+LEFT JOIN prediction_alerts pa ON p.id = pa.prediction_id AND pa.sent = FALSE
+LEFT JOIN prediction_categories pc ON p.prediction_category = pc.category_name
+WHERE p.verification_status = 'pending' 
+AND p.expires_at > CURRENT_TIMESTAMP;
+
+-- View for user prediction statistics
+CREATE OR REPLACE VIEW user_prediction_stats AS
+SELECT 
+    user_id,
+    COUNT(*) as total_predictions,
+    COUNT(*) FILTER (WHERE verification_status IN ('verified', 'user_confirmed')) as verified_predictions,
+    COUNT(*) FILTER (WHERE verification_status IN ('verified', 'user_confirmed')) as successful_predictions,
+    AVG(confidence_score) as avg_confidence,
+    MIN(created_at) as first_prediction,
+    MAX(created_at) as last_prediction,
+    COUNT(DISTINCT prediction_category) as categories_used
+FROM predictions
+GROUP BY user_id;
+
+COMMIT;

@@ -39,7 +39,7 @@ class NeuralCacheService {
       
       if (cached) {
         // Track cache performance metrics
-        logger.logPerformance('neural_cache_set', 1, {
+        logger.getLogger().info('Neural cache set successful', {
           signs: [sign1, sign2],
           level: analysisLevel,
           language,
@@ -81,7 +81,7 @@ class NeuralCacheService {
         cachedData.retrieval_time_ms = retrievalTime;
         
         // Track cache hit performance
-        logger.logPerformance('neural_cache_hit', 1, {
+        logger.getLogger().info('Neural cache hit', {
           signs: [sign1, sign2],
           level: analysisLevel,
           retrieval_time: retrievalTime
@@ -93,7 +93,7 @@ class NeuralCacheService {
         return cachedData;
       } else {
         // Track cache miss
-        logger.logPerformance('neural_cache_miss', 1, {
+        logger.getLogger().info('Neural cache miss', {
           signs: [sign1, sign2],
           level: analysisLevel
         });
@@ -133,7 +133,7 @@ class NeuralCacheService {
       const cached = await this.baseCache.set(cacheKey, cacheData, this.historyTTL);
       
       if (cached) {
-        logger.logPerformance('neural_history_cache_set', 1, {
+        logger.getLogger().info('Neural history cache set successful', {
           user_id: userId,
           page,
           limit,
@@ -166,7 +166,7 @@ class NeuralCacheService {
         if (cachedData.privacy_compliant && cachedData.can_delete) {
           cachedData.retrieved_at = new Date().toISOString();
           
-          logger.logPerformance('neural_history_cache_hit', 1, {
+          logger.getLogger().info('Neural history cache hit', {
             user_id: userId,
             page,
             limit
