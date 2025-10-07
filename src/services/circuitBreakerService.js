@@ -27,10 +27,10 @@ class CircuitBreakerService {
   /**
    * Create or get a circuit breaker for a service
    */
-  getBreaker(serviceName, options = {}) {
+  getBreaker(serviceName, action, options = {}) {
     if (!this.breakers.has(serviceName)) {
       const breakerOptions = { ...this.defaultOptions, ...options };
-      const breaker = new CircuitBreaker(null, breakerOptions);
+      const breaker = new CircuitBreaker(action, breakerOptions);
       
       // Event handlers
       breaker.on('open', () => {
@@ -79,10 +79,10 @@ class CircuitBreakerService {
    * Execute function with circuit breaker protection
    */
   async execute(serviceName, asyncFunction, options = {}) {
-    const breaker = this.getBreaker(serviceName, options);
-    
+    const breaker = this.getBreaker(serviceName, asyncFunction, options);
+
     try {
-      const result = await breaker.fire(asyncFunction);
+      const result = await breaker.fire();
       logger.logExternalAPI(serviceName, 'SUCCESS', {
         circuitBreakerState: breaker.state,
         stats: breaker.stats

@@ -28,6 +28,8 @@ const goalGenerationLimit = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'development', // Skip rate limiting in dev
+  validate: { trustProxy: false } // Don't validate trust proxy
 });
 
 // General API rate limit
@@ -37,7 +39,9 @@ const apiRateLimit = rateLimit({
   message: {
     error: 'Too many requests',
     message: 'Please wait before making more requests'
-  }
+  },
+  skip: (req) => process.env.NODE_ENV === 'development',
+  validate: { trustProxy: false }
 });
 
 /**
