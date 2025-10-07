@@ -165,6 +165,7 @@ loadRoute('/api/admin', './routes/admin', 'Admin routes');
 loadRoute('/api/monitoring', './routes/monitoring', 'Monitoring routes');
 loadRoute('/api/notifications', './routes/notification', 'Notification routes');
 loadRoute('/api/neural-compatibility', './routes/neuralCompatibility', 'Neural Compatibility routes');
+loadRoute('/api/ai/goals', './routes/goalPlanner', 'Goal Planner routes (Stellar Premium)');
 
 // Routes status endpoint
 app.get('/api/routes', (req, res) => {
