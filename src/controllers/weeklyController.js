@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const moment = require('moment');
+const OpenAI = require('openai');
 
 class WeeklyController {
   /**
@@ -217,6 +218,152 @@ class WeeklyController {
     }
     
     return missing;
+  }
+
+  /**
+   * Generate all weekly horoscopes using OpenAI
+   */
+  async generateWeeklyHoroscopes(req, res) {
+    const { admin_key, force } = req.query;
+
+    // Security check
+    if (admin_key !== process.env.ADMIN_KEY) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const weekStart = moment().startOf('isoWeek').format('YYYY-MM-DD');
+      const weekEnd = moment().endOf('isoWeek').format('YYYY-MM-DD');
+
+      // Check if horoscopes already exist for this week
+      if (!force) {
+        const checkQuery = `SELECT COUNT(*) FROM weekly_horoscopes WHERE week_start = $1`;
+        const checkResult = await db.query(checkQuery, [weekStart]);
+
+        if (parseInt(checkResult.rows[0].count) > 0) {
+          return res.status(400).json({
+            error: 'Horoscopes already exist for this week',
+            message: 'Use force=true to regenerate',
+            week: `${weekStart} to ${weekEnd}`,
+            existing_count: parseInt(checkResult.rows[0].count)
+          });
+        }
+      }
+
+      // Initialize OpenAI
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+
+      const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+                     'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+      const languages = {
+        'en': 'English',
+        'es': 'Spanish',
+        'de': 'German',
+        'fr': 'French',
+        'it': 'Italian',
+        'pt': 'Portuguese'
+      };
+
+      const results = {
+        success: 0,
+        errors: 0,
+        week: `${weekStart} to ${weekEnd}`,
+        details: []
+      };
+
+      // Generate horoscopes for each sign and language
+      for (const sign of signs) {
+        for (const [langCode, langName] of Object.entries(languages)) {
+          try {
+            console.log(`Generating weekly horoscope for ${sign} in ${langName}...`);
+
+            const prompt = `Generate a detailed weekly horoscope for ${sign} for the week of ${weekStart} to ${weekEnd}.
+
+Write in ${langName} language.
+
+The horoscope should include:
+- Overview of the week (2-3 sentences)
+- Love & Relationships forecast
+- Career & Finance insights
+- Health & Wellness advice
+- Lucky numbers and colors for the week
+
+Write in a warm, insightful, and encouraging tone. Be specific about the week's energy and opportunities.
+Keep the total length around 200-250 words.`;
+
+            const completion = await openai.chat.completions.create({
+              model: "gpt-4o-mini",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a professional astrologer with deep knowledge of zodiac signs and planetary influences. You provide insightful, positive, and actionable weekly horoscopes."
+                },
+                {
+                  role: "user",
+                  content: prompt
+                }
+              ],
+              temperature: 0.8,
+              max_tokens: 500
+            });
+
+            const content = completion.choices[0].message.content;
+
+            // Store in database
+            const insertQuery = `
+              INSERT INTO weekly_horoscopes (sign, language_code, week_start, week_end, content)
+              VALUES ($1, $2, $3, $4, $5)
+              ON CONFLICT (sign, language_code, week_start)
+              DO UPDATE SET
+                content = $5,
+                updated_at = NOW(),
+                week_end = $4
+            `;
+
+            await db.query(insertQuery, [sign, langCode, weekStart, weekEnd, content]);
+
+            results.success++;
+            results.details.push({
+              sign,
+              language: langName,
+              status: 'generated'
+            });
+
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+          } catch (error) {
+            console.error(`Error generating ${sign} ${langName}:`, error);
+            results.errors++;
+            results.details.push({
+              sign,
+              language: langName,
+              status: 'error',
+              error: error.message
+            });
+          }
+        }
+      }
+
+      res.json({
+        message: 'Weekly horoscope generation completed',
+        week: `${weekStart} to ${weekEnd}`,
+        total_expected: 72,
+        success: results.success,
+        errors: results.errors,
+        completion_rate: `${Math.round((results.success / 72) * 100)}%`,
+        details: results.details
+      });
+
+    } catch (error) {
+      console.error("Generate weekly horoscopes error:", error);
+      res.status(500).json({
+        error: 'Failed to generate weekly horoscopes',
+        message: error.message
+      });
+    }
   }
 }
 

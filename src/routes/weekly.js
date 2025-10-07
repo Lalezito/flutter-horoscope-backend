@@ -26,14 +26,14 @@ router.get("/getAllWeeklyHoroscopes", weeklyController.getAllWeeklyHoroscopes);
  */
 router.get("/checkMissing", async (req, res) => {
   const { admin_key } = req.query;
-  
+
   if (admin_key !== process.env.ADMIN_KEY) {
     return res.status(403).json({ error: 'Unauthorized' });
   }
 
   try {
     const missing = await weeklyController.checkMissingWeeklyHoroscopes();
-    
+
     res.json({
       missing_count: missing.length,
       expected_total: 72, // 12 signs × 6 languages
@@ -45,5 +45,13 @@ router.get("/checkMissing", async (req, res) => {
     res.status(500).json({ error: "Failed to check missing horoscopes" });
   }
 });
+
+/**
+ * @route POST /api/weekly/generate
+ * @description Generate all weekly horoscopes using OpenAI (admin endpoint)
+ * @query {string} admin_key - Admin authentication key (required)
+ * @query {boolean} force - Force regeneration even if data exists (optional)
+ */
+router.post("/generate", weeklyController.generateWeeklyHoroscopes);
 
 module.exports = router;
