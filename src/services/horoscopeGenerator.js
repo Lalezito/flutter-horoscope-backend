@@ -29,6 +29,22 @@ class HoroscopeGeneratorService {
       { code: 'it', name: 'italiano' },
       { code: 'pt', name: 'português' }
     ];
+
+    // Frases genéricas prohibidas (para validación de calidad)
+    this.genericPhrases = [
+      'today is a good day',
+      'hoy es un buen día',
+      'you will have success',
+      'tendrás éxito',
+      'be positive',
+      'sé positivo',
+      'good luck',
+      'buena suerte',
+      'trust yourself',
+      'confía en ti',
+      'follow your heart',
+      'sigue tu corazón'
+    ];
   }
 
   /**
@@ -46,22 +62,24 @@ class HoroscopeGeneratorService {
     // Clean old daily horoscopes (keep only last 7 days)
     await this.cleanOldDailyHoroscopes();
 
-    for (const sign of this.signs) {
+    // Paralelizar generación por signo (12 signos en paralelo)
+    const signPromises = this.signs.map(async (sign) => {
+      // Para cada signo, generar todos los idiomas en serie
       for (const language of this.languages) {
         try {
           const horoscope = await this.generateDailyHoroscope(sign, language, date);
           await this.storeDailyHoroscope(horoscope);
-          
+
           results.success++;
           results.details.push({
             sign,
             language: language.code,
             status: 'generated'
           });
-          
-          // Small delay to avoid rate limits
+
+          // Small delay between languages for same sign
           await this.delay(100);
-          
+
         } catch (error) {
           console.error(`Error generating daily horoscope for ${sign} ${language.code}:`, error.message);
           results.errors++;
@@ -73,7 +91,10 @@ class HoroscopeGeneratorService {
           });
         }
       }
-    }
+    });
+
+    // Esperar que todos los signos terminen
+    await Promise.all(signPromises);
 
     console.log(`✅ Daily generation completed: ${results.success} success, ${results.errors} errors`);
     return results;
@@ -95,22 +116,24 @@ class HoroscopeGeneratorService {
     // Clean old weekly horoscopes (keep only last 4 weeks)
     await this.cleanOldWeeklyHoroscopes();
 
-    for (const sign of this.signs) {
+    // Paralelizar generación por signo (12 signos en paralelo)
+    const signPromises = this.signs.map(async (sign) => {
+      // Para cada signo, generar todos los idiomas en serie
       for (const language of this.languages) {
         try {
           const horoscope = await this.generateWeeklyHoroscope(sign, language, weekStart, weekEnd);
           await this.storeWeeklyHoroscope(horoscope);
-          
+
           results.success++;
           results.details.push({
             sign,
             language: language.code,
             status: 'generated'
           });
-          
-          // Delay to avoid rate limits
+
+          // Delay between languages for same sign
           await this.delay(200);
-          
+
         } catch (error) {
           console.error(`Error generating weekly horoscope for ${sign} ${language.code}:`, error.message);
           results.errors++;
@@ -122,14 +145,17 @@ class HoroscopeGeneratorService {
           });
         }
       }
-    }
+    });
+
+    // Esperar que todos los signos terminen
+    await Promise.all(signPromises);
 
     console.log(`✅ Weekly generation completed: ${results.success} success, ${results.errors} errors`);
     return results;
   }
 
   /**
-   * Generate single daily horoscope using OpenAI
+   * Generate single daily horoscope using OpenAI with retry logic
    */
   async generateDailyHoroscope(sign, language, date) {
     // Return mock data if OpenAI is not enabled
@@ -138,36 +164,65 @@ class HoroscopeGeneratorService {
     }
 
     const prompt = this.getDailyPrompt(sign, language.name, date);
-    
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini', // gpt-4o-mini: más rápido y barato, soporta json_object
-        messages: [
-          { role: 'system', content: prompt },
-          { role: 'user', content: `Generate daily horoscope for ${sign} in ${language.name} for ${date}` }
-        ],
-        temperature: 0.8,
-        max_tokens: 800,
-        response_format: { type: 'json_object' }
-      });
+    const maxRetries = 3;
+    let lastError = null;
 
-      const content = JSON.parse(response.choices[0].message.content);
-      
-      return {
-        sign,
-        language_code: language.code,
-        date,
-        content
-      };
-      
-    } catch (error) {
-      console.error(`OpenAI API error for ${sign} ${language.code}:`, error);
-      throw error;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`📝 Generating daily ${sign} ${language.code} (attempt ${attempt}/${maxRetries})`);
+
+        const response = await this.openai.chat.completions.create({
+          model: 'gpt-4o-mini', // gpt-4o-mini: más rápido y barato, soporta json_object
+          messages: [
+            { role: 'system', content: prompt },
+            { role: 'user', content: `Generate daily horoscope for ${sign} in ${language.name} for ${date}` }
+          ],
+          temperature: 0.8,
+          max_tokens: 800,
+          response_format: { type: 'json_object' }
+        });
+
+        const content = JSON.parse(response.choices[0].message.content);
+
+        // Validar calidad del contenido
+        const validation = this.validateHoroscopeQuality(content, sign);
+        if (!validation.valid) {
+          console.warn(`⚠️ Quality issues in daily ${sign} ${language.code}:`, validation.issues);
+          // Continuar de todos modos, pero loggear
+        } else {
+          console.log(`✅ Daily ${sign} ${language.code} generated with high quality`);
+        }
+
+        return {
+          sign,
+          language_code: language.code,
+          date,
+          content
+        };
+
+      } catch (error) {
+        lastError = error;
+        const isLastAttempt = attempt === maxRetries;
+
+        console.error(`❌ Attempt ${attempt}/${maxRetries} failed for daily ${sign} ${language.code}:`, error.message);
+
+        if (isLastAttempt) {
+          console.error(`🚨 All ${maxRetries} attempts failed for daily ${sign} ${language.code}`);
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const backoffMs = Math.pow(2, attempt - 1) * 1000;
+        console.log(`⏳ Retrying in ${backoffMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
     }
+
+    throw lastError;
   }
 
   /**
-   * Generate single weekly horoscope using OpenAI
+   * Generate single weekly horoscope using OpenAI with retry logic
    */
   async generateWeeklyHoroscope(sign, language, weekStart, weekEnd) {
     // Return mock data if OpenAI is not enabled
@@ -176,33 +231,101 @@ class HoroscopeGeneratorService {
     }
 
     const prompt = this.getWeeklyPrompt(sign, language.name, weekStart, weekEnd);
-    
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini', // gpt-4o-mini: más rápido y barato, soporta json_object
-        messages: [
-          { role: 'system', content: prompt },
-          { role: 'user', content: `Generate weekly horoscope for ${sign} in ${language.name} for week ${weekStart} to ${weekEnd}` }
-        ],
-        temperature: 0.8,
-        max_tokens: 1200,
-        response_format: { type: 'json_object' }
-      });
+    const maxRetries = 3;
+    let lastError = null;
 
-      const content = JSON.parse(response.choices[0].message.content);
-      
-      return {
-        sign,
-        language_code: language.code,
-        week_start: weekStart,
-        week_end: weekEnd,
-        content
-      };
-      
-    } catch (error) {
-      console.error(`OpenAI API error for weekly ${sign} ${language.code}:`, error);
-      throw error;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`📅 Generating weekly ${sign} ${language.code} (attempt ${attempt}/${maxRetries})`);
+
+        const response = await this.openai.chat.completions.create({
+          model: 'gpt-4o-mini', // gpt-4o-mini: más rápido y barato, soporta json_object
+          messages: [
+            { role: 'system', content: prompt },
+            { role: 'user', content: `Generate weekly horoscope for ${sign} in ${language.name} for week ${weekStart} to ${weekEnd}` }
+          ],
+          temperature: 0.8,
+          max_tokens: 1200,
+          response_format: { type: 'json_object' }
+        });
+
+        const content = JSON.parse(response.choices[0].message.content);
+
+        // Validar calidad del contenido
+        const validation = this.validateHoroscopeQuality(content, sign);
+        if (!validation.valid) {
+          console.warn(`⚠️ Quality issues in weekly ${sign} ${language.code}:`, validation.issues);
+          // Continuar de todos modos, pero loggear
+        } else {
+          console.log(`✅ Weekly ${sign} ${language.code} generated with high quality`);
+        }
+
+        return {
+          sign,
+          language_code: language.code,
+          week_start: weekStart,
+          week_end: weekEnd,
+          content
+        };
+
+      } catch (error) {
+        lastError = error;
+        const isLastAttempt = attempt === maxRetries;
+
+        console.error(`❌ Attempt ${attempt}/${maxRetries} failed for weekly ${sign} ${language.code}:`, error.message);
+
+        if (isLastAttempt) {
+          console.error(`🚨 All ${maxRetries} attempts failed for weekly ${sign} ${language.code}`);
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const backoffMs = Math.pow(2, attempt - 1) * 1000;
+        console.log(`⏳ Retrying in ${backoffMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
     }
+
+    throw lastError;
+  }
+
+  /**
+   * Validate horoscope content quality
+   * Returns { valid: boolean, issues: string[] }
+   */
+  validateHoroscopeQuality(content, sign) {
+    const issues = [];
+
+    // Convertir todo a minúsculas para comparación
+    const textToCheck = JSON.stringify(content).toLowerCase();
+    const signLower = sign.toLowerCase();
+
+    // 1. Verificar que NO contenga frases genéricas
+    for (const phrase of this.genericPhrases) {
+      if (textToCheck.includes(phrase.toLowerCase())) {
+        issues.push(`Contains generic phrase: "${phrase}"`);
+      }
+    }
+
+    // 2. Verificar que mencione el signo específico
+    if (!textToCheck.includes(signLower)) {
+      issues.push(`Does not mention sign name: "${sign}"`);
+    }
+
+    // 3. Verificar longitud mínima (al menos 100 caracteres)
+    if (textToCheck.length < 100) {
+      issues.push(`Content too short: ${textToCheck.length} characters`);
+    }
+
+    // 4. Verificar que tenga estructura JSON correcta
+    if (!content.general && !content.love && !content.work && !content.health) {
+      issues.push('Missing required content fields (general/love/work/health)');
+    }
+
+    return {
+      valid: issues.length === 0,
+      issues
+    };
   }
 
   /**
@@ -265,12 +388,47 @@ Responde SOLO con este JSON (sin texto adicional):
   }
 
   /**
-   * Weekly horoscope prompt (enhanced version)
+   * Weekly horoscope prompt (ENHANCED with astrological context)
    */
   getWeeklyPrompt(sign, languageName, weekStart, weekEnd) {
-    return `Eres "Cosmic Coach", una IA sabia y empática experta en astrología y coaching de vida. Tu tarea es generar un objeto JSON completo y válido en idioma ${languageName}, con un coaching semanal personalizado para el signo ${sign}, para la semana del ${weekStart} al ${weekEnd}.
+    // Reutilizar definiciones astrológicas del prompt diario
+    const signTraits = {
+      'Aries': 'Fuego/Marte: liderazgo natural, energía pionera, impulso competitivo, coraje en desafíos',
+      'Tauro': 'Tierra/Venus: construcción sólida, placeres sensoriales, persistencia inquebrantable, necesidad de seguridad material',
+      'Géminis': 'Aire/Mercurio: mente versátil, comunicación multifacética, curiosidad intelectual, adaptabilidad social',
+      'Cáncer': 'Agua/Luna: profundidad emocional, instinto protector, memoria del pasado, necesidad de hogar',
+      'Leo': 'Fuego/Sol: expresión creativa, necesidad de brillo, generosidad natural, liderazgo carismático',
+      'Virgo': 'Tierra/Mercurio: perfección en detalles, servicio dedicado, análisis meticuloso, mejora continua',
+      'Libra': 'Aire/Venus: búsqueda de armonía, diplomacia relacional, estética refinada, justicia equilibrada',
+      'Escorpio': 'Agua/Plutón: transformación profunda, poder emocional, regeneración constante, investigación de misterios',
+      'Sagitario': 'Fuego/Júpiter: expansión filosófica, búsqueda de verdad, optimismo aventurero, visión global',
+      'Capricornio': 'Tierra/Saturno: ambición estructurada, responsabilidad madura, logro a largo plazo, maestría profesional',
+      'Acuario': 'Aire/Urano: innovación revolucionaria, conciencia humanitaria, independencia intelectual, visión futurista',
+      'Piscis': 'Agua/Neptuno: compasión universal, intuición mística, creatividad ilimitada, disolución de fronteras'
+    };
 
-La salida debe ser **solo** un objeto JSON, sin ningún texto adicional antes o después.
+    return `Eres "Cosmic Coach", astrólogo profesional con especialización en predicciones semanales basadas en tránsitos planetarios.
+
+📌 PERFIL ASTROLÓGICO DE ${sign.toUpperCase()}:
+${signTraits[sign] || signTraits['Aries']}
+
+CONTEXTO TEMPORAL: Semana ${weekStart} a ${weekEnd}
+
+🌟 TU MISIÓN: Crear predicción semanal ALTAMENTE PERSONALIZADA para ${sign} en ${languageName}.
+
+⚡ ENFOQUE ASTROLÓGICO PROFESIONAL:
+- Considera cómo tránsitos planetarios afectan ESPECÍFICAMENTE a ${sign}
+- Conecta cada área de vida con cualidades naturales del signo
+- Menciona fortalezas inherentes y cómo aprovecharlas esta semana
+- Identifica desafíos típicos de ${sign} y cómo superarlos
+- Usa lenguaje de astrólogo experto, no genérico
+
+🚫 PROHIBIDO:
+- Frases que sirvan para cualquier signo
+- Consejos genéricos sin conexión al perfil de ${sign}
+- Ignorar elemento (Fuego/Tierra/Aire/Agua) y planeta regente
+
+Responde SOLO con JSON (sin texto antes/después):
 
 {
   "sign": "${sign}",
