@@ -35,10 +35,10 @@ class CronJobsService {
 
   /**
    * Schedule daily horoscope generation
-   * Runs every day at 6:00 AM
+   * Runs every day at 00:00 (midnight)
    */
   scheduleDailyGeneration() {
-    const job = cron.schedule('0 6 * * *', async () => {
+    const job = cron.schedule('0 0 * * *', async () => {
       console.log('🌟 Starting scheduled daily horoscope generation...');
       
       try {
@@ -97,7 +97,7 @@ class CronJobsService {
     // Start job only in production or if explicitly enabled
     if (this.isProduction || process.env.ENABLE_CRON_JOBS === 'true') {
       job.start();
-      console.log('📅 Daily generation cron job started (6:00 AM daily)');
+      console.log('📅 Daily generation cron job started (00:00 midnight daily)');
     } else {
       console.log('📅 Daily generation cron job created but not started (development mode)');
     }
@@ -105,10 +105,10 @@ class CronJobsService {
 
   /**
    * Schedule weekly horoscope generation
-   * Runs every Monday at 5:30 AM (30 minutes before daily)
+   * Runs every Monday at 23:30 (30 minutes before daily midnight generation)
    */
   scheduleWeeklyGeneration() {
-    const job = cron.schedule('30 5 * * 1', async () => {
+    const job = cron.schedule('30 23 * * 0', async () => {
       console.log('📅 Starting scheduled weekly horoscope generation...');
       
       try {
