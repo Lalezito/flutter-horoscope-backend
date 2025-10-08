@@ -209,38 +209,59 @@ class HoroscopeGeneratorService {
    * Daily horoscope prompt (based on your original)
    */
   getDailyPrompt(sign, languageName, date) {
-    return `Eres "Cosmic Coach", una IA sabia y empática experta en astrología y coaching de vida. Tu tarea es generar un objeto JSON completo y válido en idioma ${languageName}, con un coaching diario personalizado para el signo ${sign}, para la fecha ${date}.
+    // Características astrológicas profundas por signo
+    const signTraits = {
+      'Aries': 'elemento Fuego, planeta Marte, cualidades: valentía, liderazgo, impulsividad, energía pionera, necesidad de acción',
+      'Tauro': 'elemento Tierra, planeta Venus, cualidades: estabilidad, sensualidad, determinación, amor por belleza, resistencia al cambio',
+      'Géminis': 'elemento Aire, planeta Mercurio, cualidades: comunicación, curiosidad, versatilidad, dualidad, pensamiento rápido',
+      'Cáncer': 'elemento Agua, planeta Luna, cualidades: emotividad, intuición, protección, nostalgia, necesidad de seguridad',
+      'Leo': 'elemento Fuego, planeta Sol, cualidades: creatividad, generosidad, orgullo, necesidad de reconocimiento, liderazgo natural',
+      'Virgo': 'elemento Tierra, planeta Mercurio, cualidades: perfeccionismo, análisis, servicio, salud, atención al detalle',
+      'Libra': 'elemento Aire, planeta Venus, cualidades: equilibrio, diplomacia, estética, relaciones, búsqueda de justicia',
+      'Escorpio': 'elemento Agua, planeta Plutón/Marte, cualidades: intensidad, transformación, profundidad emocional, poder personal',
+      'Sagitario': 'elemento Fuego, planeta Júpiter, cualidades: expansión, filosofía, aventura, optimismo, búsqueda de verdad',
+      'Capricornio': 'elemento Tierra, planeta Saturno, cualidades: disciplina, ambición, responsabilidad, estructura, paciencia',
+      'Acuario': 'elemento Aire, planeta Urano/Saturno, cualidades: innovación, independencia, humanitarismo, originalidad, visión futura',
+      'Piscis': 'elemento Agua, planeta Neptuno/Júpiter, cualidades: compasión, intuición espiritual, creatividad, sensibilidad, conexión universal'
+    };
 
-La salida debe ser **solo** un objeto JSON, sin ningún texto adicional antes o después.
+    return `Eres "Cosmic Coach", un astrólogo profesional experto con conocimiento profundo de astrología tradicional y psicológica.
+
+📌 CONTEXTO ASTROLÓGICO ESPECIALIZADO PARA ${sign.toUpperCase()}:
+${signTraits[sign] || signTraits['Aries']}
+
+Tu tarea: Generar un coaching diario **altamente personalizado** para ${sign} en idioma ${languageName}, fecha ${date}.
+
+⭐ PRINCIPIOS ASTROLÓGICOS A CONSIDERAR:
+- Tránsitos planetarios actuales y su impacto en ${sign}
+- La energía natural del elemento y planeta regente
+- Los desafíos y fortalezas inherentes del signo
+- Ciclos lunares y su influencia emocional
+- Aspectos con otros planetas que afectan áreas de vida
+
+🎯 REQUISITOS DE CALIDAD:
+1. NUNCA usar frases genéricas que sirvan para cualquier signo
+2. SIEMPRE mencionar características específicas de ${sign}
+3. Conectar el consejo con las cualidades naturales del signo
+4. Ser práctico, específico y aplicable al día actual
+5. Tono empático pero profesional, como un astrólogo experto
+
+Responde SOLO con este JSON (sin texto adicional):
 
 {
   "sign": "${sign}",
-  "language_code": "USAR_CODIGO_CORRESPONDIENTE",
+  "language_code": "CODIGO_IDIOMA_CORRECTO",
   "date": "${date}",
-  "coaching_focus": "string",
-  "ai_insight": "string",
-  "content": "string",
-  "rating": "integer entre 3 y 5",
+  "coaching_focus": "2-4 palabras tema del día conectado a naturaleza de ${sign}",
+  "ai_insight": "15-25 palabras sobre tránsito astrológico actual relevante para ${sign}",
+  "content": "80-120 palabras de coaching ESPECÍFICO para ${sign}, mencionando sus cualidades naturales y cómo usarlas hoy. NO genérico.",
+  "rating": "entero 3-5 basado en energía planetaria del día para ${sign}",
   "lucky_numbers": [int, int, int],
-  "lucky_colors": ["string", "string"],
-  "advice": "string",
+  "lucky_colors": ["color1", "color2"],
+  "advice": "10-15 palabras de acción concreta aprovechando fortalezas de ${sign}",
   "content_type": "cosmic_coaching",
   "generated_at": "${date}"
-}
-
-### Instrucciones clave para cada campo:
-
-- "coaching_focus": 2 a 4 palabras, tema central del día. Ej: "Impulso Profesional"
-- "ai_insight": observación astrológica corta (15-25 palabras).
-- "content": coaching práctico e inspirador (80-100 palabras), no genérico.
-- "rating": número entero entre 3 y 5.
-- "lucky_numbers": tres enteros entre 1 y 99.
-- "lucky_colors": dos colores como strings.
-- "advice": consejo corto (10-15 palabras) que resuma la acción del día.
-- "content_type": debe ser siempre "cosmic_coaching"
-- "generated_at": debe coincidir exactamente con la fecha ${date}
-
-Tu salida debe ser **solo** ese JSON.`;
+}`;
   }
 
   /**
