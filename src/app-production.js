@@ -102,7 +102,7 @@ app.get('/health', (req, res) => {
         hasFirebase: !!process.env.FIREBASE_PROJECT_ID
       },
       uptime: process.uptime(),
-      version: '2.1.0-production'
+      version: '2.1.1-production-gpt4omini'
     };
 
     res.json(health);
@@ -120,7 +120,7 @@ app.get('/ping', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: '2.1.0-production'
+    version: '2.1.1-production-gpt4omini'
   });
 });
 
