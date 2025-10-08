@@ -141,7 +141,7 @@ class HoroscopeGeneratorService {
     
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini', // gpt-4o-mini: más rápido y barato, soporta json_object
         messages: [
           { role: 'system', content: prompt },
           { role: 'user', content: `Generate daily horoscope for ${sign} in ${language.name} for ${date}` }
@@ -179,7 +179,7 @@ class HoroscopeGeneratorService {
     
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini', // gpt-4o-mini: más rápido y barato, soporta json_object
         messages: [
           { role: 'system', content: prompt },
           { role: 'user', content: `Generate weekly horoscope for ${sign} in ${language.name} for week ${weekStart} to ${weekEnd}` }
