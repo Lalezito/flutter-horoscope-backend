@@ -92,7 +92,7 @@ class GoalPlannerService {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert life coach and astrologer who creates personalized SMART goals. Return responses in valid JSON format only.'
+            content: this._getSystemPrompt(languageCode)
           },
           {
             role: 'user',
@@ -144,12 +144,47 @@ class GoalPlannerService {
   }
 
   /**
+   * Get language-specific system prompt for AI
+   */
+  _getSystemPrompt(languageCode) {
+    const languageInstructions = {
+      'es': 'Debes responder COMPLETAMENTE en español. Todos los textos, títulos, descripciones y mensajes deben estar en español. NO uses nombres fantasiosos como "Rally\'s Ritual", "Golems", etc. Usa nombres simples, directos y prácticos en español.',
+      'en': 'You must respond COMPLETELY in English. All text, titles, descriptions and messages must be in English. DO NOT use fantasy names like "Rally\'s Ritual", "Golems", etc. Use simple, direct, practical names in English.',
+      'pt': 'Você deve responder COMPLETAMENTE em português. Todos os textos, títulos, descrições e mensagens devem estar em português. NÃO use nomes fantasiosos como "Rally\'s Ritual", "Golems", etc. Use nomes simples, diretos e práticos em português.',
+      'fr': 'Vous devez répondre COMPLÈTEMENT en français. Tous les textes, titres, descriptions et messages doivent être en français. N\'utilisez PAS de noms fantaisistes comme "Rally\'s Ritual", "Golems", etc. Utilisez des noms simples, directs et pratiques en français.',
+    };
+
+    const instruction = languageInstructions[languageCode] || languageInstructions['en'];
+
+    return `You are an expert life coach and astrologer who creates personalized SMART goals. Return responses in valid JSON format only.
+
+IMPORTANT LANGUAGE REQUIREMENT:
+${instruction}
+
+NAMING GUIDELINES:
+- Use practical, realistic goal names (e.g., "Mejorar mi rutina matutina", "Build morning routine")
+- Avoid mystical or fantasy terminology
+- Keep it simple and actionable
+- Names should be clear and professional`;
+  }
+
+  /**
    * Build AI prompt for goal generation
    */
   _buildGoalPrompt(params) {
     const { zodiacSign, traits, objective, emotionalState, focusArea, timeframe, languageCode } = params;
 
-    return `Generate a personalized SMART goal plan for a ${zodiacSign} user with the following profile:
+    const languageNames = {
+      'es': 'español',
+      'en': 'English',
+      'pt': 'português',
+      'fr': 'français'
+    };
+    const languageName = languageNames[languageCode] || 'English';
+
+    return `IMPORTANT: Respond ENTIRELY in ${languageName}. All content must be in ${languageName}.
+
+Generate a personalized SMART goal plan for a ${zodiacSign} user with the following profile:
 
 **User Profile:**
 - Zodiac Sign: ${zodiacSign} (Strength: ${traits.strength}, Challenge: ${traits.challenge}, Style: ${traits.style})
@@ -157,7 +192,6 @@ class GoalPlannerService {
 - Current Emotional State: ${emotionalState}
 - Focus Area: ${focusArea}
 - Timeframe: ${timeframe}
-- Language: ${languageCode}
 
 **Task:** Create a comprehensive goal plan with the following structure (return as JSON):
 
@@ -210,7 +244,7 @@ class GoalPlannerService {
   "motivationalMessage": "Inspiring message personalized for ${zodiacSign} speaking to their ${traits.strength}"
 }
 
-Make it deeply personal, actionable, and aligned with ${zodiacSign} characteristics. Language: ${languageCode}`;
+Make it deeply personal, actionable, and aligned with ${zodiacSign} characteristics.`;
   }
 
   /**
