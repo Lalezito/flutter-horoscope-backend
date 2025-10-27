@@ -179,43 +179,78 @@ app.use((req, res, next) => {
 // Apply adaptive rate limiting to all routes - disabled for Railway stability
 // app.use(adaptiveRateLimit(200)); // 200 requests per minute base limit
 
-// Enhanced health check endpoints - simplified for Railway
-app.get('/health', (req, res) => {
+// Enhanced health check endpoints - comprehensive monitoring
+app.get('/health', async (req, res) => {
   try {
     const firebaseStatus = firebaseService.getStatus();
     const cacheStats = cacheService.getStats();
+    const redisHealth = await redisService.getHealthStatus();
+
+    // Check database connection
+    const db = require('./config/db');
+    let databaseStatus = 'unknown';
+    let databaseConnected = false;
+
+    try {
+      const dbTest = await Promise.race([
+        db.testConnection(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+      ]);
+      databaseStatus = dbTest ? 'connected' : 'disconnected';
+      databaseConnected = dbTest;
+    } catch (error) {
+      databaseStatus = error.message === 'timeout' ? 'timeout' : 'error';
+      databaseConnected = false;
+    }
 
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
+      version: '2.1.0',
       services: {
+        api: 'operational',
+        database: databaseStatus,
         firebase: {
-          initialized: firebaseStatus.initialized,
+          status: firebaseStatus.initialized ? 'initialized' : 'mock',
           hasServiceAccount: firebaseStatus.hasServiceAccount
         },
         cache: {
-          mode: cacheStats.mode
+          mode: cacheStats.mode,
+          status: 'operational'
+        },
+        redis: {
+          status: redisHealth.connected ? 'connected' : 'fallback',
+          mode: redisHealth.mode
         }
       },
-      uptime: process.uptime(),
-      version: '2.0.0'
+      uptime: Math.floor(process.uptime()),
+      environment: process.env.NODE_ENV || 'development',
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        unit: 'MB'
+      }
     };
 
-    res.json(health);
+    // Set response status based on critical services
+    const statusCode = databaseConnected ? 200 : 503;
+    res.status(statusCode).json(health);
+
   } catch (error) {
     logger.logError(error, { endpoint: 'health_check' });
     res.status(500).json({
       status: 'unhealthy',
       error: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      version: '2.1.0'
     });
   }
 });
 
-app.get('/ping', (req, res) => res.json({ 
-  status: 'ok', 
+app.get('/ping', (req, res) => res.json({
+  status: 'ok',
   timestamp: new Date().toISOString(),
-  version: '2.0.0'
+  version: '2.1.0'
 }));
 
 // API routes with appropriate rate limiting
@@ -243,12 +278,13 @@ app.use("/webhook", endpointLimits.webhook);
 app.get('/api/docs', (req, res) => {
   res.json({
     name: 'Zodiac Backend API',
-    version: '2.0.0',
+    version: '2.1.0',
     description: 'Enhanced horoscope backend with weekly predictions and production features',
     endpoints: {
       health: {
-        'GET /health': 'System health check',
-        'GET /api/admin/health': 'Comprehensive health check (admin)'
+        'GET /health': 'Comprehensive system health check with database, cache, Redis, Firebase status',
+        'GET /ping': 'Simple ping endpoint for quick availability check',
+        'GET /api/admin/health': 'Detailed admin health check (requires admin_key)'
       },
       horoscopes: {
         'GET /api/coaching/getDailyHoroscope': 'Get daily horoscope',
