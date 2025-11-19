@@ -241,6 +241,55 @@ class AICoachService {
   /**
    * 💬 SEND MESSAGE AND GET AI RESPONSE
    * Main chat functionality with AI response generation
+   *
+   * @param {string} sessionId - Unique session identifier
+   * @param {string} message - User's message content
+   * @param {string} userId - User identifier
+   * @param {Object} options - Optional parameters
+   * @param {string} [options.zodiacSign] - User's zodiac sign (e.g., 'Leo', 'Aries')
+   * @param {string} [options.language] - Language code (e.g., 'es', 'en', 'de', 'fr', 'it', 'pt')
+   *
+   * @returns {Promise<Object>} Response object
+   * @returns {boolean} return.success - Operation success status
+   * @returns {Object} return.response - AI response data
+   * @returns {string} return.response.content - AI-generated response text
+   * @returns {string} return.response.sessionId - Session identifier
+   * @returns {string} return.response.messageId - Unique message identifier
+   * @returns {string} return.response.model - AI model used (e.g., 'gpt-4-turbo')
+   * @returns {number} return.response.tokensUsed - Total tokens consumed
+   * @returns {number} return.response.responseTime - Response time in milliseconds
+   * @returns {number} return.response.confidenceScore - AI confidence score (0-1)
+   * @returns {string} return.response.persona - Active AI persona
+   * @returns {string} return.response.timestamp - ISO timestamp
+   * @returns {Object|null} return.response.horoscopeData - Daily horoscope metadata
+   * @returns {string} return.response.horoscopeData.energyLevel - Energy level ('high'|'medium'|'low'|'balanced')
+   * @returns {string} return.response.horoscopeData.luckyColors - Comma-separated lucky colors
+   * @returns {string} return.response.horoscopeData.favorableTimes - Time ranges (e.g., '14:00-16:00, 20:00-22:00')
+   * @returns {string} return.response.horoscopeData.date - Horoscope date (ISO format)
+   * @returns {string} [return.response.horoscopeData.loveFocus] - Love guidance
+   * @returns {string} [return.response.horoscopeData.careerFocus] - Career guidance
+   * @returns {string} [return.response.horoscopeData.wellnessFocus] - Wellness guidance
+   * @returns {Object} return.usage - Usage statistics
+   * @returns {number} return.usage.remainingMessages - Messages remaining in current period
+   * @returns {string} return.usage.resetTime - Usage reset timestamp
+   *
+   * @example
+   * const response = await sendMessage(
+   *   'session-123',
+   *   '¿Cómo está mi día?',
+   *   'user-456',
+   *   { zodiacSign: 'Leo', language: 'es' }
+   * );
+   *
+   * // Response includes personalized horoscope data:
+   * // response.response.horoscopeData = {
+   * //   energyLevel: 'high',
+   * //   luckyColors: 'dorado, púrpura',
+   * //   favorableTimes: '14:00-16:00, 20:00-22:00',
+   * //   loveFocus: 'Comunicación abierta trae armonía',
+   * //   careerFocus: 'Excelente día para presentar proyectos',
+   * //   wellnessFocus: 'Ejercicio vigoroso canaliza tu energía'
+   * // }
    */
   async sendMessage(sessionId, message, userId, options = {}) {
     const startTime = Date.now();
@@ -328,7 +377,9 @@ class AICoachService {
           responseTime: totalResponseTime,
           confidenceScore: aiResponse.confidenceScore,
           persona: sessionData.ai_coach_persona,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          // ✨ NEW: Include horoscope data for frontend display
+          horoscopeData: aiResponse.horoscopeData
         },
         usage: {
           remainingMessages: Math.max(0, usageCheck.limit - usageCheck.used - 1),
@@ -569,6 +620,7 @@ class AICoachService {
 
   /**
    * 🤖 PRIVATE: Generate AI response using OpenAI
+   * ✨ NEW: Now includes personalized astrological data
    */
   async _generateAIResponse(sessionData, userMessage, options = {}) {
     const startTime = Date.now();
@@ -576,7 +628,19 @@ class AICoachService {
     try {
       const persona = this.personas[sessionData.ai_coach_persona];
       const conversationContext = JSON.parse(sessionData.conversation_context || '{}');
-      
+
+      // ✨ Get horoscope data first (for metadata)
+      const zodiacSign = options.zodiacSign || sessionData.zodiac_sign || 'Leo';
+      const language = options.language || sessionData.language_code || 'en';
+      const horoscopeData = await this._getDailyHoroscope(zodiacSign, language);
+
+      // ✨ NEW: Build personalized astrological prompt
+      const personalizedPrompt = await this._buildAstrologicalPrompt(
+        persona.systemPrompt,
+        zodiacSign,
+        language
+      );
+
       // Build conversation history for context
       const recentMessages = conversationContext.messageHistory || [];
       const contextMessages = recentMessages.slice(-this.config.maxContextMessages);
@@ -584,7 +648,7 @@ class AICoachService {
       const messages = [
         {
           role: 'system',
-          content: persona.systemPrompt + '\n\nImportant: Keep responses under 500 words and focus on practical, actionable advice. Be warm, supportive, and encouraging.'
+          content: personalizedPrompt + '\n\nImportant: Keep responses under 500 words and focus on practical, actionable advice. Be warm, supportive, and encouraging.'
         },
         ...contextMessages,
         {
@@ -613,7 +677,17 @@ class AICoachService {
         tokensUsed,
         responseTime,
         confidenceScore: 0.85, // Default confidence score
-        messageId: completion.id
+        messageId: completion.id,
+        // ✨ NEW: Include horoscope data for frontend display
+        horoscopeData: horoscopeData ? {
+          energyLevel: horoscopeData.energy_level,
+          luckyColors: horoscopeData.lucky_colors,
+          favorableTimes: horoscopeData.favorable_times,
+          date: horoscopeData.date,
+          loveFocus: horoscopeData.love_focus,
+          careerFocus: horoscopeData.career_focus,
+          wellnessFocus: horoscopeData.wellness_focus
+        } : null
       };
 
     } catch (error) {
@@ -626,10 +700,17 @@ class AICoachService {
       // Try fallback model
       if (error.code === 'model_overloaded' || error.code === 'rate_limit_exceeded') {
         try {
+          // ✅ FIX: Fallback también debe usar personalización astrológica
+          const fallbackPrompt = await this._buildAstrologicalPrompt(
+            this.personas[sessionData.ai_coach_persona].systemPrompt,
+            options.zodiacSign || sessionData.zodiac_sign || 'Leo',
+            options.language || sessionData.language_code || 'en'
+          );
+
           const fallbackCompletion = await this.openai.chat.completions.create({
             model: this.config.fallbackModel,
             messages: [
-              { role: 'system', content: this.personas[sessionData.ai_coach_persona].systemPrompt },
+              { role: 'system', content: fallbackPrompt },
               { role: 'user', content: userMessage }
             ],
             max_tokens: 300,
@@ -642,7 +723,17 @@ class AICoachService {
             model: this.config.fallbackModel,
             tokensUsed: fallbackCompletion.usage.total_tokens,
             responseTime: Date.now() - startTime,
-            confidenceScore: 0.75
+            confidenceScore: 0.75,
+            // ✨ NEW: Include horoscope data in fallback too
+            horoscopeData: horoscopeData ? {
+              energyLevel: horoscopeData.energy_level,
+              luckyColors: horoscopeData.lucky_colors,
+              favorableTimes: horoscopeData.favorable_times,
+              date: horoscopeData.date,
+              loveFocus: horoscopeData.love_focus,
+              careerFocus: horoscopeData.career_focus,
+              wellnessFocus: horoscopeData.wellness_focus
+            } : null
           };
 
         } catch (fallbackError) {
@@ -656,6 +747,182 @@ class AICoachService {
         message: 'Unable to generate AI response at this time'
       };
     }
+  }
+
+  /**
+   * ✨ NEW: Get daily horoscope from database with Redis caching
+   *
+   * @param {string} zodiacSign - User's zodiac sign (e.g., 'leo')
+   * @param {string} language - Language code (e.g., 'es', 'en')
+   * @returns {Promise<Object|null>} Horoscope data or null if not found
+   */
+  async _getDailyHoroscope(zodiacSign, language) {
+    try {
+      // Normalize zodiac sign to lowercase
+      const sign = zodiacSign.toLowerCase();
+      const today = new Date().toISOString().split('T')[0]; // '2025-11-19'
+
+      // Build Redis cache key
+      const cacheKey = `daily_horoscope:${sign}:${language}:${today}`;
+
+      // Try to get from cache first
+      const cached = await redisService.get(cacheKey);
+
+      if (cached) {
+        logger.logInfo('Daily horoscope retrieved from cache', {
+          sign,
+          language,
+          date: today
+        });
+        return JSON.parse(cached);
+      }
+
+      // Not in cache, query database
+      logger.logInfo('Querying database for daily horoscope', {
+        sign,
+        language,
+        date: today
+      });
+
+      const query = `
+        SELECT
+          id,
+          sign,
+          date,
+          language_code,
+          content,
+          energy_level,
+          lucky_colors,
+          favorable_times,
+          love_focus,
+          career_focus,
+          wellness_focus
+        FROM daily_horoscopes
+        WHERE date = CURRENT_DATE
+          AND sign ILIKE $1
+          AND language_code = $2
+        LIMIT 1
+      `;
+
+      const result = await db.query(query, [sign, language]);
+
+      if (result.rows.length === 0) {
+        logger.logWarning('No horoscope found for today', {
+          sign,
+          language,
+          date: today
+        });
+        return null;
+      }
+
+      const horoscope = result.rows[0];
+
+      // Cache for 1 hour (3600 seconds)
+      await redisService.setex(cacheKey, 3600, JSON.stringify(horoscope));
+
+      logger.logInfo('Daily horoscope cached successfully', {
+        sign,
+        language,
+        cacheKey,
+        expiresIn: '1 hour'
+      });
+
+      return horoscope;
+
+    } catch (error) {
+      logger.logError(error, {
+        context: 'get_daily_horoscope',
+        zodiacSign,
+        language
+      });
+      return null; // Return null on error, will use generic prompt
+    }
+  }
+
+  /**
+   * ✨ NEW: Build personalized astrological prompt with daily horoscope data
+   *
+   * @param {string} basePrompt - Base system prompt from persona
+   * @param {string} zodiacSign - User's zodiac sign
+   * @param {string} language - Language code
+   * @returns {Promise<string>} Enriched prompt with astrological context
+   */
+  async _buildAstrologicalPrompt(basePrompt, zodiacSign, language) {
+    // Get today's horoscope
+    const horoscope = await this._getDailyHoroscope(zodiacSign, language);
+
+    // If no horoscope found, return base prompt
+    if (!horoscope) {
+      logger.logWarning('No horoscope available, using generic prompt', {
+        zodiacSign,
+        language
+      });
+      return basePrompt;
+    }
+
+    // Build enriched prompt with astrological context
+    const astrologicalPrompt = `${basePrompt}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ ASTROLOGICAL CONTEXT FOR TODAY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📅 Date: ${horoscope.date}
+♈ User's Zodiac Sign: ${zodiacSign.toUpperCase()}
+⚡ Energy Level: ${horoscope.energy_level || 'Balanced'}
+🎨 Lucky Colors: ${horoscope.lucky_colors || 'Not specified'}
+⏰ Favorable Times: ${horoscope.favorable_times || 'Throughout the day'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📜 TODAY'S COSMIC GUIDANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${horoscope.content}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 KEY FOCUS AREAS FOR TODAY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❤️ LOVE & RELATIONSHIPS:
+${horoscope.love_focus || 'Focus on authentic communication and emotional honesty. Today is favorable for deepening connections.'}
+
+💼 CAREER & AMBITIONS:
+${horoscope.career_focus || 'Steady progress is favored. Focus on consistency rather than dramatic changes. Collaborate with others.'}
+
+🌿 WELLNESS & ENERGY:
+${horoscope.wellness_focus || 'Balance is key. Take time for self-care and listen to your body\'s needs. Meditation or gentle exercise recommended.'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ IMPORTANT COACHING INSTRUCTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. **Reference Astrological Context**: Naturally mention the user's zodiac sign
+   and today's cosmic energies in your response. Make it feel personal.
+
+2. **Align Advice with Horoscope**: Your coaching should align with and enhance
+   the guidance provided in today's horoscope. Reference specific themes.
+
+3. **Use Favorable Times**: When suggesting actions, mention the favorable times
+   if relevant (e.g., "This afternoon between 2-4 PM is ideal for...").
+
+4. **Acknowledge Energy Level**: Consider today's energy level when giving advice.
+   High energy = bold actions. Low energy = rest and reflection.
+
+5. **Be Authentically Astrological**: This is a PREMIUM feature. Users are paying
+   for personalized astrological guidance, not generic life coaching.
+
+REMEMBER: You're not just a life coach - you're a COSMIC LIFE COACH who blends
+psychology, practical wisdom, and astrological insight. Make every response feel
+uniquely tailored to this ${zodiacSign} user on this specific day.`;
+
+    logger.logInfo('Built personalized astrological prompt', {
+      zodiacSign,
+      language,
+      hasHoroscope: true,
+      energyLevel: horoscope.energy_level
+    });
+
+    return astrologicalPrompt;
   }
 
   /**
