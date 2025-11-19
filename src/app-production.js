@@ -102,7 +102,7 @@ app.get('/health', (req, res) => {
         hasFirebase: !!process.env.FIREBASE_PROJECT_ID
       },
       uptime: process.uptime(),
-      version: '2.1.1-production-gpt4omini'
+      version: '2.2.0'
     };
 
     res.json(health);
@@ -120,7 +120,7 @@ app.get('/ping', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: '2.1.1-production-gpt4omini'
+    version: '2.2.0'
   });
 });
 
@@ -128,7 +128,7 @@ app.get('/ping', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     service: 'Zodiac Backend API - Production',
-    version: '2.1.0-production',
+    version: '2.2.0',
     status: 'running',
     endpoints: {
       health: '/health',
@@ -220,7 +220,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Start server
 app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`🚀 Zodiac Backend Production v2.1.0 running on port ${PORT}`);
+  console.log(`🚀 Zodiac Backend Production v2.2.0 running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Health: http://localhost:${PORT}/health`);
 
