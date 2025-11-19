@@ -206,7 +206,7 @@ app.get('/health', async (req, res) => {
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: '2.1.0',
+      version: '2.2.0',
       services: {
         api: 'operational',
         database: databaseStatus,
@@ -242,7 +242,7 @@ app.get('/health', async (req, res) => {
       status: 'unhealthy',
       error: error.message,
       timestamp: new Date().toISOString(),
-      version: '2.1.0'
+      version: '2.2.0'
     });
   }
 });
@@ -250,7 +250,7 @@ app.get('/health', async (req, res) => {
 app.get('/ping', (req, res) => res.json({
   status: 'ok',
   timestamp: new Date().toISOString(),
-  version: '2.1.0'
+  version: '2.2.0'
 }));
 
 // API routes with appropriate rate limiting
@@ -278,7 +278,7 @@ app.use("/webhook", endpointLimits.webhook);
 app.get('/api/docs', (req, res) => {
   res.json({
     name: 'Zodiac Backend API',
-    version: '2.1.0',
+    version: '2.2.0',
     description: 'Enhanced horoscope backend with weekly predictions and production features',
     endpoints: {
       health: {

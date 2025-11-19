@@ -1,6 +1,6 @@
 {
   "name": "flutter-horoscope-backend",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Zodiac Backend API - Production ready with Firebase integration",
   "main": "src/app.js",
   "scripts": {
