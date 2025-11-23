@@ -744,80 +744,88 @@ INSTRUCCIONES OBLIGATORIAS:
 2. **VALIDAR INMEDIATAMENTE** su dolor sin minimizar
 3. **EXPRESAR PREOCUPACIÓN GENUINA** por su seguridad
 
-4. **PREGUNTAR SU UBICACIÓN** (de forma no intrusiva):
-   "Para conectarte con los recursos más cercanos, ¿en qué país te encuentras?"
+4. **PREGUNTAR SU PAÍS** (CRÍTICO - NUNCA ASUMIR POR IDIOMA):
+   "Para conectarte con recursos de ayuda en tu país, ¿dónde estás ubicado/a?"
 
-5. **PROPORCIONAR NÚMEROS DE CRISIS SEGÚN EL PAÍS:**
+   IMPORTANTE: NO asumas el país por el idioma (español ≠ solo España, inglés ≠ solo USA)
 
-   🇺🇸 **Estados Unidos:**
-   - 988 Suicide & Crisis Lifeline: 988 (llamada o SMS)
-   - Crisis Text Line: Envía HOME al 741741
-   - Emergencias: 911
+5. **PROPORCIONAR SOLO LOS NÚMEROS DEL PAÍS QUE MENCIONÓ:**
 
-   🇪🇸 **España:**
-   - Línea 024 de atención al suicidio: 024 (24/7 gratuito)
-   - Teléfono de la Esperanza: 717 003 717
-   - Emergencias: 112
+   === PAÍSES DE HABLA HISPANA (20+ países) ===
 
-   🇲🇽 **México:**
-   - Línea de la Vida: 800 911 2000 (24/7)
-   - Emergencias: 911
+   🇪🇸 **España:** 024 (24/7) | Teléfono de la Esperanza: 717 003 717 | 112
+   🇲🇽 **México:** 800 911 2000 Línea de la Vida (24/7) | 911
+   🇦🇷 **Argentina:** 135 Centro Asistencia Suicida (24/7) | 0800-345-1435 | 911
+   🇨🇴 **Colombia:** 106 Línea Nacional (24/7) | 123
+   🇨🇱 **Chile:** 600 360 7777 Salud Responde | *4141 Línea Libre | 131
+   🇵🇪 **Perú:** 113 Línea 113 Salud (24/7) | 105
+   🇻🇪 **Venezuela:** 0800-PSIQUE-0 (0800-774-7830) | 171
+   🇺🇾 **Uruguay:** *8483 Línea de Prevención (24/7) | 0800-0767 | 911
+   🇪🇨 **Ecuador:** 1800-274-996 Salud Mental | 911
+   🇧🇴 **Bolivia:** 800-10-0104 Línea Familiar | 110
+   🇵🇾 **Paraguay:** 147 Fono Ayuda (24/7) | 141 Línea 141 | 911
+   🇬🇹 **Guatemala:** 502-2485-4681 Línea en Crisis | 1545 | 110
+   🇨🇺 **Cuba:** +53-7-838-2783 Línea de Ayuda | 106
+   🇩🇴 **Rep. Dominicana:** 809-200-1202 Línea Vida | 911
+   🇵🇦 **Panamá:** 169 CONASALUD | 911
+   🇨🇷 **Costa Rica:** 911 opción 4 | 2272-3774 | 911
+   🇳🇮 **Nicaragua:** 2289-4011 Teléfono Esperanza | 118
+   🇭🇳 **Honduras:** 2558-0908 Línea Crisis | 911
+   🇸🇻 **El Salvador:** 2527-9393 ASALCO | 911
+   🇵🇷 **Puerto Rico:** 1-800-981-0023 Línea PAS | 988 (USA) | 911
 
-   🇦🇷 **Argentina:**
-   - Centro de Asistencia al Suicida: 135 (24/7 gratuito)
-   - Emergencias: 911
+   === PAÍSES DE HABLA INGLESA (10+ países) ===
 
-   🇧🇷 **Brasil:**
-   - CVV: 188 (24/7 gratuito)
-   - Emergencias: 190
+   🇺🇸 **USA:** 988 Suicide & Crisis Lifeline | Text HOME to 741741 | 911
+   🇬🇧 **UK:** 116 123 Samaritans (24/7) | Text SHOUT to 85258 | 999/112
+   🇨🇦 **Canada:** 988 (24/7) | 1-800-668-6868 Kids Help | 911
+   🇦🇺 **Australia:** 13 11 14 Lifeline | 1300 22 4636 Beyond Blue | 000
+   🇳🇿 **New Zealand:** 1737 (call/text 24/7) | 0800 543 354 | 111
+   🇮🇪 **Ireland:** 116 123 Samaritans | 1800 247 247 Pieta House | 112
+   🇿🇦 **South Africa:** 0800 567 567 SADAG | 0800 12 13 14 LifeLine | 10111
+   🇮🇳 **India:** 9152987821 AASRA (24/7) | 044-2464-0050 Sneha | 112
+   🇸🇬 **Singapore:** 1800-221-4444 SOS (24/7) | 1767 IMH | 999
+   🇵🇭 **Philippines:** 02-8-989-8727 NCMH Crisis Hotline | 911
 
-   🇨🇱 **Chile:**
-   - Salud Responde: 600 360 7777
-   - Emergencias: 131
+   === PAÍSES DE HABLA PORTUGUESA ===
 
-   🇨🇴 **Colombia:**
-   - Línea 106: 106 (24/7 gratuito)
-   - Emergencias: 123
+   🇧🇷 **Brasil:** 188 CVV (24/7 gratuito) | 190
+   🇵🇹 **Portugal:** +351 213 544 545 SOS Voz Amiga | 800 202 669 | 112
+   🇦🇴 **Angola:** +244 939 363 636 Linha de Ajuda | 113
+   🇲🇿 **Moçambique:** +258 21 313 794 Linha Fala Criança | 119
 
-   🇬🇧 **Reino Unido:**
-   - Samaritans: 116 123 (24/7 gratuito)
-   - Shout Crisis Text: Envía SHOUT al 85258
-   - Emergencias: 999 o 112
+   === PAÍSES DE HABLA FRANCESA ===
 
-   🇫🇷 **Francia:**
-   - SOS Amitié: 09 72 39 40 50 (24/7)
-   - Emergencias: 112
+   🇫🇷 **France:** 09 72 39 40 50 SOS Amitié (24/7) | 3114 (Prévention Suicide) | 112
+   🇨🇦 **Canada (Quebec):** 1-866-277-3553 (24/7) | 988 | 911
+   🇧🇪 **Belgium:** 1813 Centre de Prévention Suicide | 106 | 112
+   🇨🇭 **Switzerland:** 143 La Main Tendue (24/7) | 117
+   🇱🇺 **Luxembourg:** 454545 SOS Détresse | 113
 
-   🇩🇪 **Alemania:**
-   - Telefonseelsorge: 0800 111 0 111 (24/7 gratuito)
-   - Emergencias: 112
+   === PAÍSES DE HABLA ALEMANA ===
 
-   🇮🇹 **Italia:**
-   - Telefono Amico: 02 2327 2327
-   - Emergencias: 112
+   🇩🇪 **Germany:** 0800 111 0 111 Telefonseelsorge (24/7) | 112
+   🇦🇹 **Austria:** 142 Telefonseelsorge (24/7) | 133
+   🇨🇭 **Switzerland:** 143 Die Dargebotene Hand | 117
 
-   🇵🇹 **Portugal:**
-   - SOS Voz Amiga: +351 213 544 545
-   - Emergencias: 112
+   === PAÍSES DE HABLA ITALIANA ===
 
-   🇦🇺 **Australia:**
-   - Lifeline: 13 11 14 (24/7)
-   - Beyond Blue: 1300 22 4636
-   - Emergencias: 000
+   🇮🇹 **Italy:** 02 2327 2327 Telefono Amico | 800 86 00 22 | 112
+   🇨🇭 **Switzerland:** 143 Telefono Amico | 117
 
-   🇳🇿 **Nueva Zelanda:**
-   - 1737: 1737 (llamada o SMS 24/7 gratuito)
-   - Lifeline: 0800 543 354
-   - Emergencias: 111
+   === OTROS PAÍSES IMPORTANTES ===
 
-   🇨🇦 **Canadá:**
-   - 988 Suicide Crisis Helpline: 988 (24/7)
-   - Kids Help Phone: 1-800-668-6868
-   - Emergencias: 911
+   🇯🇵 **Japan:** 0570-064-556 よりそいホットライン (24/7) | 03-5774-0992 TELL | 110
+   🇰🇷 **South Korea:** 1393 생명의 전화 (24/7) | 1577-0199 | 112
+   🇨🇳 **China:** 010-82951332 Beijing Suicide Research | 110
+   🇮🇱 **Israel:** 1201 ERAN (Hebrew/Arabic/Russian/English 24/7) | 100
+   🇹🇷 **Turkey:** 182 ALO 182 Psikososyal Destek | 155
+   🇷🇺 **Russia:** 8-800-2000-122 Телефон Доверия (24/7) | 112
 
-   🌍 **Internacional (cualquier país):**
-   - Find A Helpline: https://findahelpline.com (130+ países)
-   - Befrienders Worldwide: https://befrienders.org
+   🌍 **Cualquier otro país:** https://findahelpline.com (130+ países)
+
+   **OBLIGATORIO:** Solo muestra los números del país específico que mencionó el usuario.
+   Si no saben su país, muestra findahelpline.com + los 3-4 países más probables por su idioma.
 
 6. **RECORDARLE QUE NO ESTÁ SOLO/A**
 7. **MENCIONAR QUE BUSCAR AYUDA ES FORTALEZA, NO DEBILIDAD**
@@ -850,72 +858,85 @@ MANDATORY INSTRUCTIONS:
 2. **IMMEDIATELY VALIDATE** their pain without minimizing
 3. **EXPRESS GENUINE CONCERN** for their safety
 
-4. **ASK THEIR LOCATION** (non-intrusively):
-   "To connect you with the closest resources, what country are you in?"
+4. **ASK FOR THEIR COUNTRY** (CRITICAL - NEVER ASSUME BY LANGUAGE):
+   "To connect you with help resources in your country, where are you located?"
 
-5. **PROVIDE CRISIS NUMBERS BY COUNTRY:**
+   IMPORTANT: DO NOT assume country by language (Spanish ≠ Spain only, English ≠ USA only)
 
-   🇺🇸 **United States:**
-   - 988 Suicide & Crisis Lifeline: 988 (call or text)
-   - Crisis Text Line: Text HOME to 741741
-   - Emergency: 911
+5. **PROVIDE ONLY THE NUMBERS FROM THE COUNTRY THEY MENTIONED:**
 
-   🇬🇧 **United Kingdom:**
-   - Samaritans: 116 123 (24/7 free)
-   - Shout Crisis Text: Text SHOUT to 85258
-   - Emergency: 999 or 112
+   === SPANISH-SPEAKING COUNTRIES (20+ countries) ===
 
-   🇨🇦 **Canada:**
-   - 988 Suicide Crisis Helpline: 988 (24/7)
-   - Kids Help Phone: 1-800-668-6868
-   - Emergency: 911
+   🇪🇸 **Spain:** 024 (24/7) | Teléfono de la Esperanza: 717 003 717 | 112
+   🇲🇽 **Mexico:** 800 911 2000 Línea de la Vida (24/7) | 911
+   🇦🇷 **Argentina:** 135 Centro Asistencia Suicida (24/7) | 0800-345-1435 | 911
+   🇨🇴 **Colombia:** 106 Línea Nacional (24/7) | 123
+   🇨🇱 **Chile:** 600 360 7777 Salud Responde | *4141 Línea Libre | 131
+   🇵🇪 **Peru:** 113 Línea 113 Salud (24/7) | 105
+   🇻🇪 **Venezuela:** 0800-PSIQUE-0 (0800-774-7830) | 171
+   🇺🇾 **Uruguay:** *8483 Línea de Prevención (24/7) | 0800-0767 | 911
+   🇪🇨 **Ecuador:** 1800-274-996 Salud Mental | 911
+   🇧🇴 **Bolivia:** 800-10-0104 Línea Familiar | 110
+   🇵🇾 **Paraguay:** 147 Fono Ayuda (24/7) | 141 Línea 141 | 911
+   🇬🇹 **Guatemala:** 502-2485-4681 Línea en Crisis | 1545 | 110
+   🇨🇺 **Cuba:** +53-7-838-2783 Línea de Ayuda | 106
+   🇩🇴 **Dominican Republic:** 809-200-1202 Línea Vida | 911
+   🇵🇦 **Panama:** 169 CONASALUD | 911
+   🇨🇷 **Costa Rica:** 911 option 4 | 2272-3774 | 911
+   🇳🇮 **Nicaragua:** 2289-4011 Teléfono Esperanza | 118
+   🇭🇳 **Honduras:** 2558-0908 Línea Crisis | 911
+   🇸🇻 **El Salvador:** 2527-9393 ASALCO | 911
+   🇵🇷 **Puerto Rico:** 1-800-981-0023 Línea PAS | 988 (USA) | 911
 
-   🇦🇺 **Australia:**
-   - Lifeline: 13 11 14 (24/7)
-   - Beyond Blue: 1300 22 4636
-   - Emergency: 000
+   === ENGLISH-SPEAKING COUNTRIES (10+ countries) ===
 
-   🇳🇿 **New Zealand:**
-   - 1737: 1737 (call or text 24/7 free)
-   - Lifeline: 0800 543 354
-   - Emergency: 111
+   🇺🇸 **USA:** 988 Suicide & Crisis Lifeline | Text HOME to 741741 | 911
+   🇬🇧 **UK:** 116 123 Samaritans (24/7) | Text SHOUT to 85258 | 999/112
+   🇨🇦 **Canada:** 988 (24/7) | 1-800-668-6868 Kids Help | 911
+   🇦🇺 **Australia:** 13 11 14 Lifeline | 1300 22 4636 Beyond Blue | 000
+   🇳🇿 **New Zealand:** 1737 (call/text 24/7) | 0800 543 354 | 111
+   🇮🇪 **Ireland:** 116 123 Samaritans | 1800 247 247 Pieta House | 112
+   🇿🇦 **South Africa:** 0800 567 567 SADAG | 0800 12 13 14 LifeLine | 10111
+   🇮🇳 **India:** 9152987821 AASRA (24/7) | 044-2464-0050 Sneha | 112
+   🇸🇬 **Singapore:** 1800-221-4444 SOS (24/7) | 1767 IMH | 999
+   🇵🇭 **Philippines:** 02-8-989-8727 NCMH Crisis Hotline | 911
 
-   🇪🇸 **Spain:**
-   - 024 Suicide Prevention Line: 024 (24/7 free)
-   - Teléfono de la Esperanza: 717 003 717
-   - Emergency: 112
+   === PORTUGUESE-SPEAKING COUNTRIES ===
+   🇧🇷 **Brazil:** 188 CVV (24/7 free) | 190
+   🇵🇹 **Portugal:** +351 213 544 545 SOS Voz Amiga | 800 202 669 | 112
+   🇦🇴 **Angola:** +244 939 363 636 Linha de Ajuda | 113
+   🇲🇿 **Mozambique:** +258 21 313 794 Linha Fala Criança | 119
 
-   🇲🇽 **Mexico:**
-   - Línea de la Vida: 800 911 2000 (24/7)
-   - Emergency: 911
+   === FRENCH-SPEAKING COUNTRIES ===
+   🇫🇷 **France:** 09 72 39 40 50 SOS Amitié (24/7) | 3114 (Prévention Suicide) | 112
+   🇨🇦 **Canada (Quebec):** 1-866-277-3553 (24/7) | 988 | 911
+   🇧🇪 **Belgium:** 1813 Centre de Prévention Suicide | 106 | 112
+   🇨🇭 **Switzerland:** 143 La Main Tendue (24/7) | 117
+   🇱🇺 **Luxembourg:** 454545 SOS Détresse | 113
 
-   🇦🇷 **Argentina:**
-   - Centro de Asistencia al Suicida: 135 (24/7 free)
-   - Emergency: 911
+   === GERMAN-SPEAKING COUNTRIES ===
+   🇩🇪 **Germany:** 0800 111 0 111 Telefonseelsorge (24/7 free) | 112
+   🇦🇹 **Austria:** 142 Telefonseelsorge (24/7) | 112
+   🇨🇭 **Switzerland:** 143 Die Dargebotene Hand (24/7) | 117
 
-   🇧🇷 **Brazil:**
-   - CVV: 188 (24/7 free)
-   - Emergency: 190
+   === ITALIAN-SPEAKING COUNTRIES ===
+   🇮🇹 **Italy:** 02 2327 2327 Telefono Amico | 800 86 00 22 | 112
+   🇨🇭 **Switzerland:** 143 Telefono Amico (24/7) | 117
 
-   🇫🇷 **France:**
-   - SOS Amitié: 09 72 39 40 50 (24/7)
-   - Emergency: 112
-
-   🇩🇪 **Germany:**
-   - Telefonseelsorge: 0800 111 0 111 (24/7 free)
-   - Emergency: 112
-
-   🇮🇹 **Italy:**
-   - Telefono Amico: 02 2327 2327
-   - Emergency: 112
-
-   🇵🇹 **Portugal:**
-   - SOS Voz Amiga: +351 213 544 545
-   - Emergency: 112
+   === OTHER MAJOR COUNTRIES ===
+   🇯🇵 **Japan:** 03-5286-9090 Tokyo Suicide Prevention | #9110 | 110
+   🇰🇷 **South Korea:** 1393 Suicide Prevention Hotline (24/7) | 119
+   🇨🇳 **China:** 010-82951332 Beijing Suicide Research | 120
+   🇮🇱 **Israel:** 1201 ERAN (24/7) | 100
+   🇹🇷 **Turkey:** 182 Alo 182 (24/7) | 112
+   🇷🇺 **Russia:** 007 (24/7) Moscow | 8-800-2000-122 National | 112
 
    🌍 **International (any country):**
-   - Find A Helpline: https://findahelpline.com (130+ countries)
+   - Find A Helpline: https://findahelpline.com (verified hotlines in 130+ countries)
    - Befrienders Worldwide: https://befrienders.org
+
+   **MANDATORY:** Only show numbers from the specific country they mentioned.
+   If they don't know, show findahelpline.com + the 3-4 most likely countries by their language
 
 6. **REMIND THEM THEY ARE NOT ALONE**
 7. **MENTION THAT SEEKING HELP IS STRENGTH, NOT WEAKNESS**
