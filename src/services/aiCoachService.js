@@ -730,8 +730,80 @@ their question, and today's specific cosmic energies.`;
       // 🚨 Crisis intervention notice (if detected)
       if (emotionalState.hasCrisisIndicators) {
         const crisisNotice = language === 'es'
-          ? '\n\n⚠️ IMPORTANTE: El usuario puede estar en crisis. Muestra máxima compasión, valida sus sentimientos, y sugiere SUAVEMENTE buscar apoyo profesional (terapeuta, línea de crisis). Nunca minimices su dolor.'
-          : '\n\n⚠️ IMPORTANT: User may be in crisis. Show maximum compassion, validate their feelings, and GENTLY suggest seeking professional support (therapist, crisis hotline). Never minimize their pain.';
+          ? `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 ALERTA DE CRISIS - PROTOCOLO DE EMERGENCIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ CRÍTICO: El usuario ha expresado pensamientos de AUTOLESIÓN O SUICIDIO.
+
+INSTRUCCIONES OBLIGATORIAS:
+
+1. **NO DAR CONSEJOS ASTROLÓGICOS** - Este NO es momento para horóscopos
+2. **VALIDAR INMEDIATAMENTE** su dolor sin minimizar
+3. **EXPRESAR PREOCUPACIÓN GENUINA** por su seguridad
+4. **SUGERIR AYUDA PROFESIONAL URGENTE:**
+
+   📞 Líneas de Crisis en España:
+   - Teléfono de la Esperanza: 717 003 717
+   - Salud Mental España: 911 385 385
+
+   📞 Crisis Lines International:
+   - Emergency: 112 (EU) / 911 (US)
+   - Suicide Prevention Lifeline: 988 (US)
+
+5. **RECORDARLE QUE NO ESTÁ SOLO/A**
+6. **MENCIONAR QUE LA AYUDA PROFESIONAL ES FORTALEZA, NO DEBILIDAD**
+7. **NO USAR FRASES COMO:**
+   - "Las estrellas te apoyan" ❌
+   - "Mantén una actitud positiva" ❌
+   - "Todo pasa por algo" ❌
+
+8. **SÍ USAR FRASES COMO:**
+   - "Tu vida tiene valor incondicional" ✓
+   - "Mereces apoyo profesional en este momento" ✓
+   - "Hay personas entrenadas esperando ayudarte" ✓
+
+TONO: Máxima compasión, cero juicio, urgencia gentil.
+LONGITUD: Breve y claro (150-200 palabras), sin divagar.
+ENFOQUE: 100% en su seguridad inmediata, 0% en astrología.`
+          : `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 CRISIS ALERT - EMERGENCY PROTOCOL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ CRITICAL: User has expressed SELF-HARM OR SUICIDAL thoughts.
+
+MANDATORY INSTRUCTIONS:
+
+1. **DO NOT GIVE ASTROLOGICAL ADVICE** - This is NOT the time for horoscopes
+2. **IMMEDIATELY VALIDATE** their pain without minimizing
+3. **EXPRESS GENUINE CONCERN** for their safety
+4. **SUGGEST URGENT PROFESSIONAL HELP:**
+
+   📞 Crisis Hotlines:
+   - National Suicide Prevention Lifeline: 988 (US)
+   - Crisis Text Line: Text HOME to 741741
+   - International: FindAHelpline.com
+   - Emergency: 911 (US) / 112 (EU)
+
+5. **REMIND THEM THEY ARE NOT ALONE**
+6. **MENTION THAT SEEKING HELP IS STRENGTH, NOT WEAKNESS**
+7. **DO NOT USE PHRASES LIKE:**
+   - "The stars support you" ❌
+   - "Stay positive" ❌
+   - "Everything happens for a reason" ❌
+
+8. **DO USE PHRASES LIKE:**
+   - "Your life has unconditional value" ✓
+   - "You deserve professional support right now" ✓
+   - "There are trained people waiting to help you" ✓
+
+TONE: Maximum compassion, zero judgment, gentle urgency.
+LENGTH: Brief and clear (150-200 words), don't ramble.
+FOCUS: 100% on their immediate safety, 0% on astrology.`;
         finalSystemPrompt += crisisNotice;
       }
 
@@ -1309,10 +1381,23 @@ uniquely tailored to this ${zodiacSign} user on this specific day.`;
       }
     }
 
-    // Check for crisis indicators (very urgent)
+    // Check for crisis indicators (very urgent) - EXPANDED
     const crisisKeywords = [
+      // Suicidal ideation
       'suicid', 'matar', 'kill myself', 'no quiero vivir',
-      'want to die', 'acabar con', 'end it all'
+      'want to die', 'acabar con', 'end it all', 'terminar con todo',
+      'quitarme la vida', 'end my life', 'no vale la pena vivir',
+      'not worth living', 'mejor muert', 'better off dead',
+
+      // Self-harm
+      'cortar', 'cortarme', 'cut myself', 'cutting', 'venas', 'veins',
+      'wrists', 'muñecas', 'lastimarme', 'hurt myself', 'hacerme daño',
+      'harm myself', 'autolesion', 'self-harm', 'self harm',
+
+      // Extreme distress
+      'no puedo más', 'can\'t take it anymore', 'ya no aguanto',
+      'quiero desaparecer', 'want to disappear', 'no hay salida',
+      'no way out', 'sin esperanza', 'hopeless case'
     ];
     const hasCrisisIndicators = crisisKeywords.some(keyword =>
       lowerMessage.includes(keyword)
