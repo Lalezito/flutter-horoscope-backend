@@ -634,21 +634,52 @@ class AICoachService {
       const language = options.language || sessionData.language_code || 'en';
       const horoscopeData = await this._getDailyHoroscope(zodiacSign, language);
 
-      // ✨ NEW: Build personalized astrological prompt
+      // 💚 NEW: Detect emotional state in user's message
+      const emotionalState = this._detectEmotionalState(userMessage);
+
+      // Log emotional analysis for debugging
+      if (emotionalState.needsExtraSupport) {
+        logger.logInfo('💙 Emotional support needed', {
+          sessionId,
+          emotion: emotionalState.primaryEmotion,
+          intensity: emotionalState.emotionalIntensity,
+          sentiment: emotionalState.sentiment
+        });
+      }
+
+      // ✨ Build personalized astrological prompt
       const personalizedPrompt = await this._buildAstrologicalPrompt(
         persona.systemPrompt,
         zodiacSign,
         language
       );
 
+      // 💙 Add empathetic context if user needs support
+      const empathyContext = this._buildEmpatheticContext(emotionalState, language);
+
       // Build conversation history for context
       const recentMessages = conversationContext.messageHistory || [];
       const contextMessages = recentMessages.slice(-this.config.maxContextMessages);
 
+      // Build final system prompt with all enhancements
+      let finalSystemPrompt = personalizedPrompt;
+      if (empathyContext) {
+        finalSystemPrompt += '\n\n' + empathyContext;
+      }
+      finalSystemPrompt += '\n\nImportant: Keep responses under 500 words and focus on practical, actionable advice. Be warm, supportive, and encouraging.';
+
+      // 🚨 Crisis intervention notice (if detected)
+      if (emotionalState.hasCrisisIndicators) {
+        const crisisNotice = language === 'es'
+          ? '\n\n⚠️ IMPORTANTE: El usuario puede estar en crisis. Muestra máxima compasión, valida sus sentimientos, y sugiere SUAVEMENTE buscar apoyo profesional (terapeuta, línea de crisis). Nunca minimices su dolor.'
+          : '\n\n⚠️ IMPORTANT: User may be in crisis. Show maximum compassion, validate their feelings, and GENTLY suggest seeking professional support (therapist, crisis hotline). Never minimize their pain.';
+        finalSystemPrompt += crisisNotice;
+      }
+
       const messages = [
         {
           role: 'system',
-          content: personalizedPrompt + '\n\nImportant: Keep responses under 500 words and focus on practical, actionable advice. Be warm, supportive, and encouraging.'
+          content: finalSystemPrompt
         },
         ...contextMessages,
         {
@@ -678,7 +709,16 @@ class AICoachService {
         responseTime,
         confidenceScore: 0.85, // Default confidence score
         messageId: completion.id,
-        // ✨ NEW: Include horoscope data for frontend display
+        // 🤖 NEW: Confirm AI is responding (for user transparency)
+        aiPowered: true,
+        aiModel: `ChatGPT (${this.config.defaultModel})`,
+        // 💚 NEW: Include emotional context metadata
+        emotionalContext: emotionalState.needsExtraSupport ? {
+          detectedEmotion: emotionalState.primaryEmotion,
+          intensity: emotionalState.emotionalIntensity,
+          supportProvided: true
+        } : null,
+        // ✨ Include horoscope data for frontend display
         horoscopeData: horoscopeData ? {
           energyLevel: horoscopeData.energy_level,
           luckyColors: horoscopeData.lucky_colors,
@@ -1121,6 +1161,231 @@ uniquely tailored to this ${zodiacSign} user on this specific day.`;
     });
 
     return astrologicalPrompt;
+  }
+
+  /**
+   * 💚 NEW: Detect emotional state from user message
+   * Analyzes user's message for emotional cues to provide empathetic responses
+   *
+   * @param {string} message - User's message
+   * @returns {Object} Emotional state analysis
+   */
+  _detectEmotionalState(message) {
+    const lowerMessage = message.toLowerCase();
+
+    // Emotional keywords categorized by state
+    const emotionalPatterns = {
+      sadness: {
+        keywords: [
+          'triste', 'sad', 'deprimid', 'depressed', 'solo', 'alone', 'lonely',
+          'llorar', 'cry', 'crying', 'dolor', 'hurt', 'pain', 'mal', 'terrible',
+          'horrible', 'perdido', 'lost', 'vacío', 'empty', 'desesperanz',
+          'hopeless', 'infeliz', 'unhappy', 'miserable', 'angustia', 'anguish'
+        ],
+        intensity: 'high'
+      },
+      anxiety: {
+        keywords: [
+          'ansiedad', 'anxiety', 'anxious', 'nervios', 'nervous', 'preocup',
+          'worry', 'worried', 'miedo', 'fear', 'afraid', 'pánico', 'panic',
+          'estrés', 'stress', 'stressed', 'agobiad', 'overwhelmed', 'tenso',
+          'tense', 'inquiet', 'restless', 'insegur', 'insecure'
+        ],
+        intensity: 'medium'
+      },
+      anger: {
+        keywords: [
+          'enojad', 'angry', 'furioso', 'furious', 'molest', 'annoyed', 'frustrad',
+          'frustrated', 'irritad', 'irritated', 'rabia', 'rage', 'enfadad',
+          'enfurec', 'odio', 'hate', 'resentid', 'resentful'
+        ],
+        intensity: 'medium'
+      },
+      confusion: {
+        keywords: [
+          'confus', 'confused', 'no sé', 'don\'t know', 'perdid', 'indecis',
+          'indecisive', 'dudas', 'doubts', 'unclear', 'no entiendo',
+          'don\'t understand', 'qué hago', 'what do i do'
+        ],
+        intensity: 'low'
+      },
+      hope: {
+        keywords: [
+          'esperanza', 'hope', 'mejor', 'better', 'positiv', 'positive',
+          'optimis', 'optimistic', 'feliz', 'happy', 'alegr', 'glad',
+          'contento', 'content', 'agradecid', 'grateful', 'gracias', 'thanks'
+        ],
+        intensity: 'positive'
+      }
+    };
+
+    const detectedStates = {};
+    let primaryEmotion = 'neutral';
+    let emotionalIntensity = 0;
+
+    // Scan message for emotional keywords
+    for (const [emotion, pattern] of Object.entries(emotionalPatterns)) {
+      const matches = pattern.keywords.filter(keyword =>
+        lowerMessage.includes(keyword)
+      );
+
+      if (matches.length > 0) {
+        detectedStates[emotion] = {
+          matches: matches.length,
+          keywords: matches,
+          intensity: pattern.intensity
+        };
+
+        // Track highest intensity emotion
+        if (pattern.intensity === 'high' && emotionalIntensity < 3) {
+          primaryEmotion = emotion;
+          emotionalIntensity = 3;
+        } else if (pattern.intensity === 'medium' && emotionalIntensity < 2) {
+          primaryEmotion = emotion;
+          emotionalIntensity = 2;
+        } else if (pattern.intensity === 'low' && emotionalIntensity < 1) {
+          primaryEmotion = emotion;
+          emotionalIntensity = 1;
+        }
+      }
+    }
+
+    // Check for crisis indicators (very urgent)
+    const crisisKeywords = [
+      'suicid', 'matar', 'kill myself', 'no quiero vivir',
+      'want to die', 'acabar con', 'end it all'
+    ];
+    const hasCrisisIndicators = crisisKeywords.some(keyword =>
+      lowerMessage.includes(keyword)
+    );
+
+    return {
+      primaryEmotion,
+      emotionalIntensity,
+      detectedStates,
+      needsExtraSupport: emotionalIntensity >= 2 || hasCrisisIndicators,
+      hasCrisisIndicators,
+      isPositive: primaryEmotion === 'hope',
+      messageLength: message.length,
+      sentiment: emotionalIntensity >= 2 ? 'negative' :
+                 emotionalIntensity === 1 ? 'neutral' : 'positive'
+    };
+  }
+
+  /**
+   * 💙 NEW: Build empathetic response prefix based on emotional state
+   * Adds compassionate context to the AI prompt when user is distressed
+   *
+   * @param {Object} emotionalState - Detected emotional state
+   * @param {string} language - User's language
+   * @returns {string} Empathetic prompt enhancement
+   */
+  _buildEmpatheticContext(emotionalState, language) {
+    if (!emotionalState.needsExtraSupport) {
+      return ''; // No special context needed for neutral/positive states
+    }
+
+    const empathyPrompts = {
+      en: {
+        sadness: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💙 EMOTIONAL CONTEXT: USER IS EXPERIENCING SADNESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The user is going through a difficult emotional time. Please respond with:
+- DEEP EMPATHY and validation of their feelings
+- GENTLE encouragement (avoid toxic positivity)
+- PRACTICAL coping strategies (breathing, journaling, etc.)
+- Remind them this feeling is temporary
+- Mention cosmic energies that support healing
+- Offer hope rooted in astrological wisdom
+
+TONE: Warm, compassionate, understanding. Like a wise friend who truly cares.
+`,
+        anxiety: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💚 EMOTIONAL CONTEXT: USER IS EXPERIENCING ANXIETY/STRESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The user is feeling anxious or overwhelmed. Please respond with:
+- ACKNOWLEDGMENT of their worries (validate, don't dismiss)
+- GROUNDING techniques (deep breathing, 5-4-3-2-1 method)
+- PERSPECTIVE shifts (what they can control vs can't)
+- Cosmic reassurance (planetary alignments supporting them)
+- Small, manageable next steps
+- Reminder of their inner strength
+
+TONE: Calm, reassuring, practical. Like a steady anchor in a storm.
+`,
+        anger: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧡 EMOTIONAL CONTEXT: USER IS EXPERIENCING ANGER/FRUSTRATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The user is feeling angry or frustrated. Please respond with:
+- VALIDATION of their right to feel this way
+- ACKNOWLEDGMENT of the injustice/challenge they face
+- CONSTRUCTIVE outlets for the energy (exercise, creation)
+- Astrological insights about fire energy and transformation
+- Healthy boundaries and communication strategies
+- Channel anger into positive change
+
+TONE: Understanding, empowering, action-oriented. Like a coach who gets it.
+`
+      },
+      es: {
+        sadness: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💙 CONTEXTO EMOCIONAL: EL USUARIO ESTÁ EXPERIMENTANDO TRISTEZA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+El usuario está pasando por un momento emocionalmente difícil. Por favor responde con:
+- EMPATÍA PROFUNDA y validación de sus sentimientos
+- Aliento GENTIL (evita positividad tóxica)
+- Estrategias PRÁCTICAS de afrontamiento (respiración, diario, etc.)
+- Recuérdale que este sentimiento es temporal
+- Menciona energías cósmicas que apoyan la sanación
+- Ofrece esperanza basada en sabiduría astrológica
+
+TONO: Cálido, compasivo, comprensivo. Como un amigo sabio que realmente se preocupa.
+`,
+        anxiety: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💚 CONTEXTO EMOCIONAL: EL USUARIO ESTÁ EXPERIMENTANDO ANSIEDAD/ESTRÉS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+El usuario se siente ansioso o abrumado. Por favor responde con:
+- RECONOCIMIENTO de sus preocupaciones (valida, no minimices)
+- Técnicas de ANCLAJE (respiración profunda, método 5-4-3-2-1)
+- Cambios de PERSPECTIVA (lo que puede controlar vs lo que no)
+- Tranquilidad cósmica (alineaciones planetarias que lo apoyan)
+- Pasos pequeños y manejables
+- Recordatorio de su fortaleza interior
+
+TONO: Calmo, tranquilizador, práctico. Como un ancla estable en la tormenta.
+`,
+        anger: `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧡 CONTEXTO EMOCIONAL: EL USUARIO ESTÁ EXPERIMENTANDO ENOJO/FRUSTRACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+El usuario se siente enojado o frustrado. Por favor responde con:
+- VALIDACIÓN de su derecho a sentirse así
+- RECONOCIMIENTO de la injusticia/desafío que enfrenta
+- Salidas CONSTRUCTIVAS para la energía (ejercicio, creación)
+- Perspectivas astrológicas sobre energía de fuego y transformación
+- Estrategias de límites saludables y comunicación
+- Canaliza el enojo hacia cambio positivo
+
+TONO: Comprensivo, empoderador, orientado a la acción. Como un coach que lo entiende.
+`
+      }
+    };
+
+    const lang = language === 'es' ? 'es' : 'en';
+    const emotion = emotionalState.primaryEmotion;
+
+    return empathyPrompts[lang][emotion] || '';
   }
 
   /**
