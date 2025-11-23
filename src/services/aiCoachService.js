@@ -29,6 +29,9 @@ const redisService = require('./redisService');
 const receiptValidationService = require('./receiptValidationService');
 const logger = require('./loggingService');
 const circuitBreaker = require('./circuitBreakerService');
+const retroactivePredictionService = require('./retroactivePredictionService');
+const streakService = require('./streakService');
+const localContextService = require('./localContextService');
 
 class AICoachService {
   constructor() {
@@ -325,6 +328,16 @@ class AICoachService {
         };
       }
 
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🔮 NEW: CHECK FOR PREDICTION FEEDBACK
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      let predictionFeedback = null;
+      const isPredictionFeedback = retroactivePredictionService.detectsPredictionFeedback(message);
+
+      if (isPredictionFeedback) {
+        predictionFeedback = await retroactivePredictionService.processFeedback(userId, message);
+      }
+
       // Store user message
       await this._storeMessage(sessionId, 'user', message, {
         userAgent: options.userAgent,
@@ -355,21 +368,74 @@ class AICoachService {
         timestamp: new Date().toISOString()
       });
 
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🔮 NEW: EXTRACT PREDICTIONS FROM AI RESPONSE
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      try {
+        await retroactivePredictionService.extractPredictions(
+          userId,
+          aiResponse.content,
+          aiResponse.horoscopeData
+        );
+      } catch (predError) {
+        // Don't fail the response if prediction extraction fails
+        logger.logError(predError, {
+          context: 'extract_predictions_from_ai_response',
+          userId,
+          sessionId
+        });
+      }
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🔮 NEW: CHECK YESTERDAY'S PREDICTIONS (once per session)
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      let predictionCheckMessage = null;
+      const messageCount = await this._getSessionMessageCount(sessionId);
+
+      if (messageCount === 1) {
+        // First message in session - check yesterday's predictions
+        const predictionCheck = await retroactivePredictionService.checkYesterdayPredictions(userId);
+        if (predictionCheck) {
+          predictionCheckMessage = predictionCheck.feedbackRequest;
+        }
+      }
+
       // Update conversation context
       await this._updateConversationContext(sessionId, message, aiResponse.content);
 
       // Update usage tracking
       await this._updateUsageStats(userId, premiumStatus.isPremium);
 
+      // 🔥 NEW: Check in user for daily streak (gamification)
+      // Detect language from options or default to Spanish
+      const userLanguage = options.language || 'es';
+      const streakInfo = await streakService.checkIn(userId, userLanguage);
+
       const totalResponseTime = Date.now() - startTime;
-      logger.getLogger().info('AI Coach message processed successfully', { 
-        sessionId, userId, totalResponseTime, aiResponseTime: aiResponse.responseTime 
+      logger.getLogger().info('AI Coach message processed successfully', {
+        sessionId, userId, totalResponseTime, aiResponseTime: aiResponse.responseTime,
+        streakCheckIn: streakInfo.success
       });
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // 🔮 BUILD FINAL RESPONSE WITH PREDICTION ENHANCEMENTS
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      let finalContent = aiResponse.content;
+
+      // Append prediction feedback celebration (if user gave positive feedback)
+      if (predictionFeedback) {
+        finalContent += predictionFeedback;
+      }
+
+      // Append yesterday's prediction check (if first message and predictions exist)
+      if (predictionCheckMessage) {
+        finalContent += predictionCheckMessage;
+      }
 
       return {
         success: true,
         response: {
-          content: aiResponse.content,
+          content: finalContent,
           sessionId: sessionId,
           messageId: aiResponse.messageId,
           model: aiResponse.model,
@@ -379,12 +445,17 @@ class AICoachService {
           persona: sessionData.ai_coach_persona,
           timestamp: new Date().toISOString(),
           // ✨ NEW: Include horoscope data for frontend display
-          horoscopeData: aiResponse.horoscopeData
+          horoscopeData: aiResponse.horoscopeData,
+          // 🔮 NEW: Prediction metadata for frontend
+          hasPredictionCheck: !!predictionCheckMessage,
+          hasPredictionFeedback: !!predictionFeedback
         },
         usage: {
           remainingMessages: Math.max(0, usageCheck.limit - usageCheck.used - 1),
           resetTime: usageCheck.resetTime
-        }
+        },
+        // 🔥 NEW: Include streak information in response
+        streak: streakInfo
       };
 
     } catch (error) {
@@ -534,17 +605,74 @@ class AICoachService {
 
   /**
    * 📊 PRIVATE: Check daily usage limits
+   *
+   * Returns paywall information when free tier user hits 5 messages/day limit
    */
   async _checkDailyUsage(userId, isPremium) {
     try {
       const today = new Date().toISOString().split('T')[0];
       const cacheKey = `ai_coach_usage:${userId}:${today}`;
-      
+
       const cachedUsage = await redisService.get(cacheKey);
       let usage = cachedUsage ? JSON.parse(cachedUsage) : { used: 0, date: today };
 
       const limits = isPremium ? this.premiumLimits.premium : this.premiumLimits.free;
       const allowed = usage.used < limits.dailyMessages;
+
+      // 🎯 PAYWALL: Show upgrade prompt when free user hits 5 messages
+      if (!isPremium && !allowed) {
+        return {
+          allowed: false,
+          used: usage.used,
+          limit: limits.dailyMessages,
+          isPremium,
+          resetTime: new Date(new Date().setHours(23, 59, 59, 999)),
+          paywall: {
+            type: 'daily_limit_exceeded',
+            message: `🌟 Llegaste a tu límite diario (${limits.dailyMessages} mensajes)
+
+¿Quieres más?
+
+✨ COSMIC ($4.99/mes):
+   • 50 mensajes/día
+   • Respuestas largas y empáticas
+   • Challenges diarios
+   • Modismos de tu país
+
+🚀 UNIVERSE ($9.99/mes):
+   • Mensajes ilimitados
+   • Moon + Rising sign
+   • Compatibilidad
+   • Lectura anual 2026
+
+👉 Upgrade ahora`,
+            cta: 'Upgrade to Cosmic',
+            trialOffer: '7 días gratis - cancela cuando quieras',
+            tiers: [
+              {
+                name: 'Cosmic',
+                price: '$4.99/mes',
+                features: [
+                  '50 mensajes/día',
+                  'Respuestas largas y empáticas',
+                  'Challenges diarios',
+                  'Modismos de tu país'
+                ]
+              },
+              {
+                name: 'Universe',
+                price: '$9.99/mes',
+                features: [
+                  'Mensajes ilimitados',
+                  'Moon + Rising sign',
+                  'Compatibilidad',
+                  'Lectura anual 2026'
+                ]
+              }
+            ]
+          }
+        };
+      }
 
       return {
         allowed,
@@ -556,7 +684,7 @@ class AICoachService {
 
     } catch (error) {
       logger.logError(error, { context: 'usage_check', userId });
-      
+
       // On error, allow limited access
       return {
         allowed: true,
@@ -657,6 +785,18 @@ class AICoachService {
       // 💙 Add empathetic context if user needs support
       const empathyContext = this._buildEmpatheticContext(emotionalState, language);
 
+      // 🌍 NEW: Get local cultural context for personalization
+      const country = options.country || sessionData.country || 'US';
+      const localContext = await localContextService.getLocalContext(country, new Date());
+      const localContextPrompt = localContextService.buildContextPrompt(localContext);
+
+      logger.getLogger().info('Local context applied', {
+        country,
+        holiday: localContext.holiday,
+        season: localContext.season,
+        summary: localContextService.getContextSummary(localContext)
+      });
+
       // Build conversation history for context
       const recentMessages = conversationContext.messageHistory || [];
       const contextMessages = recentMessages.slice(-this.config.maxContextMessages);
@@ -665,6 +805,11 @@ class AICoachService {
       let finalSystemPrompt = personalizedPrompt;
       if (empathyContext) {
         finalSystemPrompt += '\n\n' + empathyContext;
+      }
+
+      // 🌍 Add local cultural context
+      if (localContextPrompt) {
+        finalSystemPrompt += localContextPrompt;
       }
 
       // ✨ ENHANCED: Research-backed content guidelines for engagement
@@ -1854,6 +1999,23 @@ TONO: Comprensivo, empoderador, orientado a la acción. Como un coach que lo ent
       await redisService.setex(cacheKey, ttl, JSON.stringify(sessionData));
     } catch (error) {
       logger.logError(error, { context: 'cache_session_data', sessionId });
+    }
+  }
+
+  /**
+   * 🔮 NEW: Get session message count
+   * Used to determine if we should show yesterday's predictions
+   */
+  async _getSessionMessageCount(sessionId) {
+    try {
+      const result = await db.query(
+        'SELECT COUNT(*) as count FROM chat_messages WHERE session_id = $1',
+        [sessionId]
+      );
+      return parseInt(result.rows[0].count) || 0;
+    } catch (error) {
+      logger.logError(error, { context: 'get_session_message_count', sessionId });
+      return 0;
     }
   }
 

@@ -31,7 +31,7 @@ on:
           - containers
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '20.x'
 
 jobs:
   # 🔍 DEPENDENCY VULNERABILITY SCANNING
@@ -65,15 +65,15 @@ jobs:
               const audit = JSON.parse(require('fs').readFileSync('npm-audit.json', 'utf8'));
               const vulnerabilities = audit.vulnerabilities || {};
               let highCount = 0, criticalCount = 0;
-              
+
               Object.values(vulnerabilities).forEach(vuln => {
                 if (vuln.severity === 'high') highCount++;
                 if (vuln.severity === 'critical') criticalCount++;
               });
-              
+
               console.log(\`High vulnerabilities: \${highCount}\`);
               console.log(\`Critical vulnerabilities: \${criticalCount}\`);
-              
+
               if (criticalCount > 0) {
                 console.log('❌ Critical vulnerabilities found!');
                 process.exit(1);
@@ -83,6 +83,7 @@ jobs:
                 process.exit(1);
               }
             "
+          fi
 
       - name: 🛠️ Auto-fix vulnerabilities
         run: |
@@ -291,7 +292,7 @@ jobs:
           echo "## Container Security Scan Report" > container-security-report.md
           echo "- Image: zodiac-backend:security-scan" >> container-security-report.md
           echo "- Scan date: $(date)" >> container-security-report.md
-          echo "- Base image: node:18-alpine" >> container-security-report.md
+          echo "- Base image: node:20-alpine" >> container-security-report.md
           echo "" >> container-security-report.md
           
           # Analyze Trivy results

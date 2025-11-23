@@ -12,6 +12,7 @@ const cacheService = require("./services/cacheService");
 const circuitBreaker = require("./services/circuitBreakerService");
 const firebaseService = require("./services/firebaseService");
 const redisService = require("./services/redisService");
+const voiceAIService = require("./services/voiceAIService");
 
 // Route imports
 const coachingRoutes = require("./routes/coaching");
@@ -25,6 +26,7 @@ const neuralCompatibilityRoutes = require("./routes/neuralCompatibility");
 const aiCoachRoutes = require("./routes/aiCoach");
 const personalizationRoutes = require("./routes/personalization");
 const goalPlannerRoutes = require("./routes/goalPlanner");
+const voiceAIRoutes = require("./routes/voiceAI");
 // Temporarily disabled predictions routes due to middleware issues
 // const predictionsRoutes = require("./routes/predictions");
 // const verifiablePredictionsRoutes = require("./routes/verifiablePredictions");
@@ -55,6 +57,13 @@ async function initializeServices() {
     await cacheService.initialize();
     await firebaseService.initialize();
     await redisService.initialize();
+
+    // Initialize Voice AI Service (optional - won't fail if OpenAI key missing)
+    try {
+      await voiceAIService.initialize();
+    } catch (error) {
+      logger.getLogger().warn('Voice AI Service initialization skipped', { reason: error.message });
+    }
 
     logger.getLogger().info('✅ Core services initialized');
 
@@ -265,7 +274,8 @@ app.use("/api/neural-compatibility", neuralCompatibilityRoutes); // Neural-enhan
 app.use("/api/ai-coach", aiCoachRoutes); // AI Coach real-time chat functionality with premium validation
 app.use("/api/personalization", personalizationRoutes); // Hiperpersonal horoscope system with Swiss Ephemeris calculations
 app.use("/api/ai/goals", goalPlannerRoutes); // AI-powered Goal Planner for Stellar tier with SMART goals and progress tracking
-// app.use("/api/predictions", predictionsRoutes); // Basic predictions system - temporarily disabled  
+app.use("/api/voice", endpointLimits.api, voiceAIRoutes); // Voice AI responses with OpenAI TTS (premium feature)
+// app.use("/api/predictions", predictionsRoutes); // Basic predictions system - temporarily disabled
 // app.use("/api/verifiable-predictions", verifiablePredictionsRoutes); // AI-powered verifiable predictions with astrological timing and accuracy tracking
 // app.use("/api/timing", astrologicalTimingRoutes); // Advanced astrological timing intelligence with planetary hours, lunar cycles, and personalized recommendations
 // Temporarily disabled MCP routes
