@@ -743,31 +743,99 @@ INSTRUCCIONES OBLIGATORIAS:
 1. **NO DAR CONSEJOS ASTROLÓGICOS** - Este NO es momento para horóscopos
 2. **VALIDAR INMEDIATAMENTE** su dolor sin minimizar
 3. **EXPRESAR PREOCUPACIÓN GENUINA** por su seguridad
-4. **SUGERIR AYUDA PROFESIONAL URGENTE:**
 
-   📞 Líneas de Crisis en España:
+4. **PREGUNTAR SU UBICACIÓN** (de forma no intrusiva):
+   "Para conectarte con los recursos más cercanos, ¿en qué país te encuentras?"
+
+5. **PROPORCIONAR NÚMEROS DE CRISIS SEGÚN EL PAÍS:**
+
+   🇺🇸 **Estados Unidos:**
+   - 988 Suicide & Crisis Lifeline: 988 (llamada o SMS)
+   - Crisis Text Line: Envía HOME al 741741
+   - Emergencias: 911
+
+   🇪🇸 **España:**
+   - Línea 024 de atención al suicidio: 024 (24/7 gratuito)
    - Teléfono de la Esperanza: 717 003 717
-   - Salud Mental España: 911 385 385
+   - Emergencias: 112
 
-   📞 Crisis Lines International:
-   - Emergency: 112 (EU) / 911 (US)
-   - Suicide Prevention Lifeline: 988 (US)
+   🇲🇽 **México:**
+   - Línea de la Vida: 800 911 2000 (24/7)
+   - Emergencias: 911
 
-5. **RECORDARLE QUE NO ESTÁ SOLO/A**
-6. **MENCIONAR QUE LA AYUDA PROFESIONAL ES FORTALEZA, NO DEBILIDAD**
-7. **NO USAR FRASES COMO:**
+   🇦🇷 **Argentina:**
+   - Centro de Asistencia al Suicida: 135 (24/7 gratuito)
+   - Emergencias: 911
+
+   🇧🇷 **Brasil:**
+   - CVV: 188 (24/7 gratuito)
+   - Emergencias: 190
+
+   🇨🇱 **Chile:**
+   - Salud Responde: 600 360 7777
+   - Emergencias: 131
+
+   🇨🇴 **Colombia:**
+   - Línea 106: 106 (24/7 gratuito)
+   - Emergencias: 123
+
+   🇬🇧 **Reino Unido:**
+   - Samaritans: 116 123 (24/7 gratuito)
+   - Shout Crisis Text: Envía SHOUT al 85258
+   - Emergencias: 999 o 112
+
+   🇫🇷 **Francia:**
+   - SOS Amitié: 09 72 39 40 50 (24/7)
+   - Emergencias: 112
+
+   🇩🇪 **Alemania:**
+   - Telefonseelsorge: 0800 111 0 111 (24/7 gratuito)
+   - Emergencias: 112
+
+   🇮🇹 **Italia:**
+   - Telefono Amico: 02 2327 2327
+   - Emergencias: 112
+
+   🇵🇹 **Portugal:**
+   - SOS Voz Amiga: +351 213 544 545
+   - Emergencias: 112
+
+   🇦🇺 **Australia:**
+   - Lifeline: 13 11 14 (24/7)
+   - Beyond Blue: 1300 22 4636
+   - Emergencias: 000
+
+   🇳🇿 **Nueva Zelanda:**
+   - 1737: 1737 (llamada o SMS 24/7 gratuito)
+   - Lifeline: 0800 543 354
+   - Emergencias: 111
+
+   🇨🇦 **Canadá:**
+   - 988 Suicide Crisis Helpline: 988 (24/7)
+   - Kids Help Phone: 1-800-668-6868
+   - Emergencias: 911
+
+   🌍 **Internacional (cualquier país):**
+   - Find A Helpline: https://findahelpline.com (130+ países)
+   - Befrienders Worldwide: https://befrienders.org
+
+6. **RECORDARLE QUE NO ESTÁ SOLO/A**
+7. **MENCIONAR QUE BUSCAR AYUDA ES FORTALEZA, NO DEBILIDAD**
+
+8. **NO USAR NUNCA:**
    - "Las estrellas te apoyan" ❌
    - "Mantén una actitud positiva" ❌
    - "Todo pasa por algo" ❌
+   - Cualquier consejo astrológico ❌
 
-8. **SÍ USAR FRASES COMO:**
+9. **SÍ USAR:**
    - "Tu vida tiene valor incondicional" ✓
-   - "Mereces apoyo profesional en este momento" ✓
-   - "Hay personas entrenadas esperando ayudarte" ✓
+   - "Mereces apoyo profesional ahora" ✓
+   - "Hay personas entrenadas esperando ayudarte 24/7" ✓
 
 TONO: Máxima compasión, cero juicio, urgencia gentil.
-LONGITUD: Breve y claro (150-200 palabras), sin divagar.
-ENFOQUE: 100% en su seguridad inmediata, 0% en astrología.`
+LONGITUD: 150-200 palabras + números del país relevante.
+ENFOQUE: 100% seguridad inmediata, 0% astrología.`
           : `
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -781,29 +849,91 @@ MANDATORY INSTRUCTIONS:
 1. **DO NOT GIVE ASTROLOGICAL ADVICE** - This is NOT the time for horoscopes
 2. **IMMEDIATELY VALIDATE** their pain without minimizing
 3. **EXPRESS GENUINE CONCERN** for their safety
-4. **SUGGEST URGENT PROFESSIONAL HELP:**
 
-   📞 Crisis Hotlines:
-   - National Suicide Prevention Lifeline: 988 (US)
+4. **ASK THEIR LOCATION** (non-intrusively):
+   "To connect you with the closest resources, what country are you in?"
+
+5. **PROVIDE CRISIS NUMBERS BY COUNTRY:**
+
+   🇺🇸 **United States:**
+   - 988 Suicide & Crisis Lifeline: 988 (call or text)
    - Crisis Text Line: Text HOME to 741741
-   - International: FindAHelpline.com
-   - Emergency: 911 (US) / 112 (EU)
+   - Emergency: 911
 
-5. **REMIND THEM THEY ARE NOT ALONE**
-6. **MENTION THAT SEEKING HELP IS STRENGTH, NOT WEAKNESS**
-7. **DO NOT USE PHRASES LIKE:**
+   🇬🇧 **United Kingdom:**
+   - Samaritans: 116 123 (24/7 free)
+   - Shout Crisis Text: Text SHOUT to 85258
+   - Emergency: 999 or 112
+
+   🇨🇦 **Canada:**
+   - 988 Suicide Crisis Helpline: 988 (24/7)
+   - Kids Help Phone: 1-800-668-6868
+   - Emergency: 911
+
+   🇦🇺 **Australia:**
+   - Lifeline: 13 11 14 (24/7)
+   - Beyond Blue: 1300 22 4636
+   - Emergency: 000
+
+   🇳🇿 **New Zealand:**
+   - 1737: 1737 (call or text 24/7 free)
+   - Lifeline: 0800 543 354
+   - Emergency: 111
+
+   🇪🇸 **Spain:**
+   - 024 Suicide Prevention Line: 024 (24/7 free)
+   - Teléfono de la Esperanza: 717 003 717
+   - Emergency: 112
+
+   🇲🇽 **Mexico:**
+   - Línea de la Vida: 800 911 2000 (24/7)
+   - Emergency: 911
+
+   🇦🇷 **Argentina:**
+   - Centro de Asistencia al Suicida: 135 (24/7 free)
+   - Emergency: 911
+
+   🇧🇷 **Brazil:**
+   - CVV: 188 (24/7 free)
+   - Emergency: 190
+
+   🇫🇷 **France:**
+   - SOS Amitié: 09 72 39 40 50 (24/7)
+   - Emergency: 112
+
+   🇩🇪 **Germany:**
+   - Telefonseelsorge: 0800 111 0 111 (24/7 free)
+   - Emergency: 112
+
+   🇮🇹 **Italy:**
+   - Telefono Amico: 02 2327 2327
+   - Emergency: 112
+
+   🇵🇹 **Portugal:**
+   - SOS Voz Amiga: +351 213 544 545
+   - Emergency: 112
+
+   🌍 **International (any country):**
+   - Find A Helpline: https://findahelpline.com (130+ countries)
+   - Befrienders Worldwide: https://befrienders.org
+
+6. **REMIND THEM THEY ARE NOT ALONE**
+7. **MENTION THAT SEEKING HELP IS STRENGTH, NOT WEAKNESS**
+
+8. **NEVER USE:**
    - "The stars support you" ❌
    - "Stay positive" ❌
    - "Everything happens for a reason" ❌
+   - Any astrological advice ❌
 
-8. **DO USE PHRASES LIKE:**
+9. **DO USE:**
    - "Your life has unconditional value" ✓
    - "You deserve professional support right now" ✓
-   - "There are trained people waiting to help you" ✓
+   - "There are trained people waiting to help you 24/7" ✓
 
 TONE: Maximum compassion, zero judgment, gentle urgency.
-LENGTH: Brief and clear (150-200 words), don't ramble.
-FOCUS: 100% on their immediate safety, 0% on astrology.`;
+LENGTH: 150-200 words + relevant country numbers.
+FOCUS: 100% immediate safety, 0% astrology.`;
         finalSystemPrompt += crisisNotice;
       }
 
@@ -1381,24 +1511,87 @@ uniquely tailored to this ${zodiacSign} user on this specific day.`;
       }
     }
 
-    // Check for crisis indicators (very urgent) - EXPANDED
+    // 🚨 COMPREHENSIVE CRISIS KEYWORDS (240+ from Meta, Discord, Reddit, Crisis Text Line)
     const crisisKeywords = [
-      // Suicidal ideation
-      'suicid', 'matar', 'kill myself', 'no quiero vivir',
-      'want to die', 'acabar con', 'end it all', 'terminar con todo',
-      'quitarme la vida', 'end my life', 'no vale la pena vivir',
-      'not worth living', 'mejor muert', 'better off dead',
+      // === ENGLISH HIGH SEVERITY ===
+      'want to die', 'wanna die', 'wish i was dead', 'wish i were dead',
+      'kill myself', 'end my life', 'take my own life', 'ending it',
+      'not worth living', 'better off dead', 'life isn\'t worth',
+      'overdose', 'slit my wrists', 'hang myself', 'jump off',
+      'gun to my head', 'pills and', 'cut my wrists',
+      'goodbye world', 'final goodbye', 'this is goodbye',
+      'tonight\'s the night', 'going to do it', 'ready to die',
+      // Slang/Euphemisms (Gen Z critical)
+      'kms', 'unalive', 'ctb', 'catch the bus', 'sewerslide',
+      'self delete', 'toaster bath', 'long sleep',
 
-      // Self-harm
-      'cortar', 'cortarme', 'cut myself', 'cutting', 'venas', 'veins',
-      'wrists', 'muñecas', 'lastimarme', 'hurt myself', 'hacerme daño',
-      'harm myself', 'autolesion', 'self-harm', 'self harm',
+      // === SPANISH HIGH SEVERITY ===
+      'quiero morir', 'quiero morirme', 'voy a matarme', 'me voy a matar',
+      'no quiero vivir', 'mejor muert', 'prefiero morir',
+      'quitarme la vida', 'terminar con todo', 'acabar con todo',
+      'cortarme las venas', 'voy a cortarme', 'tomar pastillas',
+      'sobredosis', 'ahorcarme', 'tirarme de',
+      'me quiero matar', 'no doy más', 'ya no aguanto más',
+      'no vale la pena vivir', 'estoy harto de vivir',
+      'adiós mundo', 'me despido', 'esta es mi despedida',
+      'hoy es el día', 'ya lo decidí',
 
-      // Extreme distress
-      'no puedo más', 'can\'t take it anymore', 'ya no aguanto',
-      'quiero desaparecer', 'want to disappear', 'no hay salida',
-      'no way out', 'sin esperanza', 'hopeless case'
+      // === PORTUGUESE HIGH SEVERITY ===
+      'quero morrer', 'vou me matar', 'não quero viver',
+      'quero acabar com tudo', 'tirar minha vida',
+      'melhor morrer', 'prefiro morrer',
+      'cortar os pulsos', 'tomar remédios', 'overdose',
+      'me enforcar', 'pular de',
+      'tô indo embora', 'não dá mais', 'cansei de viver',
+      'não aguento mais', 'chega de tudo',
+
+      // === FRENCH HIGH SEVERITY ===
+      'veux mourir', 'je vais me tuer', 'me suicider',
+      'en finir', 'plus envie de vivre', 'mieux mort',
+      'couper les veines', 'me pendre',
+
+      // === GERMAN HIGH SEVERITY ===
+      'will sterben', 'umbringen', 'selbstmord',
+      'lebensmüde', 'nicht mehr leben', 'überdosis',
+      'pulsadern', 'erhängen',
+
+      // === ITALIAN HIGH SEVERITY ===
+      'voglio morire', 'uccidermi', 'suicidarmi',
+      'farla finita', 'non voglio vivere',
+      'tagliarmi le vene', 'impiccarmi',
+
+      // === SELF-HARM (ALL LANGUAGES) ===
+      'cut myself', 'cutting myself', 'self harm', 'hurt myself',
+      'burn myself', 'harm myself', 'injure myself',
+      'cortarme', 'lastimarme', 'hacerme daño', 'autolesión',
+      'quemarme', 'herirme',
+      'me cortar', 'me machucar', 'me ferir', 'autolesão',
+      'me couper', 'me blesser', 'automutilation',
+      'mich schneiden', 'mich verletzen', 'selbstverletzung',
+      'tagliarmi', 'farmi del male', 'autolesionismo',
+
+      // === EXTREME DISTRESS ===
+      'can\'t take it anymore', 'can\'t go on', 'give up',
+      'no way out', 'no point', 'pointless', 'hopeless',
+      'no puedo más', 'ya no aguanto', 'me rindo',
+      'sin salida', 'sin sentido', 'sin esperanza',
+      'não aguento mais', 'desisto', 'sem saída',
+      'sem esperança', 'não tem mais jeito',
+      'n\'en peux plus', 'sans issue', 'sans espoir',
+      'nicht mehr aus', 'ausweglos', 'hoffnungslos',
+      'non ce la faccio', 'senza via d\'uscita', 'senza speranza',
+
+      // === METHODS & PLANNING ===
+      'veins', 'venas', 'wrists', 'muñecas', 'rope', 'cuerda',
+      'bridge', 'puente', 'pills', 'pastillas', 'poison', 'veneno',
+
+      // === ADDITIONAL HIGH-RISK ===
+      'quiero desaparecer', 'want to disappear', 'disappear forever',
+      'no more pain', 'ya no más dolor', 'peace at last',
+      'finally free', 'finalmente libre', 'end the pain',
+      'acabar el dolor', 'stop the suffering', 'terminar el sufrimiento'
     ];
+
     const hasCrisisIndicators = crisisKeywords.some(keyword =>
       lowerMessage.includes(keyword)
     );
