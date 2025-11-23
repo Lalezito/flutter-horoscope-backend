@@ -750,7 +750,203 @@ class AICoachService {
   }
 
   /**
+   * 🤖 GENERATE DAILY HOROSCOPE WITH AI (Fallback when DB is empty)
+   *
+   * Generates a personalized daily horoscope using OpenAI GPT-4o-mini.
+   * Cost: ~$0.0002 per generation (cached 24h in Redis)
+   *
+   * @param {string} zodiacSign - User's zodiac sign (e.g., 'leo')
+   * @param {string} language - Language code (e.g., 'es', 'en')
+   * @returns {Promise<Object>} Generated horoscope data
+   */
+  async _generateDailyHoroscope(zodiacSign, language) {
+    const startTime = Date.now();
+    const today = new Date().toISOString().split('T')[0];
+    const sign = zodiacSign.toLowerCase();
+    const cacheKey = `ai_generated_horoscope:${sign}:${language}:${today}`;
+
+    try {
+      // Check cache first (24h TTL)
+      const cached = await redisService.get(cacheKey);
+      if (cached) {
+        logger.logInfo('✨ AI-generated horoscope retrieved from cache', {
+          sign,
+          language,
+          date: today
+        });
+        return JSON.parse(cached);
+      }
+
+      logger.logInfo('🤖 Generating horoscope with OpenAI', {
+        sign,
+        language,
+        date: today,
+        model: 'gpt-4o-mini'
+      });
+
+      // Build multilingual prompt (6 languages: EN, ES, PT, FR, DE, IT)
+      const prompts = {
+        es: `Eres un astrólogo experto. Genera un horóscopo personalizado para ${zodiacSign.toUpperCase()} para el día ${today}.
+
+Incluye: 1) Nivel de energía (alto/medio/bajo/equilibrado), 2) 2-3 colores de la suerte, 3) Rangos horarios favorables, 4) Enfoque amoroso (1 frase), 5) Enfoque profesional (1 frase), 6) Enfoque de bienestar (1 frase), 7) Guía general (2-3 frases)
+
+Responde SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_times":"...","love_focus":"...","career_focus":"...","wellness_focus":"...","content":"..."}`,
+
+        en: `You are an expert astrologer. Generate a personalized daily horoscope for ${zodiacSign.toUpperCase()} for ${today}.
+
+Include: 1) Energy level (high/medium/low/balanced), 2) 2-3 lucky colors, 3) Favorable time ranges, 4) Love focus (1 sentence), 5) Career focus (1 sentence), 6) Wellness focus (1 sentence), 7) Overall guidance (2-3 sentences)
+
+Respond ONLY with JSON: {"energy_level":"...","lucky_colors":"...","favorable_times":"...","love_focus":"...","career_focus":"...","wellness_focus":"...","content":"..."}`,
+
+        pt: `Você é um astrólogo especialista. Gere um horóscopo personalizado para ${zodiacSign.toUpperCase()} para ${today}.
+
+Inclua: 1) Nível de energia (alto/médio/baixo/equilibrado), 2) 2-3 cores da sorte, 3) Horários favoráveis, 4) Foco amoroso (1 frase), 5) Foco profissional (1 frase), 6) Foco bem-estar (1 frase), 7) Orientação geral (2-3 frases)
+
+Responda APENAS com JSON: {"energy_level":"...","lucky_colors":"...","favorable_times":"...","love_focus":"...","career_focus":"...","wellness_focus":"...","content":"..."}`,
+
+        fr: `Vous êtes un astrologue expert. Générez un horoscope personnalisé pour ${zodiacSign.toUpperCase()} pour ${today}.
+
+Incluez: 1) Niveau d'énergie (élevé/moyen/faible/équilibré), 2) 2-3 couleurs porte-bonheur, 3) Heures favorables, 4) Focus amoureux (1 phrase), 5) Focus professionnel (1 phrase), 6) Focus bien-être (1 phrase), 7) Guidance générale (2-3 phrases)
+
+Répondez UNIQUEMENT avec JSON: {"energy_level":"...","lucky_colors":"...","favorable_times":"...","love_focus":"...","career_focus":"...","wellness_focus":"...","content":"..."}`,
+
+        de: `Sie sind ein erfahrener Astrologe. Erstellen Sie ein personalisiertes Horoskop für ${zodiacSign.toUpperCase()} für ${today}.
+
+Einschließlich: 1) Energieniveau (hoch/mittel/niedrig/ausgeglichen), 2) 2-3 Glücksfarben, 3) Günstige Zeiten, 4) Liebesschwerpunkt (1 Satz), 5) Karriereschwerpunkt (1 Satz), 6) Wellness-Schwerpunkt (1 Satz), 7) Tagesführung (2-3 Sätze)
+
+Antworten Sie NUR mit JSON: {"energy_level":"...","lucky_colors":"...","favorable_times":"...","love_focus":"...","career_focus":"...","wellness_focus":"...","content":"..."}`,
+
+        it: `Sei un astrologo esperto. Genera un oroscopo personalizzato per ${zodiacSign.toUpperCase()} per ${today}.
+
+Includi: 1) Livello di energia (alto/medio/basso/equilibrato), 2) 2-3 colori fortunati, 3) Orari favorevoli, 4) Focus amore (1 frase), 5) Focus carriera (1 frase), 6) Focus benessere (1 frase), 7) Guida generale (2-3 frasi)
+
+Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_times":"...","love_focus":"...","career_focus":"...","wellness_focus":"...","content":"..."}`
+      };
+
+      const prompt = prompts[language] || prompts.en; // Fallback to English if language not supported
+
+      // Call OpenAI with JSON mode
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert astrologer who creates personalized, insightful daily horoscopes. Always respond with valid JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.8, // More creative for varied horoscopes
+        max_tokens: 500
+      });
+
+      const horoscopeData = JSON.parse(completion.choices[0].message.content);
+
+      // Enrich with metadata
+      const horoscope = {
+        ...horoscopeData,
+        sign: sign,
+        date: today,
+        language_code: language,
+        source: 'ai_generated',
+        generated_at: new Date().toISOString(),
+        tokens_used: completion.usage.total_tokens
+      };
+
+      // Cache for 24 hours (86400 seconds)
+      await redisService.setex(cacheKey, 86400, JSON.stringify(horoscope));
+
+      const responseTime = Date.now() - startTime;
+
+      logger.logInfo('✅ AI horoscope generated and cached', {
+        sign,
+        language,
+        tokensUsed: horoscope.tokens_used,
+        responseTime: `${responseTime}ms`,
+        cacheKey,
+        expiresIn: '24 hours'
+      });
+
+      return horoscope;
+
+    } catch (error) {
+      logger.logError(error, {
+        context: 'generate_ai_horoscope',
+        zodiacSign,
+        language,
+        responseTime: `${Date.now() - startTime}ms`
+      });
+
+      // Return fallback generic horoscope on error (6 languages)
+      const fallbacks = {
+        es: {
+          lucky_colors: 'azul, plateado',
+          love_focus: 'La comunicación abierta trae armonía',
+          career_focus: 'Buen día para colaboración',
+          wellness_focus: 'Prioriza descanso y equilibrio',
+          content: 'Hoy es un día equilibrado. Mantén la calma y confía en tu intuición.'
+        },
+        en: {
+          lucky_colors: 'blue, silver',
+          love_focus: 'Open communication brings harmony',
+          career_focus: 'Good day for collaboration',
+          wellness_focus: 'Prioritize rest and balance',
+          content: 'Today is a balanced day. Stay calm and trust your intuition.'
+        },
+        pt: {
+          lucky_colors: 'azul, prateado',
+          love_focus: 'A comunicação aberta traz harmonia',
+          career_focus: 'Bom dia para colaboração',
+          wellness_focus: 'Priorize descanso e equilíbrio',
+          content: 'Hoje é um dia equilibrado. Mantenha a calma e confie na sua intuição.'
+        },
+        fr: {
+          lucky_colors: 'bleu, argent',
+          love_focus: 'La communication ouverte apporte harmonie',
+          career_focus: 'Bon jour pour la collaboration',
+          wellness_focus: 'Priorisez repos et équilibre',
+          content: "Aujourd'hui est un jour équilibré. Restez calme et faites confiance à votre intuition."
+        },
+        de: {
+          lucky_colors: 'blau, silber',
+          love_focus: 'Offene Kommunikation bringt Harmonie',
+          career_focus: 'Guter Tag für Zusammenarbeit',
+          wellness_focus: 'Priorisieren Sie Ruhe und Balance',
+          content: 'Heute ist ein ausgeglichener Tag. Bleiben Sie ruhig und vertrauen Sie Ihrer Intuition.'
+        },
+        it: {
+          lucky_colors: 'blu, argento',
+          love_focus: 'La comunicazione aperta porta armonia',
+          career_focus: 'Buon giorno per la collaborazione',
+          wellness_focus: 'Priorità a riposo ed equilibrio',
+          content: 'Oggi è un giorno equilibrato. Mantieni la calma e fidati della tua intuizione.'
+        }
+      };
+
+      const fallback = fallbacks[language] || fallbacks.en;
+
+      return {
+        sign: sign,
+        date: today,
+        language_code: language,
+        energy_level: 'balanced',
+        lucky_colors: fallback.lucky_colors,
+        favorable_times: '10:00-12:00, 18:00-20:00',
+        love_focus: fallback.love_focus,
+        career_focus: fallback.career_focus,
+        wellness_focus: fallback.wellness_focus,
+        content: fallback.content,
+        source: 'fallback'
+      };
+    }
+  }
+
+  /**
    * ✨ NEW: Get daily horoscope from database with Redis caching
+   * 🔄 UPDATED: Now falls back to AI generation if DB is empty
    *
    * @param {string} zodiacSign - User's zodiac sign (e.g., 'leo')
    * @param {string} language - Language code (e.g., 'es', 'en')
@@ -807,12 +1003,14 @@ class AICoachService {
       const result = await db.query(query, [sign, language]);
 
       if (result.rows.length === 0) {
-        logger.logWarning('No horoscope found for today', {
+        logger.logWarning('💾 No horoscope in DB, falling back to AI generation', {
           sign,
           language,
           date: today
         });
-        return null;
+
+        // 🔄 FALLBACK: Generate horoscope with AI
+        return await this._generateDailyHoroscope(zodiacSign, language);
       }
 
       const horoscope = result.rows[0];
