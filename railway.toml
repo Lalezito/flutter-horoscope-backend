@@ -9,9 +9,14 @@ providers = ["nodejs"]
 
 [build.nixpacks.phases.setup]
 nixPkgs = ["nodejs", "python3", "pkg-config", "pixman", "cairo", "pango", "libjpeg", "giflib", "librsvg"]
+aptPkgs = ["build-essential", "libcairo2-dev", "libpango1.0-dev", "libjpeg-dev", "libgif-dev", "librsvg2-dev"]
 
 [build.nixpacks.phases.install]
-cmds = ["npm install"]
+cmds = [
+  "npm config set legacy-peer-deps true",
+  "npm install --no-package-lock",
+  "npm rebuild canvas --build-from-source"
+]
 
 [build.nixpacks.phases.build]
 cmds = []
