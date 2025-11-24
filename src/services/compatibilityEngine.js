@@ -18,6 +18,9 @@
 const logger = require('./loggingService');
 const pool = require('../config/database');
 const swisseph = require('swisseph');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
 
 class CompatibilityEngine {
   constructor() {

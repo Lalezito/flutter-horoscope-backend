@@ -29,6 +29,8 @@ const receiptValidationService = require('./receiptValidationService');
 const logger = require('./loggingService');
 const circuitBreaker = require('./circuitBreakerService');
 const moment = require('moment-timezone');
+const sharp = require('sharp');
+const fs = require('fs').promises;
 
 class ImageGenerationService {
   constructor() {

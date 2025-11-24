@@ -21,6 +21,7 @@
 
 const logger = require('./loggingService');
 const { Pool } = require('pg');
+const promClient = require('prom-client');
 
 class AnalyticsEngine {
   constructor() {
@@ -312,7 +313,7 @@ class AnalyticsEngine {
     const result = await this.db.query(query);
     const breakdown = {};
 
-    result.rows.forEach(row => {
+    for (const row of result.rows) {
       const tier = row.tier;
       const monthlyPrice = tier === 'cosmic' ? 4.99 : 9.99;
       const avgLifetimeDays = parseFloat(row.avg_lifetime_days || 0);
@@ -324,7 +325,7 @@ class AnalyticsEngine {
         churnRate: await this.getTierChurnRate(tier),
         ltv: ltv
       };
-    });
+    }
 
     return breakdown;
   }
