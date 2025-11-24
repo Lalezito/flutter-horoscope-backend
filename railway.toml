@@ -1,8 +1,25 @@
+# Railway Configuration for Zodiac Backend
+# This ensures proper build with canvas and sharp dependencies
+
 [build]
-builder = "nixpacks"
+builder = "NIXPACKS"
+
+[build.nixpacksPlan]
+providers = ["nodejs"]
+
+[build.nixpacks.phases.setup]
+nixPkgs = ["nodejs", "python3", "pkg-config", "pixman", "cairo", "pango", "libjpeg", "giflib", "librsvg"]
+
+[build.nixpacks.phases.install]
+cmds = ["npm install"]
+
+[build.nixpacks.phases.build]
+cmds = []
 
 [deploy]
-startCommand = "npm start"
+startCommand = "npm run start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
 
-# Environment variables are managed in Railway Dashboard
-# DO NOT add secrets here - configure them in Railway UI instead
+[deploy.healthcheckPath]
+path = "/health"
