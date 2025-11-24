@@ -1,9 +1,18 @@
-# Nixpacks configuration for Railway
+# Nixpacks Configuration for Railway Deployment
+# Forces Railway to use our custom build commands instead of auto-detection
+
 [phases.setup]
-nixPkgs = ['nodejs_22', 'npm-9_x', 'python311', 'gcc', 'gnumake']
+nixPkgs = ["nodejs_22", "python311", "gcc", "gnumake", "pkg-config", "cairo", "pango", "pixman", "libjpeg", "giflib", "librsvg"]
 
 [phases.install]
-cmds = ['npm ci']
+cmds = [
+  "npm config set legacy-peer-deps true",
+  "npm install --no-package-lock",
+  "npm rebuild canvas --build-from-source"
+]
+
+[phases.build]
+cmds = []
 
 [start]
-cmd = 'npm start'
+cmd = "npm start"
