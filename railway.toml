@@ -20,6 +20,5 @@ cmds = []
 startCommand = "npm run start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-
-[deploy.healthcheckPath]
-path = "/health"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
