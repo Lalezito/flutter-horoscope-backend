@@ -1,9 +1,10 @@
 # Nixpacks Configuration for Railway Deployment
 # Forces Railway to use our custom build commands instead of auto-detection
 
-[providers]
-nodejs = "22"
-python = "3.11"
+providers = ["node"]
+
+[variables]
+NODE_VERSION = "20"
 
 [phases.setup]
 nixPkgs = ["gcc", "gnumake", "pkg-config", "cairo", "pango", "pixman", "libjpeg", "giflib", "librsvg"]
