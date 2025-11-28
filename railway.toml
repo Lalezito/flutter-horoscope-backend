@@ -6,7 +6,7 @@ builder = "NIXPACKS"
 nixpacksConfigPath = "nixpacks.toml"
 
 [build.nixpacksPlan]
-providers = ["nodejs"]
+# providers auto-detected from package.json
 
 [build.nixpacks.phases.setup]
 nixPkgs = ["nodejs", "python3", "pkg-config", "pixman", "cairo", "pango", "libjpeg", "giflib", "librsvg"]
