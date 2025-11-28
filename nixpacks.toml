@@ -1,7 +1,7 @@
 # Nixpacks Configuration for Railway Deployment
 # Forces Railway to use our custom build commands instead of auto-detection
 
-providers = ["node"]
+providers = ["nodejs"]
 
 [variables]
 NODE_VERSION = "20"
