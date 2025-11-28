@@ -1,6 +1,10 @@
-# Nixpacks config for native dependencies (sweph, canvas, sharp)
+# Nixpacks config for Node.js with native dependencies (sweph, canvas, sharp)
+
 [phases.setup]
-nixPkgs = ["python3", "gcc", "gnumake", "pkg-config", "cairo", "pango", "pixman", "libjpeg", "giflib", "librsvg"]
+nixPkgs = ["nodejs-20_x", "python3", "gcc", "gnumake", "pkg-config", "cairo", "pango", "pixman", "libjpeg", "giflib", "librsvg"]
 
 [phases.install]
 cmds = ["npm ci --legacy-peer-deps"]
+
+[start]
+cmd = "npm start"
