@@ -1,19 +1,17 @@
 # Nixpacks Configuration for Railway Deployment
-# Forces Railway to use our custom build commands instead of auto-detection
-
-providers = ["nodejs"]
+# Let Nixpacks auto-detect Node.js from package.json
 
 [variables]
 NODE_VERSION = "20"
+NPM_CONFIG_LEGACY_PEER_DEPS = "true"
 
 [phases.setup]
 nixPkgs = ["gcc", "gnumake", "pkg-config", "cairo", "pango", "pixman", "libjpeg", "giflib", "librsvg"]
 
 [phases.install]
 cmds = [
-  "npm config set legacy-peer-deps true",
   "npm install --no-package-lock",
-  "npm rebuild canvas --build-from-source"
+  "npm rebuild canvas --build-from-source || true"
 ]
 
 [phases.build]
