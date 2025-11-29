@@ -3,9 +3,21 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const helmet = require("helmet");
 const compression = require("compression");
+const Sentry = require("@sentry/node");
 
 // Load environment
 dotenv.config();
+
+// Initialize Sentry for error tracking
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    sendDefaultPii: true,
+    tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+  });
+  console.log('🛡️ Sentry error tracking initialized');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -210,8 +222,20 @@ app.use('*', (req, res) => {
   });
 });
 
-// Global error handler
+// Global error handler with Sentry
 app.use((error, req, res, next) => {
+  // Send error to Sentry
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(error, {
+      extra: {
+        url: req.url,
+        method: req.method,
+        ip: req.ip,
+        body: req.body
+      }
+    });
+  }
+
   logger.logError(error, {
     url: req.url,
     method: req.method,
