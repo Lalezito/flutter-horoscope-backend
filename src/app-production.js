@@ -44,6 +44,17 @@ try {
   };
 }
 
+// Database initialization
+let databaseInit;
+try {
+  databaseInit = require("./config/database-init");
+} catch (e) {
+  console.log('⚠️ Database init not available');
+  databaseInit = {
+    createTables: async () => console.log('Database init skipped')
+  };
+}
+
 // Trust proxy for Railway
 app.set('trust proxy', true);
 
@@ -239,6 +250,14 @@ app.listen(PORT, '0.0.0.0', async () => {
     console.log(`🔥 Firebase: ${status.initialized ? 'Initialized ✅' : 'Mock mode ⚠️'}`);
   } catch (error) {
     console.error('⚠️ Firebase initialization failed:', error.message);
+  }
+
+  // Initialize database tables
+  try {
+    await databaseInit.createTables();
+    console.log('🗄️ Database tables initialized');
+  } catch (error) {
+    console.error('⚠️ Database initialization failed:', error.message);
   }
 
   console.log('✅ Server ready to accept requests');
