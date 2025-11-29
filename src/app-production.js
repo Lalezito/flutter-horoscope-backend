@@ -55,6 +55,17 @@ try {
   };
 }
 
+// Cron jobs for automatic horoscope generation
+let cronJobs;
+try {
+  cronJobs = require("./services/cronJobs");
+} catch (e) {
+  console.log('⚠️ Cron jobs service not available');
+  cronJobs = {
+    init: () => console.log('Cron jobs skipped')
+  };
+}
+
 // Trust proxy for Railway
 app.set('trust proxy', true);
 
@@ -258,6 +269,14 @@ app.listen(PORT, '0.0.0.0', async () => {
     console.log('🗄️ Database tables initialized');
   } catch (error) {
     console.error('⚠️ Database initialization failed:', error.message);
+  }
+
+  // Initialize cron jobs for automatic horoscope generation
+  try {
+    cronJobs.init();
+    console.log('⏰ Cron jobs initialized');
+  } catch (error) {
+    console.error('⚠️ Cron jobs initialization failed:', error.message);
   }
 
   console.log('✅ Server ready to accept requests');
