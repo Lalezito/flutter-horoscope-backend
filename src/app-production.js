@@ -155,6 +155,11 @@ app.get('/health', (req, res) => {
   }
 });
 
+// Sentry test endpoint (remove in production if not needed)
+app.get("/debug-sentry", function mainHandler(req, res) {
+  throw new Error("My first Sentry error!");
+});
+
 // Ping endpoint
 app.get('/ping', (req, res) => {
   res.json({
