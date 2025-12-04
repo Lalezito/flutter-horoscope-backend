@@ -40,57 +40,173 @@ class AICoachService {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // AI Coach personas with specialized prompts
+    // AI Coach personas with specialized prompts - PREMIUM QUALITY
     this.personas = {
       general: {
-        name: "General Life Coach",
-        systemPrompt: `You are a wise and empathetic life coach helping people navigate their daily challenges. 
-        Provide practical, actionable advice while being supportive and encouraging. Keep responses concise but meaningful.
-        Focus on personal growth, goal achievement, and positive mindset development.`,
-        maxTokens: 500,
-      },
-      spiritual: {
-        name: "Spiritual Guide",
-        systemPrompt: `You are a spiritual guide combining ancient wisdom with modern psychology. 
-        Draw from various spiritual traditions (without favoring any specific religion) to provide guidance.
-        Help users find inner peace, purpose, and spiritual growth. Include mindfulness and meditation suggestions when appropriate.`,
-        maxTokens: 600,
-      },
-      career: {
-        name: "Career Coach",
-        systemPrompt: `You are a professional career coach with expertise in personal development and workplace success.
-        Provide strategic career advice, help with professional challenges, and guide users toward their career goals.
-        Focus on skill development, networking, leadership, and work-life balance.`,
-        maxTokens: 500,
-      },
-      relationship: {
-        name: "Relationship Advisor",
-        systemPrompt: `You are a compassionate relationship coach specializing in interpersonal dynamics.
-        Help users improve their relationships (romantic, family, friends, colleagues) through better communication,
-        emotional intelligence, and healthy boundary setting. Always promote respect and healthy relationships.`,
-        maxTokens: 500,
-      },
-      wellness: {
-        name: "Wellness Coach",
-        systemPrompt: `You are a holistic wellness coach focused on mental, physical, and emotional well-being.
-        Provide guidance on stress management, healthy habits, work-life balance, and overall life satisfaction.
-        Include practical tips for daily wellness routines and self-care practices.`,
-        maxTokens: 500,
-      },
-      motivational: {
-        name: "Motivational Coach",
-        systemPrompt: `You are an energetic and inspiring motivational coach who helps people overcome challenges and achieve their goals.
-        Use positive psychology, goal-setting techniques, and motivational strategies to empower users.
-        Be enthusiastic, uplifting, and focused on action and results.`,
+        name: "Stella - Cosmic Advisor",
+        systemPrompt: `You are Stella, a wise and warm cosmic advisor. You combine ancient astrological wisdom with practical modern life advice.
+
+## YOUR PERSONALITY
+- Warm, empathetic, like a wise friend
+- Use cosmic metaphors naturally (not forced)
+- Direct and honest, never evasive
+- Subtle sense of humor
+
+## RESPONSE RULES (MANDATORY)
+1. ALWAYS mention the user's zodiac sign if known
+2. Give SPECIFIC and ACTIONABLE advice
+3. Maximum 2-3 short paragraphs
+4. Include AT LEAST one concrete recommendation
+5. Use conversational language, not formal
+
+## FORBIDDEN (NEVER DO THIS)
+❌ "The stars have good signs for you" - TOO GENERIC
+❌ "The universe guides you" without context - EMPTY
+❌ Responses longer than 4 paragraphs - TOO LONG
+❌ Repeating the user's question - UNNECESSARY
+❌ Starting every response with "As a [sign]..."
+
+## LANGUAGE
+- Respond in the SAME language the user writes in
+- If user writes in Spanish, respond in Spanish
+- If user writes in English, respond in English
+- Match their tone and formality level
+
+## EXAMPLES
+
+QUESTION: "How will work go this week?"
+
+❌ BAD RESPONSE:
+"The stars indicate you'll have opportunities in your career. Keep a positive attitude and things will flow. The universe is on your side."
+
+✅ GOOD RESPONSE:
+"With Venus entering your 6th house this week, work relationships are favored. My advice: Wednesday or Thursday are ideal for that pending conversation with your boss. Prepare 2-3 key points beforehand. Is there something specific about work that concerns you?"`,
         maxTokens: 400,
+      },
+
+      spiritual: {
+        name: "Luna - Spiritual Guide",
+        systemPrompt: `You are Luna, a spiritual guide who combines mysticism with practical psychology.
+
+## YOUR ESSENCE
+- Deep but accessible
+- Respect all traditions without favoring any
+- Offer perspective, not dogma
+- Suggest concrete practices (meditation, journaling, etc.)
+
+## RULES
+1. Connect spiritual with practical
+2. Offer ONE specific practice or exercise
+3. Maximum 3 paragraphs
+4. Avoid being preachy
+
+## LANGUAGE
+- Respond in the SAME language the user writes in
+
+## FORBIDDEN
+❌ Doom/fear predictions
+❌ Overly mystical language that confuses
+❌ Vague responses about "energies"`,
+        maxTokens: 400,
+      },
+
+      career: {
+        name: "Marcus - Career Strategist",
+        systemPrompt: `You are Marcus, a career strategist with astrological insight.
+
+## YOUR APPROACH
+- Pragmatic and results-oriented
+- Combine astrological timing with real strategy
+- Give concrete steps, not theory
+
+## RULES
+1. ALWAYS give an actionable step
+2. Mention favorable timing if relevant
+3. Be direct and concise
+4. Ask about specific context
+
+## LANGUAGE
+- Respond in the SAME language the user writes in
+
+## EXAMPLE
+QUESTION: "Should I ask for a raise?"
+
+✅ GOOD: "With Jupiter in your 2nd house, timing favors money matters. Before the conversation: 1) Document 3 recent achievements with numbers, 2) Research market salaries, 3) Practice your pitch. When was your last review?"`,
+        maxTokens: 350,
+      },
+
+      relationship: {
+        name: "Sofia - Relationship Guide",
+        systemPrompt: `You are Sofia, a compassionate and direct relationship guide.
+
+## YOUR STYLE
+- Empathetic but honest
+- Never judge, but don't evade either
+- Focused on communication and healthy boundaries
+
+## RULES
+1. Validate emotions first
+2. Offer practical perspective after
+3. Suggest how to communicate something specific
+4. Always promote healthy relationships
+
+## LANGUAGE
+- Respond in the SAME language the user writes in
+
+## FORBIDDEN
+❌ Advice promoting dependency
+❌ Generalizing about signs ("all Aries are...")
+❌ Predicting the relationship's future`,
+        maxTokens: 400,
+      },
+
+      wellness: {
+        name: "Aria - Wellness Coach",
+        systemPrompt: `You are Aria, a holistic wellness coach.
+
+## YOUR APPROACH
+- Mind, body and spirit connected
+- Simple and achievable practices
+- No extremism or fads
+
+## RULES
+1. One practical recommendation per response
+2. Consider their sign for personalization
+3. Suggest something they can do TODAY
+4. Be realistic with expectations
+
+## LANGUAGE
+- Respond in the SAME language the user writes in`,
+        maxTokens: 350,
+      },
+
+      motivational: {
+        name: "Rex - Motivational Fire",
+        systemPrompt: `You are Rex, a motivational coach with contagious energy.
+
+## YOUR ENERGY
+- Enthusiastic but genuine (no fake positivity)
+- Focused on ACTION
+- Celebrate small steps
+
+## RULES
+1. Energize without being cheesy
+2. Give ONE step to do NOW
+3. Keep responses short and powerful
+4. Use their sign to motivate specifically
+
+## LANGUAGE
+- Respond in the SAME language the user writes in`,
+        maxTokens: 300,
       },
     };
 
     // Configuration
     this.config = {
-      defaultModel: "gpt-4-turbo-preview",
-      fallbackModel: "gpt-3.5-turbo",
-      maxContextMessages: 10, // Keep last 10 messages for context
+      complexModel: "gpt-4o", // Para preguntas complejas
+      simpleModel: "gpt-4o-mini", // Para preguntas simples
+      fallbackModel: "gpt-4o-mini", // Fallback
+      maxContextMessages: 3, // Reducido porque usamos memoria
       responseTimeoutMs: 25000, // 25 seconds timeout
       maxRetries: 2,
       cacheExpirationSeconds: 3600, // 1 hour cache for similar questions
@@ -99,13 +215,22 @@ class AICoachService {
     // Premium feature limits
     this.premiumLimits = {
       free: {
-        dailyMessages: 5,
-        sessionMinutes: 15,
-        personas: ["general"],
-        features: ["basic_chat"],
+        hasAccess: false,
+        dailyMessages: 0,
+        complexMessages: 0,
+        simpleMessages: 0,
+        sessionMinutes: 0,
+        personas: [],
+        features: [],
       },
       premium: {
+        hasAccess: true,
         dailyMessages: 100,
+        complexMessages: 500,      // GPT-4o - 500/mes
+        simpleMessages: 12500,     // GPT-4o-mini - 12,500/mes
+        minBalance: 30,            // Mínimo garantizado
+        dailyAccrual: 20,          // +20/día acumulables
+        maxBalance: 500,           // Tope máximo acumulado
         sessionMinutes: 120,
         personas: Object.keys(this.personas),
         features: [
@@ -116,6 +241,63 @@ class AICoachService {
         ],
       },
     };
+  }
+
+  /**
+   * 🧠 DETECT MESSAGE COMPLEXITY
+   * Determines if a message is simple or complex to select the appropriate AI model
+   * @private
+   * @param {string} message - User message to analyze
+   * @returns {string} - 'simple' or 'complex'
+   */
+  _detectMessageComplexity(message) {
+    // Retorna: 'simple' o 'complex'
+
+    const simplePatterns = [
+      // Saludos
+      /^(hola|hi|hey|hello|buenos?\s*(días|tardes|noches)|good\s*(morning|afternoon|evening))[\s!?.]*$/i,
+      // Despedidas
+      /^(adiós|adios|bye|chao|chau|hasta\s*luego|see\s*you|goodbye)[\s!?.]*$/i,
+      // Agradecimientos
+      /^(gracias|thanks|thank\s*you|thx|ty|muchas\s*gracias)[\s!?.]*$/i,
+      // Confirmaciones
+      /^(ok|okay|sí|si|yes|no|nope|vale|bien|genial|perfecto|cool|nice)[\s!?.]*$/i,
+      // Preguntas sobre estado
+      /^(cómo\s*estás|how\s*are\s*you|qué\s*tal|what'?s\s*up)[\s!?.]*$/i,
+    ];
+
+    const lowerMessage = message.toLowerCase().trim();
+
+    // Si es muy corto (<15 chars) y matchea pattern simple
+    if (lowerMessage.length < 15) {
+      for (const pattern of simplePatterns) {
+        if (pattern.test(lowerMessage)) {
+          return 'simple';
+        }
+      }
+    }
+
+    // Si tiene menos de 5 palabras y no tiene signos de pregunta complejos
+    const wordCount = lowerMessage.split(/\s+/).length;
+    if (wordCount <= 3 && !lowerMessage.includes('?')) {
+      return 'simple';
+    }
+
+    // Todo lo demás es complejo
+    return 'complex';
+  }
+
+  /**
+   * 🤖 SELECT AI MODEL
+   * Selects the appropriate AI model based on message complexity
+   * @private
+   * @param {string} complexity - Message complexity level ('simple' or 'complex')
+   * @returns {string} - Model name to use
+   */
+  _selectModel(complexity) {
+    return complexity === 'simple'
+      ? this.config.simpleModel
+      : this.config.complexModel;
   }
 
   /**
@@ -136,10 +318,18 @@ class AICoachService {
         options.receiptData
       );
       if (!premiumStatus.hasAccess) {
+        logger.getLogger().info('Free user attempted to access AI Coach', { userId });
         return {
           success: false,
           error: "premium_required",
-          message: "AI Coach requires premium subscription",
+          message: "El Cosmic Coach es una función exclusiva Premium. Actualiza tu suscripción para acceder a consejos personalizados ilimitados.",
+          upgradeUrl: "/premium",
+          features: [
+            "Consejos astrológicos personalizados",
+            "Memoria de conversaciones",
+            "Respuestas ilimitadas",
+            "Acceso a todos los coaches especializados"
+          ],
           premiumStatus,
         };
       }
@@ -337,10 +527,18 @@ class AICoachService {
         options.receiptData
       );
       if (!premiumStatus.hasAccess) {
+        logger.getLogger().info('Free user attempted to send message to AI Coach', { userId, sessionId });
         return {
           success: false,
           error: "premium_required",
-          message: "AI Coach requires premium subscription",
+          message: "El Cosmic Coach es una función exclusiva Premium. Actualiza tu suscripción para acceder a consejos personalizados ilimitados.",
+          upgradeUrl: "/premium",
+          features: [
+            "Consejos astrológicos personalizados",
+            "Memoria de conversaciones",
+            "Respuestas ilimitadas",
+            "Acceso a todos los coaches especializados"
+          ],
         };
       }
 
@@ -645,11 +843,11 @@ class AICoachService {
         : this.premiumLimits.free;
 
       return {
-        hasAccess: true, // Both free and premium users can access AI Coach
+        hasAccess: isPremium, // SOLO premium tiene acceso al AI Coach
         isPremium,
         allowedFeatures,
         subscriptionStatus,
-        message: isPremium ? "Premium access granted" : "Free tier access",
+        message: isPremium ? "Premium access granted" : "Premium subscription required for AI Coach access",
       };
     } catch (error) {
       logger.logError(error, { context: "premium_validation", userId });
@@ -664,98 +862,209 @@ class AICoachService {
   }
 
   /**
-   * 📊 PRIVATE: Check daily usage limits
+   * 📊 PRIVATE: Check daily usage with ACCUMULATION SYSTEM
    *
-   * Returns paywall information when free tier user hits 5 messages/day limit
+   * Rules:
+   * - Minimum guaranteed: 30 messages (always available)
+   * - Daily accrual: +20 messages/day if not used
+   * - Maximum accumulated: 500 messages
+   * - FREE users: blocked (hasAccess = false)
    */
   async _checkDailyUsage(userId, isPremium) {
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const cacheKey = `ai_coach_usage:${userId}:${today}`;
-
-      const cachedUsage = await redisService.get(cacheKey);
-      let usage = cachedUsage
-        ? JSON.parse(cachedUsage)
-        : { used: 0, date: today };
-
-      const limits = isPremium
-        ? this.premiumLimits.premium
-        : this.premiumLimits.free;
-      const allowed = usage.used < limits.dailyMessages;
-
-      // 🎯 PAYWALL: Show upgrade prompt when free user hits 5 messages
-      if (!isPremium && !allowed) {
+      // Solo premium tiene acceso
+      if (!isPremium) {
         return {
           allowed: false,
-          used: usage.used,
-          limit: limits.dailyMessages,
-          isPremium,
-          resetTime: new Date(new Date().setHours(23, 59, 59, 999)),
-          paywall: {
-            type: "daily_limit_exceeded",
-            message: `🌟 Llegaste a tu límite diario (${limits.dailyMessages} mensajes)
-
-¿Quieres más?
-
-✨ COSMIC ($4.99/mes):
-   • 50 mensajes/día
-   • Respuestas largas y empáticas
-   • Challenges diarios
-   • Modismos de tu país
-
-🚀 UNIVERSE ($9.99/mes):
-   • Mensajes ilimitados
-   • Moon + Rising sign
-   • Compatibilidad
-   • Lectura anual 2026
-
-👉 Upgrade ahora`,
-            cta: "Upgrade to Cosmic",
-            trialOffer: "7 días gratis - cancela cuando quieras",
-            tiers: [
-              {
-                name: "Cosmic",
-                price: "$4.99/mes",
-                features: [
-                  "50 mensajes/día",
-                  "Respuestas largas y empáticas",
-                  "Challenges diarios",
-                  "Modismos de tu país",
-                ],
-              },
-              {
-                name: "Universe",
-                price: "$9.99/mes",
-                features: [
-                  "Mensajes ilimitados",
-                  "Moon + Rising sign",
-                  "Compatibilidad",
-                  "Lectura anual 2026",
-                ],
-              },
-            ],
-          },
+          reason: 'premium_required',
+          balance: 0,
+          message: 'El Cosmic Coach es exclusivo para usuarios Premium'
         };
       }
 
+      const cacheKey = `ai_coach_balance:${userId}`;
+      const today = new Date().toISOString().split('T')[0];
+      const limits = this.premiumLimits.premium;
+
+      // Obtener balance actual
+      let balanceData = await redisService.get(cacheKey);
+      balanceData = balanceData ? JSON.parse(balanceData) : null;
+
+      if (!balanceData) {
+        // Usuario nuevo: empieza con mínimo garantizado (30)
+        balanceData = {
+          balance: limits.minBalance,
+          lastAccrualDate: today,
+          createdAt: today
+        };
+        logger.getLogger().info('New premium user, initial balance', { userId, balance: limits.minBalance });
+      } else {
+        // Calcular días desde última acumulación
+        const lastDate = new Date(balanceData.lastAccrualDate);
+        const todayDate = new Date(today);
+        const daysDiff = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+
+        if (daysDiff > 0) {
+          // Acumular +20 por cada día que pasó
+          const accrual = daysDiff * limits.dailyAccrual;
+          balanceData.balance += accrual;
+          balanceData.lastAccrualDate = today;
+
+          logger.getLogger().info('Balance accrual', {
+            userId,
+            daysDiff,
+            accrual,
+            newBalance: balanceData.balance
+          });
+        }
+
+        // Aplicar tope máximo de 500
+        if (balanceData.balance > limits.maxBalance) {
+          balanceData.balance = limits.maxBalance;
+        }
+
+        // Garantizar mínimo de 30
+        if (balanceData.balance < limits.minBalance) {
+          balanceData.balance = limits.minBalance;
+        }
+      }
+
+      // Guardar estado actualizado (TTL: 90 días)
+      await redisService.set(cacheKey, JSON.stringify(balanceData), 7776000);
+
+      const allowed = balanceData.balance > 0;
+
       return {
         allowed,
-        used: usage.used,
-        limit: limits.dailyMessages,
-        isPremium,
-        resetTime: new Date(new Date().setHours(23, 59, 59, 999)),
+        balance: balanceData.balance,
+        minGuaranteed: limits.minBalance,
+        maxAccumulated: limits.maxBalance,
+        dailyAccrual: limits.dailyAccrual,
+        lastAccrualDate: balanceData.lastAccrualDate,
+        isPremium: true
       };
-    } catch (error) {
-      logger.logError(error, { context: "usage_check", userId });
 
-      // On error, allow limited access
+    } catch (error) {
+      logger.logError(error, { context: 'check_daily_usage_accumulation', userId });
+      // En caso de error, permitir con balance mínimo
       return {
         allowed: true,
-        used: 0,
-        limit: 5,
-        isPremium: false,
-        resetTime: new Date(new Date().setHours(23, 59, 59, 999)),
+        balance: 30,
+        error: error.message
       };
+    }
+  }
+
+  /**
+   * 📉 PRIVATE: Decrement user balance after successful message
+   */
+  async _decrementBalance(userId) {
+    try {
+      const cacheKey = `ai_coach_balance:${userId}`;
+      let balanceData = await redisService.get(cacheKey);
+
+      if (balanceData) {
+        balanceData = JSON.parse(balanceData);
+        balanceData.balance = Math.max(0, balanceData.balance - 1);
+        await redisService.set(cacheKey, JSON.stringify(balanceData), 7776000);
+
+        logger.getLogger().info('Balance decremented', {
+          userId,
+          newBalance: balanceData.balance
+        });
+      }
+
+      return balanceData?.balance || 0;
+    } catch (error) {
+      logger.logError(error, { context: 'decrement_balance', userId });
+      return 0;
+    }
+  }
+
+  /**
+   * 🎯 CHECK MONTHLY LIMITS (SEPARATE FOR COMPLEX/SIMPLE)
+   * Validates if user has available quota for complex or simple messages this month
+   */
+  async _checkMonthlyLimits(userId, complexity) {
+    try {
+      const now = new Date();
+      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const cacheKey = `ai_coach_monthly:${userId}:${monthKey}`;
+
+      let monthlyData = await redisService.get(cacheKey);
+      monthlyData = monthlyData ? JSON.parse(monthlyData) : {
+        complexUsed: 0,
+        simpleUsed: 0,
+        month: monthKey
+      };
+
+      const limits = this.premiumLimits.premium;
+
+      if (complexity === 'complex') {
+        if (monthlyData.complexUsed >= limits.complexMessages) {
+          return {
+            allowed: false,
+            reason: 'complex_limit_reached',
+            used: monthlyData.complexUsed,
+            limit: limits.complexMessages,
+            suggestion: 'Tu límite de consultas complejas se renovará el próximo mes'
+          };
+        }
+      } else {
+        if (monthlyData.simpleUsed >= limits.simpleMessages) {
+          return {
+            allowed: false,
+            reason: 'simple_limit_reached',
+            used: monthlyData.simpleUsed,
+            limit: limits.simpleMessages
+          };
+        }
+      }
+
+      return {
+        allowed: true,
+        complexity,
+        complexUsed: monthlyData.complexUsed,
+        complexLimit: limits.complexMessages,
+        simpleUsed: monthlyData.simpleUsed,
+        simpleLimit: limits.simpleMessages
+      };
+
+    } catch (error) {
+      logger.logError(error, { context: 'check_monthly_limits', userId });
+      return { allowed: true }; // En caso de error, permitir
+    }
+  }
+
+  /**
+   * 📊 INCREMENT MONTHLY USAGE (SEPARATE FOR COMPLEX/SIMPLE)
+   * Increments the counter for complex or simple messages this month
+   */
+  async _incrementMonthlyUsage(userId, complexity) {
+    try {
+      const now = new Date();
+      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const cacheKey = `ai_coach_monthly:${userId}:${monthKey}`;
+
+      let monthlyData = await redisService.get(cacheKey);
+      monthlyData = monthlyData ? JSON.parse(monthlyData) : {
+        complexUsed: 0,
+        simpleUsed: 0,
+        month: monthKey
+      };
+
+      if (complexity === 'complex') {
+        monthlyData.complexUsed += 1;
+      } else {
+        monthlyData.simpleUsed += 1;
+      }
+
+      // TTL: hasta fin del mes siguiente (máximo 62 días)
+      await redisService.set(cacheKey, JSON.stringify(monthlyData), 5356800);
+
+      return monthlyData;
+    } catch (error) {
+      logger.logError(error, { context: 'increment_monthly_usage', userId });
     }
   }
 
@@ -1191,9 +1500,32 @@ FOCUS: 100% immediate safety, 0% astrology.`;
           content: userMessage,
         },
       ];
+      // 🎯 AGENTE 4: Check monthly limits BEFORE calling OpenAI
+      // 🎯 AGENTE 4: Check monthly limits BEFORE calling OpenAI
+      // 🧠 AGENTE 2: Detectar complejidad del mensaje y seleccionar modelo
+      const complexity = this._detectMessageComplexity(userMessage);
+      const selectedModel = this._selectModel(complexity);
+      const userId = sessionData.user_id;
+
+      logger.getLogger().info('🤖 AI Model selected', {
+        complexity,
+        model: selectedModel,
+        messageLength: userMessage.length,
+        userId
+      });
+
+      const monthlyCheck = await this._checkMonthlyLimits(userId, complexity);
+      if (!monthlyCheck.allowed) {
+        return {
+          success: false,
+          error: monthlyCheck.reason,
+          message: monthlyCheck.suggestion || 'Límite mensual alcanzado',
+          usage: monthlyCheck
+        };
+      }
 
       const completion = await this.openai.chat.completions.create({
-        model: this.config.defaultModel,
+        model: selectedModel,
         messages: messages,
         max_tokens: persona.maxTokens,
         temperature: 0.7,
@@ -1205,17 +1537,22 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       const tokensUsed = completion.usage.total_tokens;
       const responseTime = Date.now() - startTime;
 
+      // 🎯 AGENTE 4: Increment monthly usage AFTER successful response
+      await this._incrementMonthlyUsage(userId, complexity);
+      // 📉 Decrement daily balance
+      await this._decrementBalance(userId);
+
       return {
         success: true,
         content: response,
-        model: this.config.defaultModel,
+        model: selectedModel,
         tokensUsed,
         responseTime,
         confidenceScore: 0.85, // Default confidence score
         messageId: completion.id,
         // 🤖 NEW: Confirm AI is responding (for user transparency)
         aiPowered: true,
-        aiModel: `ChatGPT (${this.config.defaultModel})`,
+        aiModel: `ChatGPT (${selectedModel})`,
         // 💚 NEW: Include emotional context metadata
         emotionalContext: emotionalState.needsExtraSupport
           ? {
@@ -1266,6 +1603,11 @@ FOCUS: 100% immediate safety, 0% astrology.`;
             max_tokens: 300,
             temperature: 0.7,
           });
+
+          // 🎯 AGENTE 4: Increment monthly usage for fallback too
+          await this._incrementMonthlyUsage(userId, complexity);
+          // 📉 Decrement daily balance for fallback too
+          await this._decrementBalance(userId);
 
           return {
             success: true,
@@ -2340,6 +2682,281 @@ TONO: Comprensivo, empoderador, orientado a la acción. Como un coach que lo ent
         sessionId,
       });
       return 0;
+    }
+  }
+
+  /**
+   * 🧠 PRIVATE: Get user memory from Redis
+   * Retrieves persistent memory about user's profile, topics, preferences
+   * KEY: ai_coach_memory:{userId}
+   *
+   * @param {string} userId - User identifier
+   * @returns {Promise<Object>} User memory object with profile, topics, preferences, recentContext
+   */
+  async _getUserMemory(userId) {
+    try {
+      const memoryKey = `ai_coach_memory:${userId}`;
+      const cachedMemory = await redisService.get(memoryKey);
+
+      if (cachedMemory) {
+        const memory = JSON.parse(cachedMemory);
+        logger.getLogger().info("User memory retrieved from Redis", {
+          userId,
+          messageCount: memory.messageCount,
+          topicsCount: Object.keys(memory.topics || {}).length,
+        });
+        return memory;
+      }
+
+      // Return empty structure if no memory exists
+      return {
+        profile: {},
+        topics: {},
+        preferences: {
+          responseStyle: "conversational",
+          interests: [],
+          language: "en",
+        },
+        recentContext: "",
+        messageCount: 0,
+        updatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      logger.logError(error, {
+        context: "get_user_memory",
+        userId,
+      });
+      // Return empty structure on error
+      return {
+        profile: {},
+        topics: {},
+        preferences: {
+          responseStyle: "conversational",
+          interests: [],
+          language: "en",
+        },
+        recentContext: "",
+        messageCount: 0,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * 🧠 PRIVATE: Update user memory in Redis
+   * Updates memory every 5 messages using GPT-4o-mini to generate summary
+   * TTL: 90 days (7776000 seconds)
+   *
+   * @param {string} userId - User identifier
+   * @param {Object} conversation - Current conversation data with messageHistory
+   */
+  async _updateUserMemory(userId, conversation) {
+    try {
+      const memoryKey = `ai_coach_memory:${userId}`;
+
+      // Get current memory
+      const currentMemory = await this._getUserMemory(userId);
+      currentMemory.messageCount += 1;
+
+      // Only update every 5 messages to save costs
+      if (currentMemory.messageCount % 5 !== 0) {
+        // Just increment count and save
+        currentMemory.updatedAt = new Date().toISOString();
+        const ttl = 90 * 24 * 60 * 60; // 90 days
+        await redisService.setex(memoryKey, ttl, JSON.stringify(currentMemory));
+        return;
+      }
+
+      logger.getLogger().info("Updating user memory with AI summary", {
+        userId,
+        messageCount: currentMemory.messageCount,
+      });
+
+      // Get recent conversation for context (last 10 messages)
+      const recentMessages = conversation.messageHistory?.slice(-10) || [];
+      const conversationText = recentMessages
+        .map((msg) => `${msg.role}: ${msg.content}`)
+        .join("\n");
+
+      // Generate summary using GPT-4o-mini (cost-efficient)
+      const summaryPrompt = `Analyze this conversation and update the user profile. Extract key information about:
+1. Profile: zodiacSign, ascendant, birthDate, name (if mentioned)
+2. Topics: career, love, health, spirituality, finances (summarize what they've discussed)
+3. Preferences: responseStyle (direct/detailed/empathetic), interests, language
+4. Recent context: What was the last conversation about?
+
+Current memory:
+${JSON.stringify(currentMemory, null, 2)}
+
+Recent conversation:
+${conversationText}
+
+Return ONLY a valid JSON object with this structure:
+{
+  "profile": {"zodiacSign": "...", "ascendant": "...", "birthDate": "...", "name": "..."},
+  "topics": {"career": "...", "love": "...", "health": "..."},
+  "preferences": {"responseStyle": "...", "interests": ["..."], "language": "..."},
+  "recentContext": "..."
+}`;
+
+      const completion = await this.openai.chat.completions.create({
+        model: "gpt-4o-mini", // Cost-efficient model for summaries
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a memory analyzer. Extract and summarize user information from conversations. Return ONLY valid JSON, no markdown, no explanations.",
+          },
+          {
+            role: "user",
+            content: summaryPrompt,
+          },
+        ],
+        max_tokens: 500,
+        temperature: 0.3, // Low temperature for consistent extraction
+      });
+
+      let updatedMemory = null;
+      try {
+        const responseText = completion.choices[0].message.content.trim();
+        // Remove markdown code blocks if present
+        const jsonText = responseText.replace(/```json\n?|\n?```/g, "");
+        updatedMemory = JSON.parse(jsonText);
+      } catch (parseError) {
+        logger.logError(parseError, {
+          context: "parse_memory_summary",
+          userId,
+          response: completion.choices[0].message.content,
+        });
+        // Keep current memory if parsing fails
+        updatedMemory = {
+          profile: currentMemory.profile,
+          topics: currentMemory.topics,
+          preferences: currentMemory.preferences,
+          recentContext: currentMemory.recentContext,
+        };
+      }
+
+      // Merge with current memory (preserve existing data)
+      const finalMemory = {
+        profile: { ...currentMemory.profile, ...updatedMemory.profile },
+        topics: { ...currentMemory.topics, ...updatedMemory.topics },
+        preferences: {
+          ...currentMemory.preferences,
+          ...updatedMemory.preferences,
+        },
+        recentContext: updatedMemory.recentContext || currentMemory.recentContext,
+        messageCount: currentMemory.messageCount,
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Save to Redis with 90-day TTL
+      const ttl = 90 * 24 * 60 * 60; // 90 days in seconds
+      await redisService.setex(memoryKey, ttl, JSON.stringify(finalMemory));
+
+      logger.getLogger().info("User memory updated successfully", {
+        userId,
+        messageCount: finalMemory.messageCount,
+        tokensUsed: completion.usage.total_tokens,
+      });
+    } catch (error) {
+      logger.logError(error, {
+        context: "update_user_memory",
+        userId,
+      });
+      // Don't throw - memory update failure shouldn't break the chat
+    }
+  }
+
+  /**
+   * 🧠 PRIVATE: Build context with user memory for AI
+   * Compresses memory to ~200 tokens and adds recent session messages
+   *
+   * @param {string} userId - User identifier
+   * @param {string} newMessage - Current user message
+   * @param {Array} recentMessages - Recent conversation messages (last 2-3)
+   * @returns {Promise<string>} Optimized context string for AI prompt
+   */
+  async _buildContextWithMemory(userId, newMessage, recentMessages = []) {
+    try {
+      const memory = await this._getUserMemory(userId);
+
+      // Build compressed memory context (~200 tokens)
+      let memoryContext = "";
+
+      // Profile (if exists)
+      if (Object.keys(memory.profile).length > 0) {
+        const profileParts = [];
+        if (memory.profile.name) profileParts.push(`Name: ${memory.profile.name}`);
+        if (memory.profile.zodiacSign)
+          profileParts.push(`Sign: ${memory.profile.zodiacSign}`);
+        if (memory.profile.ascendant)
+          profileParts.push(`Ascendant: ${memory.profile.ascendant}`);
+        if (memory.profile.birthDate)
+          profileParts.push(`Born: ${memory.profile.birthDate}`);
+
+        if (profileParts.length > 0) {
+          memoryContext += `\n👤 USER PROFILE: ${profileParts.join(", ")}`;
+        }
+      }
+
+      // Topics (compressed)
+      if (Object.keys(memory.topics).length > 0) {
+        const topicSummaries = [];
+        for (const [topic, summary] of Object.entries(memory.topics)) {
+          if (summary && summary.trim()) {
+            // Truncate to first 60 chars to save tokens
+            const shortSummary =
+              summary.length > 60 ? summary.substring(0, 60) + "..." : summary;
+            topicSummaries.push(`${topic}: ${shortSummary}`);
+          }
+        }
+        if (topicSummaries.length > 0) {
+          memoryContext += `\n📚 PAST TOPICS: ${topicSummaries.join(" | ")}`;
+        }
+      }
+
+      // Recent context
+      if (memory.recentContext && memory.recentContext.trim()) {
+        const shortContext =
+          memory.recentContext.length > 100
+            ? memory.recentContext.substring(0, 100) + "..."
+            : memory.recentContext;
+        memoryContext += `\n💭 LAST SESSION: ${shortContext}`;
+      }
+
+      // Preferences
+      if (memory.preferences.responseStyle) {
+        memoryContext += `\n⚙️ STYLE: ${memory.preferences.responseStyle}`;
+      }
+      if (memory.preferences.interests?.length > 0) {
+        memoryContext += ` | Interests: ${memory.preferences.interests.slice(0, 3).join(", ")}`;
+      }
+
+      // Add recent session messages (last 2-3 messages for immediate context)
+      if (recentMessages.length > 0) {
+        const recentText = recentMessages
+          .slice(-3)
+          .map((msg) => `${msg.role}: ${msg.content.substring(0, 100)}`)
+          .join("\n");
+        memoryContext += `\n\n💬 CURRENT SESSION:\n${recentText}`;
+      }
+
+      logger.getLogger().info("Context built with user memory", {
+        userId,
+        memoryLength: memoryContext.length,
+        hasProfile: Object.keys(memory.profile).length > 0,
+        topicsCount: Object.keys(memory.topics).length,
+      });
+
+      return memoryContext;
+    } catch (error) {
+      logger.logError(error, {
+        context: "build_context_with_memory",
+        userId,
+      });
+      // Return empty context on error - don't break the chat
+      return "";
     }
   }
 

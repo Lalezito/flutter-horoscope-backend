@@ -273,7 +273,7 @@ class RedisService {
 
   async set(key, value, ttlSeconds = 3600) {
     const fullKey = `${this.keyPatterns.cache}${key}`;
-    
+
     try {
       if (this.isConnected) {
         await this.client.setEx(fullKey, ttlSeconds, JSON.stringify(value));
@@ -285,13 +285,20 @@ class RedisService {
           expires: Date.now() + (ttlSeconds * 1000)
         });
       }
-      
+
       return true;
-      
+
     } catch (error) {
       console.error('Cache set error:', error);
       return false;
     }
+  }
+
+  /**
+   * Alias for set() - for compatibility with existing code
+   */
+  async setex(key, ttlSeconds, value) {
+    return await this.set(key, value, ttlSeconds);
   }
 
   async delete(key) {

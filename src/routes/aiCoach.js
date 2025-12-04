@@ -586,7 +586,7 @@ router.post('/validate-premium',
         success: true,
         premium: {
           isPremium,
-          hasAccess: true,
+          hasAccess: isPremium, // SOLO premium tiene acceso
           allowedFeatures,
           subscriptionStatus: {
             userId: subscriptionStatus.userId,
