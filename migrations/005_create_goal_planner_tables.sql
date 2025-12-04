@@ -1,6 +1,7 @@
--- Migration: 005_create_goal_planner_tables.sql
+-- Migration: 005_create_goal_planner_tables.sql (FIXED)
 -- Description: Create tables for AI-powered Goal Planner feature
 -- Date: 2025-10-08
+-- Fixed: 2025-12-04 - Corrected PostgreSQL syntax for indexes
 
 -- Main goals table
 CREATE TABLE IF NOT EXISTS goals (
@@ -36,14 +37,14 @@ CREATE TABLE IF NOT EXISTS goals (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP,
-
-    -- Indexes
-    INDEX idx_goals_user_id (user_id),
-    INDEX idx_goals_status (status),
-    INDEX idx_goals_focus_area (focus_area),
-    INDEX idx_goals_created_at (created_at)
+    completed_at TIMESTAMP
 );
+
+-- Create indexes for goals table
+CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id);
+CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status);
+CREATE INDEX IF NOT EXISTS idx_goals_focus_area ON goals(focus_area);
+CREATE INDEX IF NOT EXISTS idx_goals_created_at ON goals(created_at);
 
 -- Micro habits table
 CREATE TABLE IF NOT EXISTS goal_micro_habits (
@@ -55,10 +56,11 @@ CREATE TABLE IF NOT EXISTS goal_micro_habits (
     duration VARCHAR(100), -- "15 minutes", "30 minutes", etc
     order_index INTEGER DEFAULT 0,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    INDEX idx_micro_habits_goal_id (goal_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create index for micro habits
+CREATE INDEX IF NOT EXISTS idx_micro_habits_goal_id ON goal_micro_habits(goal_id);
 
 -- Milestones table
 CREATE TABLE IF NOT EXISTS goal_milestones (
@@ -72,11 +74,12 @@ CREATE TABLE IF NOT EXISTS goal_milestones (
     order_index INTEGER DEFAULT 0,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    INDEX idx_milestones_goal_id (goal_id),
-    INDEX idx_milestones_completed (is_completed)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create indexes for milestones
+CREATE INDEX IF NOT EXISTS idx_milestones_goal_id ON goal_milestones(goal_id);
+CREATE INDEX IF NOT EXISTS idx_milestones_completed ON goal_milestones(is_completed);
 
 -- Obstacles table
 CREATE TABLE IF NOT EXISTS goal_obstacles (
@@ -87,10 +90,11 @@ CREATE TABLE IF NOT EXISTS goal_obstacles (
     solution TEXT,
     order_index INTEGER DEFAULT 0,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    INDEX idx_obstacles_goal_id (goal_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create index for obstacles
+CREATE INDEX IF NOT EXISTS idx_obstacles_goal_id ON goal_obstacles(goal_id);
 
 -- Check-ins table (progress tracking)
 CREATE TABLE IF NOT EXISTS goal_checkins (
@@ -102,11 +106,12 @@ CREATE TABLE IF NOT EXISTS goal_checkins (
     mood VARCHAR(50), -- excited, motivated, neutral, struggling, stuck
     feedback TEXT,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    INDEX idx_checkins_goal_id (goal_id),
-    INDEX idx_checkins_created_at (created_at)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create indexes for check-ins
+CREATE INDEX IF NOT EXISTS idx_checkins_goal_id ON goal_checkins(goal_id);
+CREATE INDEX IF NOT EXISTS idx_checkins_created_at ON goal_checkins(created_at);
 
 -- Comments
 COMMENT ON TABLE goals IS 'AI-generated SMART goals for users based on zodiac sign';
