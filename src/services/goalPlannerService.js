@@ -10,19 +10,20 @@
  * - Goal tracking and check-ins
  */
 
-const dotenv = require('dotenv');
-if (process.env.NODE_ENV === 'production') {
-  dotenv.config({ path: '.env.production' });
-  dotenv.config({ path: '.env' }); // Fallback
+const dotenv = require("dotenv");
+if (process.env.NODE_ENV === "production") {
+  dotenv.config({ path: ".env.production" });
+  dotenv.config({ path: ".env" }); // Fallback
 } else {
   dotenv.config();
 }
 
-const OpenAI = require('openai');
-const { randomUUID } = require('crypto');
-const db = require('../config/db');
-const logger = require('./loggingService');
-const circuitBreaker = require('./circuitBreakerService');
+const OpenAI = require("openai");
+const { randomUUID } = require("crypto");
+const db = require("../config/db");
+const logger = require("./loggingService");
+const circuitBreaker = require("./circuitBreakerService");
+const { normalizeSignName } = require("../utils/signTranslations");
 
 class GoalPlannerService {
   constructor() {
@@ -31,27 +32,71 @@ class GoalPlannerService {
     });
 
     this.config = {
-      model: 'gpt-4-turbo-preview',
-      fallbackModel: 'gpt-3.5-turbo',
+      model: "gpt-4-turbo-preview",
+      fallbackModel: "gpt-3.5-turbo",
       maxTokens: 1500,
       temperature: 0.7,
-      timeoutMs: 30000
+      timeoutMs: 30000,
     };
 
     // Zodiac characteristics for goal personalization
     this.zodiacTraits = {
-      aries: { strength: 'initiative', challenge: 'patience', style: 'action-oriented' },
-      taurus: { strength: 'persistence', challenge: 'flexibility', style: 'steady progress' },
-      gemini: { strength: 'adaptability', challenge: 'focus', style: 'varied approach' },
-      cancer: { strength: 'intuition', challenge: 'boundaries', style: 'emotional connection' },
-      leo: { strength: 'confidence', challenge: 'ego', style: 'bold action' },
-      virgo: { strength: 'analysis', challenge: 'perfectionism', style: 'detailed planning' },
-      libra: { strength: 'balance', challenge: 'decision-making', style: 'harmonious approach' },
-      scorpio: { strength: 'determination', challenge: 'control', style: 'intense focus' },
-      sagittarius: { strength: 'optimism', challenge: 'commitment', style: 'explorative' },
-      capricorn: { strength: 'discipline', challenge: 'rigidity', style: 'structured growth' },
-      aquarius: { strength: 'innovation', challenge: 'detachment', style: 'unique path' },
-      pisces: { strength: 'creativity', challenge: 'boundaries', style: 'intuitive flow' }
+      aries: {
+        strength: "initiative",
+        challenge: "patience",
+        style: "action-oriented",
+      },
+      taurus: {
+        strength: "persistence",
+        challenge: "flexibility",
+        style: "steady progress",
+      },
+      gemini: {
+        strength: "adaptability",
+        challenge: "focus",
+        style: "varied approach",
+      },
+      cancer: {
+        strength: "intuition",
+        challenge: "boundaries",
+        style: "emotional connection",
+      },
+      leo: { strength: "confidence", challenge: "ego", style: "bold action" },
+      virgo: {
+        strength: "analysis",
+        challenge: "perfectionism",
+        style: "detailed planning",
+      },
+      libra: {
+        strength: "balance",
+        challenge: "decision-making",
+        style: "harmonious approach",
+      },
+      scorpio: {
+        strength: "determination",
+        challenge: "control",
+        style: "intense focus",
+      },
+      sagittarius: {
+        strength: "optimism",
+        challenge: "commitment",
+        style: "explorative",
+      },
+      capricorn: {
+        strength: "discipline",
+        challenge: "rigidity",
+        style: "structured growth",
+      },
+      aquarius: {
+        strength: "innovation",
+        challenge: "detachment",
+        style: "unique path",
+      },
+      pisces: {
+        strength: "creativity",
+        challenge: "boundaries",
+        style: "intuitive flow",
+      },
     };
   }
 
@@ -66,14 +111,17 @@ class GoalPlannerService {
       emotionalState,
       focusArea, // 'career', 'relationships', 'wellness', 'personal_growth'
       timeframe, // 'weekly', 'monthly', 'quarterly'
-      languageCode = 'en'
+      languageCode = "en",
     } = params;
 
     try {
-      logger.getLogger().info('Generating AI goals', { userId, zodiacSign, focusArea });
+      logger
+        .getLogger()
+        .info("Generating AI goals", { userId, zodiacSign, focusArea });
 
       // Get zodiac traits
-      const traits = this.zodiacTraits[zodiacSign.toLowerCase()] || this.zodiacTraits.aries;
+      const traits =
+        this.zodiacTraits[zodiacSign.toLowerCase()] || this.zodiacTraits.aries;
 
       // Build AI prompt
       const prompt = this._buildGoalPrompt({
@@ -83,7 +131,7 @@ class GoalPlannerService {
         emotionalState,
         focusArea,
         timeframe,
-        languageCode
+        languageCode,
       });
 
       // Call OpenAI directly (circuit breaker adds complexity for initial testing)
@@ -91,17 +139,17 @@ class GoalPlannerService {
         model: this.config.model,
         messages: [
           {
-            role: 'system',
-            content: this._getSystemPrompt(languageCode)
+            role: "system",
+            content: this._getSystemPrompt(languageCode),
           },
           {
-            role: 'user',
-            content: prompt
-          }
+            role: "user",
+            content: prompt,
+          },
         ],
         max_tokens: this.config.maxTokens,
         temperature: this.config.temperature,
-        response_format: { type: 'json_object' }
+        response_format: { type: "json_object" },
       });
 
       // Parse AI response
@@ -116,27 +164,28 @@ class GoalPlannerService {
         focusArea,
         objective,
         ...aiResponse,
-        status: 'active',
-        createdAt: new Date().toISOString()
+        status: "active",
+        createdAt: new Date().toISOString(),
       };
 
       // Save to database
       await this._saveGoal(goalData);
 
-      logger.getLogger().info('AI goals generated successfully', { userId, goalId });
+      logger
+        .getLogger()
+        .info("AI goals generated successfully", { userId, goalId });
 
       return {
         success: true,
         goalId,
         goal: goalData,
-        responseTime: Date.now()
+        responseTime: Date.now(),
       };
-
     } catch (error) {
       logger.logError(error, {
-        service: 'goalPlannerService',
-        method: 'generateGoals',
-        userId
+        service: "goalPlannerService",
+        method: "generateGoals",
+        userId,
       });
 
       throw error;
@@ -148,13 +197,14 @@ class GoalPlannerService {
    */
   _getSystemPrompt(languageCode) {
     const languageInstructions = {
-      'es': 'Debes responder COMPLETAMENTE en español. Todos los textos, títulos, descripciones y mensajes deben estar en español. NO uses nombres fantasiosos como "Rally\'s Ritual", "Golems", etc. Usa nombres simples, directos y prácticos en español.',
-      'en': 'You must respond COMPLETELY in English. All text, titles, descriptions and messages must be in English. DO NOT use fantasy names like "Rally\'s Ritual", "Golems", etc. Use simple, direct, practical names in English.',
-      'pt': 'Você deve responder COMPLETAMENTE em português. Todos os textos, títulos, descrições e mensagens devem estar em português. NÃO use nomes fantasiosos como "Rally\'s Ritual", "Golems", etc. Use nomes simples, diretos e práticos em português.',
-      'fr': 'Vous devez répondre COMPLÈTEMENT en français. Tous les textes, titres, descriptions et messages doivent être en français. N\'utilisez PAS de noms fantaisistes comme "Rally\'s Ritual", "Golems", etc. Utilisez des noms simples, directs et pratiques en français.',
+      es: 'Debes responder COMPLETAMENTE en español. Todos los textos, títulos, descripciones y mensajes deben estar en español. NO uses nombres fantasiosos como "Rally\'s Ritual", "Golems", etc. Usa nombres simples, directos y prácticos en español.',
+      en: 'You must respond COMPLETELY in English. All text, titles, descriptions and messages must be in English. DO NOT use fantasy names like "Rally\'s Ritual", "Golems", etc. Use simple, direct, practical names in English.',
+      pt: 'Você deve responder COMPLETAMENTE em português. Todos os textos, títulos, descrições e mensagens devem estar em português. NÃO use nomes fantasiosos como "Rally\'s Ritual", "Golems", etc. Use nomes simples, diretos e práticos em português.',
+      fr: 'Vous devez répondre COMPLÈTEMENT en français. Tous les textes, titres, descriptions et messages doivent être en français. N\'utilisez PAS de noms fantaisistes comme "Rally\'s Ritual", "Golems", etc. Utilisez des noms simples, directs et pratiques en français.',
     };
 
-    const instruction = languageInstructions[languageCode] || languageInstructions['en'];
+    const instruction =
+      languageInstructions[languageCode] || languageInstructions["en"];
 
     return `You are an expert life coach and astrologer who creates personalized SMART goals. Return responses in valid JSON format only.
 
@@ -172,15 +222,23 @@ NAMING GUIDELINES:
    * Build AI prompt for goal generation
    */
   _buildGoalPrompt(params) {
-    const { zodiacSign, traits, objective, emotionalState, focusArea, timeframe, languageCode } = params;
+    const {
+      zodiacSign,
+      traits,
+      objective,
+      emotionalState,
+      focusArea,
+      timeframe,
+      languageCode,
+    } = params;
 
     const languageNames = {
-      'es': 'español',
-      'en': 'English',
-      'pt': 'português',
-      'fr': 'français'
+      es: "español",
+      en: "English",
+      pt: "português",
+      fr: "français",
     };
-    const languageName = languageNames[languageCode] || 'English';
+    const languageName = languageNames[languageCode] || "English";
 
     return `IMPORTANT: Respond ENTIRELY in ${languageName}. All content must be in ${languageName}.
 
@@ -274,16 +332,17 @@ Make it deeply personal, actionable, and aligned with ${zodiacSign} characterist
         JSON.stringify(goalData.potentialObstacles),
         goalData.motivationalMessage,
         goalData.status,
-        goalData.createdAt
+        goalData.createdAt,
       ];
 
       const result = await db.query(query, values);
       return result.rows[0];
-
     } catch (error) {
       // If table doesn't exist, log warning but don't fail
-      if (error.code === '42P01') {
-        logger.getLogger().warn('premium_goals table not found - run migrations');
+      if (error.code === "42P01") {
+        logger
+          .getLogger()
+          .warn("premium_goals table not found - run migrations");
       }
       throw error;
     }
@@ -292,7 +351,7 @@ Make it deeply personal, actionable, and aligned with ${zodiacSign} characterist
   /**
    * Get user goals
    */
-  async getUserGoals(userId, status = 'active') {
+  async getUserGoals(userId, status = "active") {
     try {
       const query = `
         SELECT * FROM premium_goals
@@ -302,18 +361,35 @@ Make it deeply personal, actionable, and aligned with ${zodiacSign} characterist
 
       const result = await db.query(query, [userId, status]);
 
-      return result.rows.map(row => ({
+      return result.rows.map((row) => ({
         ...row,
         // PostgreSQL JSONB columns are already parsed
-        mainGoal: typeof row.main_goal === 'string' ? JSON.parse(row.main_goal) : row.main_goal,
-        weeklyFocus: typeof row.weekly_focus === 'string' ? JSON.parse(row.weekly_focus) : row.weekly_focus,
-        microHabits: typeof row.micro_habits === 'string' ? JSON.parse(row.micro_habits) : row.micro_habits,
-        successIndicators: typeof row.success_indicators === 'string' ? JSON.parse(row.success_indicators) : row.success_indicators,
-        potentialObstacles: typeof row.potential_obstacles === 'string' ? JSON.parse(row.potential_obstacles) : row.potential_obstacles
+        mainGoal:
+          typeof row.main_goal === "string"
+            ? JSON.parse(row.main_goal)
+            : row.main_goal,
+        weeklyFocus:
+          typeof row.weekly_focus === "string"
+            ? JSON.parse(row.weekly_focus)
+            : row.weekly_focus,
+        microHabits:
+          typeof row.micro_habits === "string"
+            ? JSON.parse(row.micro_habits)
+            : row.micro_habits,
+        successIndicators:
+          typeof row.success_indicators === "string"
+            ? JSON.parse(row.success_indicators)
+            : row.success_indicators,
+        potentialObstacles:
+          typeof row.potential_obstacles === "string"
+            ? JSON.parse(row.potential_obstacles)
+            : row.potential_obstacles,
       }));
-
     } catch (error) {
-      logger.logError(error, { service: 'goalPlannerService', method: 'getUserGoals' });
+      logger.logError(error, {
+        service: "goalPlannerService",
+        method: "getUserGoals",
+      });
       throw error;
     }
   }
@@ -338,20 +414,24 @@ Make it deeply personal, actionable, and aligned with ${zodiacSign} characterist
         progress,
         feedback,
         mood,
-        new Date().toISOString()
+        new Date().toISOString(),
       ];
 
       const result = await db.query(query, values);
 
-      logger.getLogger().info('Goal check-in recorded', { goalId, userId, progress });
+      logger
+        .getLogger()
+        .info("Goal check-in recorded", { goalId, userId, progress });
 
       return {
         success: true,
-        checkIn: result.rows[0]
+        checkIn: result.rows[0],
       };
-
     } catch (error) {
-      logger.logError(error, { service: 'goalPlannerService', method: 'recordCheckIn' });
+      logger.logError(error, {
+        service: "goalPlannerService",
+        method: "recordCheckIn",
+      });
       throw error;
     }
   }
@@ -359,7 +439,7 @@ Make it deeply personal, actionable, and aligned with ${zodiacSign} characterist
   /**
    * Get goal analytics
    */
-  async getGoalAnalytics(userId, timeframe = '30d') {
+  async getGoalAnalytics(userId, timeframe = "30d") {
     try {
       const query = `
         SELECT
@@ -383,14 +463,21 @@ Make it deeply personal, actionable, and aligned with ${zodiacSign} characterist
         analytics: result.rows,
         summary: {
           totalGoals: result.rows.length,
-          activeGoals: result.rows.filter(r => r.status === 'active').length,
-          completedGoals: result.rows.filter(r => r.status === 'completed').length,
-          avgProgress: result.rows.reduce((sum, r) => sum + (parseFloat(r.avg_progress) || 0), 0) / result.rows.length || 0
-        }
+          activeGoals: result.rows.filter((r) => r.status === "active").length,
+          completedGoals: result.rows.filter((r) => r.status === "completed")
+            .length,
+          avgProgress:
+            result.rows.reduce(
+              (sum, r) => sum + (parseFloat(r.avg_progress) || 0),
+              0
+            ) / result.rows.length || 0,
+        },
       };
-
     } catch (error) {
-      logger.logError(error, { service: 'goalPlannerService', method: 'getGoalAnalytics' });
+      logger.logError(error, {
+        service: "goalPlannerService",
+        method: "getGoalAnalytics",
+      });
       throw error;
     }
   }
@@ -413,19 +500,21 @@ Make it deeply personal, actionable, and aligned with ${zodiacSign} characterist
 
       return {
         success: true,
-        stats: result.rows[0]
+        stats: result.rows[0],
       };
-
     } catch (error) {
-      logger.logError(error, { service: 'goalPlannerService', method: 'getStats' });
+      logger.logError(error, {
+        service: "goalPlannerService",
+        method: "getStats",
+      });
       return {
         success: false,
         stats: {
           total_users: 0,
           total_goals: 0,
           active_goals: 0,
-          completed_goals: 0
-        }
+          completed_goals: 0,
+        },
       };
     }
   }

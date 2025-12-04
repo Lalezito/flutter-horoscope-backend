@@ -2,14 +2,18 @@ const db = require("../config/db");
 const weeklyController = require("./weeklyController");
 const aiCoachService = require("../services/aiCoachService");
 const logger = require("../services/loggingService");
-const { body, validationResult } = require('express-validator');
+const { body, validationResult } = require("express-validator");
+const { normalizeSignName } = require("../utils/signTranslations");
 
 class CoachingController {
   async getDailyHoroscope(req, res) {
     const { sign, language, lang } = req.query;
-    
+
     // Support both 'language' and 'lang' parameters for compatibility
     const languageCode = language || lang;
+
+    // Normalizar el nombre del signo (inglés → español)
+    const normalizedSign = normalizeSignName(sign);
 
     try {
       const query = `
@@ -18,7 +22,7 @@ class CoachingController {
         AND sign ILIKE $1 AND language_code = $2
         LIMIT 1;
       `;
-      const result = await db.query(query, [sign, languageCode]);
+      const result = await db.query(query, [normalizedSign, languageCode]);
 
       if (result.rows.length === 0) {
         return res.status(404).json({ error: "No horoscope found" });
@@ -33,9 +37,12 @@ class CoachingController {
 
   async getAllHoroscopes(req, res) {
     const { sign, language, lang } = req.query;
-    
+
     // Support both 'language' and 'lang' parameters for compatibility
     const languageCode = language || lang;
+
+    // Normalizar el nombre del signo si se proporciona
+    const normalizedSign = sign ? normalizeSignName(sign) : null;
 
     try {
       const query = `
@@ -45,7 +52,10 @@ class CoachingController {
         AND ($2::text IS NULL OR sign ILIKE $2)
         ORDER BY sign;
       `;
-      const result = await db.query(query, [languageCode || null, sign || null]);
+      const result = await db.query(query, [
+        languageCode || null,
+        normalizedSign,
+      ]);
       res.json(result.rows);
     } catch (error) {
       console.error("DB error:", error);
@@ -62,8 +72,8 @@ class CoachingController {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid input',
-        details: errors.array()
+        error: "Invalid input",
+        details: errors.array(),
       });
     }
 
@@ -74,20 +84,25 @@ class CoachingController {
       // Build user context for personalized coaching
       const userContext = {
         userId: userId || `anonymous_${Date.now()}`,
-        zodiacSign: zodiacSign || 'Leo', // Default to Leo if not provided
-        language: language || 'en',
-        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        zodiacSign: zodiacSign || "Leo", // Default to Leo if not provided
+        language: language || "en",
+        requestId: `req_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}`,
       };
 
-      logger.getLogger().info('AI Coach: New chat request', {
+      logger.getLogger().info("AI Coach: New chat request", {
         userId: userContext.userId,
         zodiacSign: userContext.zodiacSign,
         messageLength: message?.length,
-        language: userContext.language
+        language: userContext.language,
       });
 
       // Generate AI coach response
-      const coachResponse = await aiCoachService.generateCoachResponse(message, userContext);
+      const coachResponse = await aiCoachService.generateCoachResponse(
+        message,
+        userContext
+      );
 
       const responseTime = Date.now() - startTime;
 
@@ -101,33 +116,33 @@ class CoachingController {
           responseTime: responseTime,
           requestId: userContext.requestId,
           zodiacSign: userContext.zodiacSign,
-          timestamp: coachResponse.timestamp
+          timestamp: coachResponse.timestamp,
         },
         meta: {
           tokensUsed: coachResponse.tokensUsed,
           model: coachResponse.model,
           responseType: coachResponse.responseType,
-          cached: coachResponse.cached || false
-        }
+          cached: coachResponse.cached || false,
+        },
       });
-
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       logger.logError(error, {
-        controller: 'CoachingController',
-        method: 'chatWithCoach',
+        controller: "CoachingController",
+        method: "chatWithCoach",
         userId: req.body.userId,
         zodiacSign: req.body.zodiacSign,
-        responseTime
+        responseTime,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Unable to generate coach response',
-        message: 'I apologize, but I\'m experiencing some technical difficulties. Please try again in a moment.',
+        error: "Unable to generate coach response",
+        message:
+          "I apologize, but I'm experiencing some technical difficulties. Please try again in a moment.",
         requestId: `req_${Date.now()}_error`,
-        responseTime
+        responseTime,
       });
     }
   }
@@ -143,7 +158,7 @@ class CoachingController {
       if (!userId) {
         return res.status(400).json({
           success: false,
-          error: 'User ID is required'
+          error: "User ID is required",
         });
       }
 
@@ -162,11 +177,16 @@ class CoachingController {
         ORDER BY created_at DESC 
         LIMIT $2 OFFSET $3
       `;
-      
-      const result = await db.query(query, [userId, parseInt(limit), parseInt(offset)]);
+
+      const result = await db.query(query, [
+        userId,
+        parseInt(limit),
+        parseInt(offset),
+      ]);
 
       // Get total count for pagination
-      const countQuery = 'SELECT COUNT(*) FROM coach_conversations WHERE user_id = $1';
+      const countQuery =
+        "SELECT COUNT(*) FROM coach_conversations WHERE user_id = $1";
       const countResult = await db.query(countQuery, [userId]);
       const totalCount = parseInt(countResult.rows[0].count);
 
@@ -178,21 +198,20 @@ class CoachingController {
             total: totalCount,
             limit: parseInt(limit),
             offset: parseInt(offset),
-            hasMore: (parseInt(offset) + result.rows.length) < totalCount
-          }
-        }
+            hasMore: parseInt(offset) + result.rows.length < totalCount,
+          },
+        },
       });
-
     } catch (error) {
       logger.logError(error, {
-        controller: 'CoachingController',
-        method: 'getConversationHistory',
-        userId
+        controller: "CoachingController",
+        method: "getConversationHistory",
+        userId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Unable to retrieve conversation history'
+        error: "Unable to retrieve conversation history",
       });
     }
   }
@@ -202,20 +221,20 @@ class CoachingController {
    */
   async updateUserPreferences(req, res) {
     const { userId } = req.params;
-    const { 
-      zodiacSign, 
-      preferredLanguage, 
-      coachingStyle, 
-      focusAreas, 
+    const {
+      zodiacSign,
+      preferredLanguage,
+      coachingStyle,
+      focusAreas,
       communicationPreferences,
-      timezone 
+      timezone,
     } = req.body;
 
     try {
       if (!userId) {
         return res.status(400).json({
           success: false,
-          error: 'User ID is required'
+          error: "User ID is required",
         });
       }
 
@@ -238,31 +257,30 @@ class CoachingController {
       const result = await db.query(query, [
         userId,
         zodiacSign,
-        preferredLanguage || 'en',
-        coachingStyle || 'balanced',
+        preferredLanguage || "en",
+        coachingStyle || "balanced",
         JSON.stringify(focusAreas || []),
         JSON.stringify(communicationPreferences || {}),
-        timezone
+        timezone,
       ]);
 
       res.status(200).json({
         success: true,
         data: {
           preferences: result.rows[0],
-          message: 'User preferences updated successfully'
-        }
+          message: "User preferences updated successfully",
+        },
       });
-
     } catch (error) {
       logger.logError(error, {
-        controller: 'CoachingController',
-        method: 'updateUserPreferences',
-        userId
+        controller: "CoachingController",
+        method: "updateUserPreferences",
+        userId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Unable to update user preferences'
+        error: "Unable to update user preferences",
       });
     }
   }
@@ -280,19 +298,18 @@ class CoachingController {
         data: {
           health: healthCheck,
           statistics: stats,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
-
     } catch (error) {
       logger.logError(error, {
-        controller: 'CoachingController',
-        method: 'getCoachStats'
+        controller: "CoachingController",
+        method: "getCoachStats",
       });
 
       res.status(500).json({
         success: false,
-        error: 'Unable to retrieve coach statistics'
+        error: "Unable to retrieve coach statistics",
       });
     }
   }
@@ -302,26 +319,27 @@ class CoachingController {
    */
   async submitConversationFeedback(req, res) {
     const { conversationId } = req.params;
-    const { userId, satisfactionRating, helpful, feedback, followUpRequested } = req.body;
+    const { userId, satisfactionRating, helpful, feedback, followUpRequested } =
+      req.body;
 
     try {
       // Validate conversation exists and belongs to user
       const conversationCheck = await db.query(
-        'SELECT user_id FROM coach_conversations WHERE id = $1',
+        "SELECT user_id FROM coach_conversations WHERE id = $1",
         [conversationId]
       );
 
       if (conversationCheck.rows.length === 0) {
         return res.status(404).json({
           success: false,
-          error: 'Conversation not found'
+          error: "Conversation not found",
         });
       }
 
       if (conversationCheck.rows[0].user_id !== userId) {
         return res.status(403).json({
           success: false,
-          error: 'Unauthorized to provide feedback for this conversation'
+          error: "Unauthorized to provide feedback for this conversation",
         });
       }
 
@@ -340,28 +358,27 @@ class CoachingController {
         satisfactionRating,
         helpful,
         followUpRequested || false,
-        feedback
+        feedback,
       ]);
 
       res.status(200).json({
         success: true,
         data: {
           feedback: result.rows[0],
-          message: 'Feedback submitted successfully'
-        }
+          message: "Feedback submitted successfully",
+        },
       });
-
     } catch (error) {
       logger.logError(error, {
-        controller: 'CoachingController',
-        method: 'submitConversationFeedback',
+        controller: "CoachingController",
+        method: "submitConversationFeedback",
         conversationId,
-        userId
+        userId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Unable to submit feedback'
+        error: "Unable to submit feedback",
       });
     }
   }
@@ -371,42 +388,45 @@ class CoachingController {
    */
   async notifyHoroscope(req, res) {
     const { type, horoscopes } = req.body;
-    
+
     try {
-      if (type === 'weekly' && Array.isArray(horoscopes)) {
+      if (type === "weekly" && Array.isArray(horoscopes)) {
         // Process weekly horoscopes from n8n
-        const results = await weeklyController.storeWeeklyHoroscopes(horoscopes);
-        console.log(`✅ Processed ${results.success} weekly horoscopes, ${results.errors} errors`);
-        
-        res.status(200).json({ 
-          success: true, 
-          type: 'weekly',
+        const results = await weeklyController.storeWeeklyHoroscopes(
+          horoscopes
+        );
+        console.log(
+          `✅ Processed ${results.success} weekly horoscopes, ${results.errors} errors`
+        );
+
+        res.status(200).json({
+          success: true,
+          type: "weekly",
           processed: results.success,
           errors: results.errors,
-          details: results.details
+          details: results.details,
         });
-      } else if (type === 'daily' || !type) {
+      } else if (type === "daily" || !type) {
         // Process daily horoscopes (existing behavior)
         const horoscopeData = req.body;
         console.log("✅ Received daily horoscopes from n8n:", horoscopeData);
-        
-        res.status(200).json({ 
-          success: true, 
-          type: 'daily',
-          message: "Daily horoscope notification received correctly"
+
+        res.status(200).json({
+          success: true,
+          type: "daily",
+          message: "Daily horoscope notification received correctly",
         });
       } else {
-        res.status(400).json({ 
+        res.status(400).json({
           error: "Invalid notification type",
-          supported_types: ['daily', 'weekly']
+          supported_types: ["daily", "weekly"],
         });
       }
-      
     } catch (error) {
       console.error("Error processing webhook:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Error processing notification",
-        message: error.message
+        message: error.message,
       });
     }
   }
@@ -416,23 +436,36 @@ class CoachingController {
    */
   static getChatValidation() {
     return [
-      body('message')
+      body("message")
         .notEmpty()
-        .withMessage('Message is required')
+        .withMessage("Message is required")
         .isLength({ min: 3, max: 1000 })
-        .withMessage('Message must be between 3 and 1000 characters'),
-      body('zodiacSign')
+        .withMessage("Message must be between 3 and 1000 characters"),
+      body("zodiacSign")
         .optional()
-        .isIn(['Aries', 'Tauro', 'Géminis', 'Cáncer', 'Leo', 'Virgo', 'Libra', 'Escorpio', 'Sagitario', 'Capricornio', 'Acuario', 'Piscis'])
-        .withMessage('Invalid zodiac sign'),
-      body('language')
+        .isIn([
+          "Aries",
+          "Tauro",
+          "Géminis",
+          "Cáncer",
+          "Leo",
+          "Virgo",
+          "Libra",
+          "Escorpio",
+          "Sagitario",
+          "Capricornio",
+          "Acuario",
+          "Piscis",
+        ])
+        .withMessage("Invalid zodiac sign"),
+      body("language")
         .optional()
-        .isIn(['en', 'es', 'fr', 'de', 'it', 'pt'])
-        .withMessage('Invalid language code'),
-      body('userId')
+        .isIn(["en", "es", "fr", "de", "it", "pt"])
+        .withMessage("Invalid language code"),
+      body("userId")
         .optional()
         .isLength({ min: 1, max: 255 })
-        .withMessage('User ID must be between 1 and 255 characters')
+        .withMessage("User ID must be between 1 and 255 characters"),
     ];
   }
 }
