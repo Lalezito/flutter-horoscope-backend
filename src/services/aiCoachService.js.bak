@@ -215,22 +215,22 @@ QUESTION: "Should I ask for a raise?"
     // Premium feature limits
     this.premiumLimits = {
       free: {
-        hasAccess: false,
-        dailyMessages: 0,
+        hasAccess: false, // Free NO tiene acceso
         complexMessages: 0,
         simpleMessages: 0,
+        dailyMessages: 0,
         sessionMinutes: 0,
         personas: [],
         features: [],
       },
       premium: {
         hasAccess: true,
+        complexMessages: 500, // GPT-4o - 500/mes
+        simpleMessages: 12500, // GPT-4o-mini - 12,500/mes
+        dailyAccrual: 20,
+        minBalance: 30,
+        maxBalance: 500,
         dailyMessages: 100,
-        complexMessages: 500,      // GPT-4o - 500/mes
-        simpleMessages: 12500,     // GPT-4o-mini - 12,500/mes
-        minBalance: 30,            // Mínimo garantizado
-        dailyAccrual: 20,          // +20/día acumulables
-        maxBalance: 500,           // Tope máximo acumulado
         sessionMinutes: 120,
         personas: Object.keys(this.personas),
         features: [
@@ -241,63 +241,6 @@ QUESTION: "Should I ask for a raise?"
         ],
       },
     };
-  }
-
-  /**
-   * 🧠 DETECT MESSAGE COMPLEXITY
-   * Determines if a message is simple or complex to select the appropriate AI model
-   * @private
-   * @param {string} message - User message to analyze
-   * @returns {string} - 'simple' or 'complex'
-   */
-  _detectMessageComplexity(message) {
-    // Retorna: 'simple' o 'complex'
-
-    const simplePatterns = [
-      // Saludos
-      /^(hola|hi|hey|hello|buenos?\s*(días|tardes|noches)|good\s*(morning|afternoon|evening))[\s!?.]*$/i,
-      // Despedidas
-      /^(adiós|adios|bye|chao|chau|hasta\s*luego|see\s*you|goodbye)[\s!?.]*$/i,
-      // Agradecimientos
-      /^(gracias|thanks|thank\s*you|thx|ty|muchas\s*gracias)[\s!?.]*$/i,
-      // Confirmaciones
-      /^(ok|okay|sí|si|yes|no|nope|vale|bien|genial|perfecto|cool|nice)[\s!?.]*$/i,
-      // Preguntas sobre estado
-      /^(cómo\s*estás|how\s*are\s*you|qué\s*tal|what'?s\s*up)[\s!?.]*$/i,
-    ];
-
-    const lowerMessage = message.toLowerCase().trim();
-
-    // Si es muy corto (<15 chars) y matchea pattern simple
-    if (lowerMessage.length < 15) {
-      for (const pattern of simplePatterns) {
-        if (pattern.test(lowerMessage)) {
-          return 'simple';
-        }
-      }
-    }
-
-    // Si tiene menos de 5 palabras y no tiene signos de pregunta complejos
-    const wordCount = lowerMessage.split(/\s+/).length;
-    if (wordCount <= 3 && !lowerMessage.includes('?')) {
-      return 'simple';
-    }
-
-    // Todo lo demás es complejo
-    return 'complex';
-  }
-
-  /**
-   * 🤖 SELECT AI MODEL
-   * Selects the appropriate AI model based on message complexity
-   * @private
-   * @param {string} complexity - Message complexity level ('simple' or 'complex')
-   * @returns {string} - Model name to use
-   */
-  _selectModel(complexity) {
-    return complexity === 'simple'
-      ? this.config.simpleModel
-      : this.config.complexModel;
   }
 
   /**
@@ -315,8 +258,7 @@ QUESTION: "Should I ask for a raise?"
       // Validate premium subscription
       const premiumStatus = await this._validatePremiumAccess(
         userId,
-        options.receiptData,
-        options.premiumTier
+        options.receiptData
       );
       if (!premiumStatus.hasAccess) {
         logger.getLogger().info('Free user attempted to access AI Coach', { userId });
@@ -525,8 +467,7 @@ QUESTION: "Should I ask for a raise?"
       // Check premium access and usage
       const premiumStatus = await this._validatePremiumAccess(
         userId,
-        options.receiptData,
-        options.premiumTier
+        options.receiptData
       );
       if (!premiumStatus.hasAccess) {
         logger.getLogger().info('Free user attempted to send message to AI Coach', { userId, sessionId });
@@ -813,21 +754,8 @@ QUESTION: "Should I ask for a raise?"
   /**
    * 🔐 PRIVATE: Validate premium subscription access
    */
-  async _validatePremiumAccess(userId, receiptData, premiumTier = null) {
+  async _validatePremiumAccess(userId, receiptData) {
     try {
-      // ✅ FIX DIC-05-2025: If frontend sends premiumTier (from RevenueCat), trust it
-      // This bypasses receipt validation since RevenueCat handles it on the frontend
-      if (premiumTier && (premiumTier === 'stellar' || premiumTier === 'cosmic')) {
-        logger.getLogger().info(`✅ Premium tier validated from frontend: ${premiumTier} for user ${userId}`);
-        return {
-          hasAccess: true,
-          isPremium: true,
-          tier: premiumTier,
-          allowedFeatures: this.premiumLimits.premium,
-          message: `Premium access granted - ${premiumTier} tier`,
-        };
-      }
-
       if (!receiptData) {
         // For testing/development, allow free tier access
         if (process.env.NODE_ENV !== "production") {
@@ -877,42 +805,35 @@ QUESTION: "Should I ask for a raise?"
   }
 
   /**
-   * 📊 PRIVATE: Check daily usage with ACCUMULATION SYSTEM
+   * 📊 PRIVATE: Check daily usage limits
    *
-   * Rules:
-   * - Minimum guaranteed: 30 messages (always available)
-   * - Daily accrual: +20 messages/day if not used
-   * - Maximum accumulated: 500 messages
-   * - FREE users: blocked (hasAccess = false)
+   * Returns paywall information when free tier user hits 5 messages/day limit
    */
   async _checkDailyUsage(userId, isPremium) {
     try {
-      // Solo premium tiene acceso
+      // Solo premium tiene acceso (free bloqueado por otro agente)
       if (!isPremium) {
         return {
           allowed: false,
           reason: 'premium_required',
-          balance: 0,
-          message: 'El Cosmic Coach es exclusivo para usuarios Premium'
+          balance: 0
         };
       }
 
       const cacheKey = `ai_coach_balance:${userId}`;
       const today = new Date().toISOString().split('T')[0];
-      const limits = this.premiumLimits.premium;
 
       // Obtener balance actual
       let balanceData = await redisService.get(cacheKey);
       balanceData = balanceData ? JSON.parse(balanceData) : null;
 
       if (!balanceData) {
-        // Usuario nuevo: empieza con mínimo garantizado (30)
+        // Usuario nuevo: empieza con 30
         balanceData = {
-          balance: limits.minBalance,
+          balance: 30,
           lastAccrualDate: today,
           createdAt: today
         };
-        logger.getLogger().info('New premium user, initial balance', { userId, balance: limits.minBalance });
       } else {
         // Calcular días desde última acumulación
         const lastDate = new Date(balanceData.lastAccrualDate);
@@ -921,47 +842,38 @@ QUESTION: "Should I ask for a raise?"
 
         if (daysDiff > 0) {
           // Acumular +20 por cada día que pasó
-          const accrual = daysDiff * limits.dailyAccrual;
-          balanceData.balance += accrual;
+          balanceData.balance += (daysDiff * 20);
           balanceData.lastAccrualDate = today;
 
-          logger.getLogger().info('Balance accrual', {
-            userId,
-            daysDiff,
-            accrual,
-            newBalance: balanceData.balance
-          });
-        }
-
-        // Aplicar tope máximo de 500
-        if (balanceData.balance > limits.maxBalance) {
-          balanceData.balance = limits.maxBalance;
+          // Aplicar tope máximo de 500
+          if (balanceData.balance > 500) {
+            balanceData.balance = 500;
+          }
         }
 
         // Garantizar mínimo de 30
-        if (balanceData.balance < limits.minBalance) {
-          balanceData.balance = limits.minBalance;
+        if (balanceData.balance < 30) {
+          balanceData.balance = 30;
         }
       }
 
-      // Guardar estado actualizado (TTL: 90 días)
-      await redisService.set(cacheKey, JSON.stringify(balanceData), 7776000);
+      // Guardar estado actualizado
+      await redisService.set(cacheKey, JSON.stringify(balanceData), 7776000); // 90 días TTL
 
       const allowed = balanceData.balance > 0;
 
       return {
         allowed,
         balance: balanceData.balance,
-        minGuaranteed: limits.minBalance,
-        maxAccumulated: limits.maxBalance,
-        dailyAccrual: limits.dailyAccrual,
-        lastAccrualDate: balanceData.lastAccrualDate,
-        isPremium: true
+        minGuaranteed: 30,
+        maxAccumulated: 500,
+        dailyAccrual: 20,
+        lastAccrualDate: balanceData.lastAccrualDate
       };
 
     } catch (error) {
-      logger.logError(error, { context: 'check_daily_usage_accumulation', userId });
-      // En caso de error, permitir con balance mínimo
+      logger.logError(error, { context: 'check_daily_usage', userId });
+      // En caso de error, permitir con balance por defecto
       return {
         allowed: true,
         balance: 30,
@@ -971,7 +883,8 @@ QUESTION: "Should I ask for a raise?"
   }
 
   /**
-   * 📉 PRIVATE: Decrement user balance after successful message
+   * 📉 PRIVATE: Decrement user message balance
+   * Called after successful message delivery to update the accumulation system
    */
   async _decrementBalance(userId) {
     try {
@@ -982,11 +895,6 @@ QUESTION: "Should I ask for a raise?"
         balanceData = JSON.parse(balanceData);
         balanceData.balance = Math.max(0, balanceData.balance - 1);
         await redisService.set(cacheKey, JSON.stringify(balanceData), 7776000);
-
-        logger.getLogger().info('Balance decremented', {
-          userId,
-          newBalance: balanceData.balance
-        });
       }
 
       return balanceData?.balance || 0;
@@ -1515,32 +1423,9 @@ FOCUS: 100% immediate safety, 0% astrology.`;
           content: userMessage,
         },
       ];
-      // 🎯 AGENTE 4: Check monthly limits BEFORE calling OpenAI
-      // 🎯 AGENTE 4: Check monthly limits BEFORE calling OpenAI
-      // 🧠 AGENTE 2: Detectar complejidad del mensaje y seleccionar modelo
-      const complexity = this._detectMessageComplexity(userMessage);
-      const selectedModel = this._selectModel(complexity);
-      const userId = sessionData.user_id;
-
-      logger.getLogger().info('🤖 AI Model selected', {
-        complexity,
-        model: selectedModel,
-        messageLength: userMessage.length,
-        userId
-      });
-
-      const monthlyCheck = await this._checkMonthlyLimits(userId, complexity);
-      if (!monthlyCheck.allowed) {
-        return {
-          success: false,
-          error: monthlyCheck.reason,
-          message: monthlyCheck.suggestion || 'Límite mensual alcanzado',
-          usage: monthlyCheck
-        };
-      }
 
       const completion = await this.openai.chat.completions.create({
-        model: selectedModel,
+        model: this.config.defaultModel,
         messages: messages,
         max_tokens: persona.maxTokens,
         temperature: 0.7,
@@ -1552,22 +1437,17 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       const tokensUsed = completion.usage.total_tokens;
       const responseTime = Date.now() - startTime;
 
-      // 🎯 AGENTE 4: Increment monthly usage AFTER successful response
-      await this._incrementMonthlyUsage(userId, complexity);
-      // 📉 Decrement daily balance
-      await this._decrementBalance(userId);
-
       return {
         success: true,
         content: response,
-        model: selectedModel,
+        model: this.config.defaultModel,
         tokensUsed,
         responseTime,
         confidenceScore: 0.85, // Default confidence score
         messageId: completion.id,
         // 🤖 NEW: Confirm AI is responding (for user transparency)
         aiPowered: true,
-        aiModel: `ChatGPT (${selectedModel})`,
+        aiModel: `ChatGPT (${this.config.defaultModel})`,
         // 💚 NEW: Include emotional context metadata
         emotionalContext: emotionalState.needsExtraSupport
           ? {
@@ -1618,11 +1498,6 @@ FOCUS: 100% immediate safety, 0% astrology.`;
             max_tokens: 300,
             temperature: 0.7,
           });
-
-          // 🎯 AGENTE 4: Increment monthly usage for fallback too
-          await this._incrementMonthlyUsage(userId, complexity);
-          // 📉 Decrement daily balance for fallback too
-          await this._decrementBalance(userId);
 
           return {
             success: true,
@@ -2697,281 +2572,6 @@ TONO: Comprensivo, empoderador, orientado a la acción. Como un coach que lo ent
         sessionId,
       });
       return 0;
-    }
-  }
-
-  /**
-   * 🧠 PRIVATE: Get user memory from Redis
-   * Retrieves persistent memory about user's profile, topics, preferences
-   * KEY: ai_coach_memory:{userId}
-   *
-   * @param {string} userId - User identifier
-   * @returns {Promise<Object>} User memory object with profile, topics, preferences, recentContext
-   */
-  async _getUserMemory(userId) {
-    try {
-      const memoryKey = `ai_coach_memory:${userId}`;
-      const cachedMemory = await redisService.get(memoryKey);
-
-      if (cachedMemory) {
-        const memory = JSON.parse(cachedMemory);
-        logger.getLogger().info("User memory retrieved from Redis", {
-          userId,
-          messageCount: memory.messageCount,
-          topicsCount: Object.keys(memory.topics || {}).length,
-        });
-        return memory;
-      }
-
-      // Return empty structure if no memory exists
-      return {
-        profile: {},
-        topics: {},
-        preferences: {
-          responseStyle: "conversational",
-          interests: [],
-          language: "en",
-        },
-        recentContext: "",
-        messageCount: 0,
-        updatedAt: new Date().toISOString(),
-      };
-    } catch (error) {
-      logger.logError(error, {
-        context: "get_user_memory",
-        userId,
-      });
-      // Return empty structure on error
-      return {
-        profile: {},
-        topics: {},
-        preferences: {
-          responseStyle: "conversational",
-          interests: [],
-          language: "en",
-        },
-        recentContext: "",
-        messageCount: 0,
-        updatedAt: new Date().toISOString(),
-      };
-    }
-  }
-
-  /**
-   * 🧠 PRIVATE: Update user memory in Redis
-   * Updates memory every 5 messages using GPT-4o-mini to generate summary
-   * TTL: 90 days (7776000 seconds)
-   *
-   * @param {string} userId - User identifier
-   * @param {Object} conversation - Current conversation data with messageHistory
-   */
-  async _updateUserMemory(userId, conversation) {
-    try {
-      const memoryKey = `ai_coach_memory:${userId}`;
-
-      // Get current memory
-      const currentMemory = await this._getUserMemory(userId);
-      currentMemory.messageCount += 1;
-
-      // Only update every 5 messages to save costs
-      if (currentMemory.messageCount % 5 !== 0) {
-        // Just increment count and save
-        currentMemory.updatedAt = new Date().toISOString();
-        const ttl = 90 * 24 * 60 * 60; // 90 days
-        await redisService.setex(memoryKey, ttl, JSON.stringify(currentMemory));
-        return;
-      }
-
-      logger.getLogger().info("Updating user memory with AI summary", {
-        userId,
-        messageCount: currentMemory.messageCount,
-      });
-
-      // Get recent conversation for context (last 10 messages)
-      const recentMessages = conversation.messageHistory?.slice(-10) || [];
-      const conversationText = recentMessages
-        .map((msg) => `${msg.role}: ${msg.content}`)
-        .join("\n");
-
-      // Generate summary using GPT-4o-mini (cost-efficient)
-      const summaryPrompt = `Analyze this conversation and update the user profile. Extract key information about:
-1. Profile: zodiacSign, ascendant, birthDate, name (if mentioned)
-2. Topics: career, love, health, spirituality, finances (summarize what they've discussed)
-3. Preferences: responseStyle (direct/detailed/empathetic), interests, language
-4. Recent context: What was the last conversation about?
-
-Current memory:
-${JSON.stringify(currentMemory, null, 2)}
-
-Recent conversation:
-${conversationText}
-
-Return ONLY a valid JSON object with this structure:
-{
-  "profile": {"zodiacSign": "...", "ascendant": "...", "birthDate": "...", "name": "..."},
-  "topics": {"career": "...", "love": "...", "health": "..."},
-  "preferences": {"responseStyle": "...", "interests": ["..."], "language": "..."},
-  "recentContext": "..."
-}`;
-
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini", // Cost-efficient model for summaries
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a memory analyzer. Extract and summarize user information from conversations. Return ONLY valid JSON, no markdown, no explanations.",
-          },
-          {
-            role: "user",
-            content: summaryPrompt,
-          },
-        ],
-        max_tokens: 500,
-        temperature: 0.3, // Low temperature for consistent extraction
-      });
-
-      let updatedMemory = null;
-      try {
-        const responseText = completion.choices[0].message.content.trim();
-        // Remove markdown code blocks if present
-        const jsonText = responseText.replace(/```json\n?|\n?```/g, "");
-        updatedMemory = JSON.parse(jsonText);
-      } catch (parseError) {
-        logger.logError(parseError, {
-          context: "parse_memory_summary",
-          userId,
-          response: completion.choices[0].message.content,
-        });
-        // Keep current memory if parsing fails
-        updatedMemory = {
-          profile: currentMemory.profile,
-          topics: currentMemory.topics,
-          preferences: currentMemory.preferences,
-          recentContext: currentMemory.recentContext,
-        };
-      }
-
-      // Merge with current memory (preserve existing data)
-      const finalMemory = {
-        profile: { ...currentMemory.profile, ...updatedMemory.profile },
-        topics: { ...currentMemory.topics, ...updatedMemory.topics },
-        preferences: {
-          ...currentMemory.preferences,
-          ...updatedMemory.preferences,
-        },
-        recentContext: updatedMemory.recentContext || currentMemory.recentContext,
-        messageCount: currentMemory.messageCount,
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Save to Redis with 90-day TTL
-      const ttl = 90 * 24 * 60 * 60; // 90 days in seconds
-      await redisService.setex(memoryKey, ttl, JSON.stringify(finalMemory));
-
-      logger.getLogger().info("User memory updated successfully", {
-        userId,
-        messageCount: finalMemory.messageCount,
-        tokensUsed: completion.usage.total_tokens,
-      });
-    } catch (error) {
-      logger.logError(error, {
-        context: "update_user_memory",
-        userId,
-      });
-      // Don't throw - memory update failure shouldn't break the chat
-    }
-  }
-
-  /**
-   * 🧠 PRIVATE: Build context with user memory for AI
-   * Compresses memory to ~200 tokens and adds recent session messages
-   *
-   * @param {string} userId - User identifier
-   * @param {string} newMessage - Current user message
-   * @param {Array} recentMessages - Recent conversation messages (last 2-3)
-   * @returns {Promise<string>} Optimized context string for AI prompt
-   */
-  async _buildContextWithMemory(userId, newMessage, recentMessages = []) {
-    try {
-      const memory = await this._getUserMemory(userId);
-
-      // Build compressed memory context (~200 tokens)
-      let memoryContext = "";
-
-      // Profile (if exists)
-      if (Object.keys(memory.profile).length > 0) {
-        const profileParts = [];
-        if (memory.profile.name) profileParts.push(`Name: ${memory.profile.name}`);
-        if (memory.profile.zodiacSign)
-          profileParts.push(`Sign: ${memory.profile.zodiacSign}`);
-        if (memory.profile.ascendant)
-          profileParts.push(`Ascendant: ${memory.profile.ascendant}`);
-        if (memory.profile.birthDate)
-          profileParts.push(`Born: ${memory.profile.birthDate}`);
-
-        if (profileParts.length > 0) {
-          memoryContext += `\n👤 USER PROFILE: ${profileParts.join(", ")}`;
-        }
-      }
-
-      // Topics (compressed)
-      if (Object.keys(memory.topics).length > 0) {
-        const topicSummaries = [];
-        for (const [topic, summary] of Object.entries(memory.topics)) {
-          if (summary && summary.trim()) {
-            // Truncate to first 60 chars to save tokens
-            const shortSummary =
-              summary.length > 60 ? summary.substring(0, 60) + "..." : summary;
-            topicSummaries.push(`${topic}: ${shortSummary}`);
-          }
-        }
-        if (topicSummaries.length > 0) {
-          memoryContext += `\n📚 PAST TOPICS: ${topicSummaries.join(" | ")}`;
-        }
-      }
-
-      // Recent context
-      if (memory.recentContext && memory.recentContext.trim()) {
-        const shortContext =
-          memory.recentContext.length > 100
-            ? memory.recentContext.substring(0, 100) + "..."
-            : memory.recentContext;
-        memoryContext += `\n💭 LAST SESSION: ${shortContext}`;
-      }
-
-      // Preferences
-      if (memory.preferences.responseStyle) {
-        memoryContext += `\n⚙️ STYLE: ${memory.preferences.responseStyle}`;
-      }
-      if (memory.preferences.interests?.length > 0) {
-        memoryContext += ` | Interests: ${memory.preferences.interests.slice(0, 3).join(", ")}`;
-      }
-
-      // Add recent session messages (last 2-3 messages for immediate context)
-      if (recentMessages.length > 0) {
-        const recentText = recentMessages
-          .slice(-3)
-          .map((msg) => `${msg.role}: ${msg.content.substring(0, 100)}`)
-          .join("\n");
-        memoryContext += `\n\n💬 CURRENT SESSION:\n${recentText}`;
-      }
-
-      logger.getLogger().info("Context built with user memory", {
-        userId,
-        memoryLength: memoryContext.length,
-        hasProfile: Object.keys(memory.profile).length > 0,
-        topicsCount: Object.keys(memory.topics).length,
-      });
-
-      return memoryContext;
-    } catch (error) {
-      logger.logError(error, {
-        context: "build_context_with_memory",
-        userId,
-      });
-      // Return empty context on error - don't break the chat
-      return "";
     }
   }
 

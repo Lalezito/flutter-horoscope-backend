@@ -217,8 +217,6 @@ QUESTION: "Should I ask for a raise?"
       free: {
         hasAccess: false,
         dailyMessages: 0,
-        complexMessages: 0,
-        simpleMessages: 0,
         sessionMinutes: 0,
         personas: [],
         features: [],
@@ -226,11 +224,6 @@ QUESTION: "Should I ask for a raise?"
       premium: {
         hasAccess: true,
         dailyMessages: 100,
-        complexMessages: 500,      // GPT-4o - 500/mes
-        simpleMessages: 12500,     // GPT-4o-mini - 12,500/mes
-        minBalance: 30,            // Mínimo garantizado
-        dailyAccrual: 20,          // +20/día acumulables
-        maxBalance: 500,           // Tope máximo acumulado
         sessionMinutes: 120,
         personas: Object.keys(this.personas),
         features: [
@@ -315,8 +308,7 @@ QUESTION: "Should I ask for a raise?"
       // Validate premium subscription
       const premiumStatus = await this._validatePremiumAccess(
         userId,
-        options.receiptData,
-        options.premiumTier
+        options.receiptData
       );
       if (!premiumStatus.hasAccess) {
         logger.getLogger().info('Free user attempted to access AI Coach', { userId });
@@ -525,8 +517,7 @@ QUESTION: "Should I ask for a raise?"
       // Check premium access and usage
       const premiumStatus = await this._validatePremiumAccess(
         userId,
-        options.receiptData,
-        options.premiumTier
+        options.receiptData
       );
       if (!premiumStatus.hasAccess) {
         logger.getLogger().info('Free user attempted to send message to AI Coach', { userId, sessionId });
@@ -813,21 +804,8 @@ QUESTION: "Should I ask for a raise?"
   /**
    * 🔐 PRIVATE: Validate premium subscription access
    */
-  async _validatePremiumAccess(userId, receiptData, premiumTier = null) {
+  async _validatePremiumAccess(userId, receiptData) {
     try {
-      // ✅ FIX DIC-05-2025: If frontend sends premiumTier (from RevenueCat), trust it
-      // This bypasses receipt validation since RevenueCat handles it on the frontend
-      if (premiumTier && (premiumTier === 'stellar' || premiumTier === 'cosmic')) {
-        logger.getLogger().info(`✅ Premium tier validated from frontend: ${premiumTier} for user ${userId}`);
-        return {
-          hasAccess: true,
-          isPremium: true,
-          tier: premiumTier,
-          allowedFeatures: this.premiumLimits.premium,
-          message: `Premium access granted - ${premiumTier} tier`,
-        };
-      }
-
       if (!receiptData) {
         // For testing/development, allow free tier access
         if (process.env.NODE_ENV !== "production") {
@@ -877,209 +855,98 @@ QUESTION: "Should I ask for a raise?"
   }
 
   /**
-   * 📊 PRIVATE: Check daily usage with ACCUMULATION SYSTEM
+   * 📊 PRIVATE: Check daily usage limits
    *
-   * Rules:
-   * - Minimum guaranteed: 30 messages (always available)
-   * - Daily accrual: +20 messages/day if not used
-   * - Maximum accumulated: 500 messages
-   * - FREE users: blocked (hasAccess = false)
+   * Returns paywall information when free tier user hits 5 messages/day limit
    */
   async _checkDailyUsage(userId, isPremium) {
     try {
-      // Solo premium tiene acceso
-      if (!isPremium) {
+      const today = new Date().toISOString().split("T")[0];
+      const cacheKey = `ai_coach_usage:${userId}:${today}`;
+
+      const cachedUsage = await redisService.get(cacheKey);
+      let usage = cachedUsage
+        ? JSON.parse(cachedUsage)
+        : { used: 0, date: today };
+
+      const limits = isPremium
+        ? this.premiumLimits.premium
+        : this.premiumLimits.free;
+      const allowed = usage.used < limits.dailyMessages;
+
+      // 🎯 PAYWALL: Show upgrade prompt when free user hits 5 messages
+      if (!isPremium && !allowed) {
         return {
           allowed: false,
-          reason: 'premium_required',
-          balance: 0,
-          message: 'El Cosmic Coach es exclusivo para usuarios Premium'
+          used: usage.used,
+          limit: limits.dailyMessages,
+          isPremium,
+          resetTime: new Date(new Date().setHours(23, 59, 59, 999)),
+          paywall: {
+            type: "daily_limit_exceeded",
+            message: `🌟 Llegaste a tu límite diario (${limits.dailyMessages} mensajes)
+
+¿Quieres más?
+
+✨ COSMIC ($4.99/mes):
+   • 50 mensajes/día
+   • Respuestas largas y empáticas
+   • Challenges diarios
+   • Modismos de tu país
+
+🚀 UNIVERSE ($9.99/mes):
+   • Mensajes ilimitados
+   • Moon + Rising sign
+   • Compatibilidad
+   • Lectura anual 2026
+
+👉 Upgrade ahora`,
+            cta: "Upgrade to Cosmic",
+            trialOffer: "7 días gratis - cancela cuando quieras",
+            tiers: [
+              {
+                name: "Cosmic",
+                price: "$4.99/mes",
+                features: [
+                  "50 mensajes/día",
+                  "Respuestas largas y empáticas",
+                  "Challenges diarios",
+                  "Modismos de tu país",
+                ],
+              },
+              {
+                name: "Universe",
+                price: "$9.99/mes",
+                features: [
+                  "Mensajes ilimitados",
+                  "Moon + Rising sign",
+                  "Compatibilidad",
+                  "Lectura anual 2026",
+                ],
+              },
+            ],
+          },
         };
       }
-
-      const cacheKey = `ai_coach_balance:${userId}`;
-      const today = new Date().toISOString().split('T')[0];
-      const limits = this.premiumLimits.premium;
-
-      // Obtener balance actual
-      let balanceData = await redisService.get(cacheKey);
-      balanceData = balanceData ? JSON.parse(balanceData) : null;
-
-      if (!balanceData) {
-        // Usuario nuevo: empieza con mínimo garantizado (30)
-        balanceData = {
-          balance: limits.minBalance,
-          lastAccrualDate: today,
-          createdAt: today
-        };
-        logger.getLogger().info('New premium user, initial balance', { userId, balance: limits.minBalance });
-      } else {
-        // Calcular días desde última acumulación
-        const lastDate = new Date(balanceData.lastAccrualDate);
-        const todayDate = new Date(today);
-        const daysDiff = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
-
-        if (daysDiff > 0) {
-          // Acumular +20 por cada día que pasó
-          const accrual = daysDiff * limits.dailyAccrual;
-          balanceData.balance += accrual;
-          balanceData.lastAccrualDate = today;
-
-          logger.getLogger().info('Balance accrual', {
-            userId,
-            daysDiff,
-            accrual,
-            newBalance: balanceData.balance
-          });
-        }
-
-        // Aplicar tope máximo de 500
-        if (balanceData.balance > limits.maxBalance) {
-          balanceData.balance = limits.maxBalance;
-        }
-
-        // Garantizar mínimo de 30
-        if (balanceData.balance < limits.minBalance) {
-          balanceData.balance = limits.minBalance;
-        }
-      }
-
-      // Guardar estado actualizado (TTL: 90 días)
-      await redisService.set(cacheKey, JSON.stringify(balanceData), 7776000);
-
-      const allowed = balanceData.balance > 0;
 
       return {
         allowed,
-        balance: balanceData.balance,
-        minGuaranteed: limits.minBalance,
-        maxAccumulated: limits.maxBalance,
-        dailyAccrual: limits.dailyAccrual,
-        lastAccrualDate: balanceData.lastAccrualDate,
-        isPremium: true
+        used: usage.used,
+        limit: limits.dailyMessages,
+        isPremium,
+        resetTime: new Date(new Date().setHours(23, 59, 59, 999)),
       };
-
     } catch (error) {
-      logger.logError(error, { context: 'check_daily_usage_accumulation', userId });
-      // En caso de error, permitir con balance mínimo
+      logger.logError(error, { context: "usage_check", userId });
+
+      // On error, allow limited access
       return {
         allowed: true,
-        balance: 30,
-        error: error.message
+        used: 0,
+        limit: 5,
+        isPremium: false,
+        resetTime: new Date(new Date().setHours(23, 59, 59, 999)),
       };
-    }
-  }
-
-  /**
-   * 📉 PRIVATE: Decrement user balance after successful message
-   */
-  async _decrementBalance(userId) {
-    try {
-      const cacheKey = `ai_coach_balance:${userId}`;
-      let balanceData = await redisService.get(cacheKey);
-
-      if (balanceData) {
-        balanceData = JSON.parse(balanceData);
-        balanceData.balance = Math.max(0, balanceData.balance - 1);
-        await redisService.set(cacheKey, JSON.stringify(balanceData), 7776000);
-
-        logger.getLogger().info('Balance decremented', {
-          userId,
-          newBalance: balanceData.balance
-        });
-      }
-
-      return balanceData?.balance || 0;
-    } catch (error) {
-      logger.logError(error, { context: 'decrement_balance', userId });
-      return 0;
-    }
-  }
-
-  /**
-   * 🎯 CHECK MONTHLY LIMITS (SEPARATE FOR COMPLEX/SIMPLE)
-   * Validates if user has available quota for complex or simple messages this month
-   */
-  async _checkMonthlyLimits(userId, complexity) {
-    try {
-      const now = new Date();
-      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const cacheKey = `ai_coach_monthly:${userId}:${monthKey}`;
-
-      let monthlyData = await redisService.get(cacheKey);
-      monthlyData = monthlyData ? JSON.parse(monthlyData) : {
-        complexUsed: 0,
-        simpleUsed: 0,
-        month: monthKey
-      };
-
-      const limits = this.premiumLimits.premium;
-
-      if (complexity === 'complex') {
-        if (monthlyData.complexUsed >= limits.complexMessages) {
-          return {
-            allowed: false,
-            reason: 'complex_limit_reached',
-            used: monthlyData.complexUsed,
-            limit: limits.complexMessages,
-            suggestion: 'Tu límite de consultas complejas se renovará el próximo mes'
-          };
-        }
-      } else {
-        if (monthlyData.simpleUsed >= limits.simpleMessages) {
-          return {
-            allowed: false,
-            reason: 'simple_limit_reached',
-            used: monthlyData.simpleUsed,
-            limit: limits.simpleMessages
-          };
-        }
-      }
-
-      return {
-        allowed: true,
-        complexity,
-        complexUsed: monthlyData.complexUsed,
-        complexLimit: limits.complexMessages,
-        simpleUsed: monthlyData.simpleUsed,
-        simpleLimit: limits.simpleMessages
-      };
-
-    } catch (error) {
-      logger.logError(error, { context: 'check_monthly_limits', userId });
-      return { allowed: true }; // En caso de error, permitir
-    }
-  }
-
-  /**
-   * 📊 INCREMENT MONTHLY USAGE (SEPARATE FOR COMPLEX/SIMPLE)
-   * Increments the counter for complex or simple messages this month
-   */
-  async _incrementMonthlyUsage(userId, complexity) {
-    try {
-      const now = new Date();
-      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const cacheKey = `ai_coach_monthly:${userId}:${monthKey}`;
-
-      let monthlyData = await redisService.get(cacheKey);
-      monthlyData = monthlyData ? JSON.parse(monthlyData) : {
-        complexUsed: 0,
-        simpleUsed: 0,
-        month: monthKey
-      };
-
-      if (complexity === 'complex') {
-        monthlyData.complexUsed += 1;
-      } else {
-        monthlyData.simpleUsed += 1;
-      }
-
-      // TTL: hasta fin del mes siguiente (máximo 62 días)
-      await redisService.set(cacheKey, JSON.stringify(monthlyData), 5356800);
-
-      return monthlyData;
-    } catch (error) {
-      logger.logError(error, { context: 'increment_monthly_usage', userId });
     }
   }
 
@@ -1515,19 +1382,11 @@ FOCUS: 100% immediate safety, 0% astrology.`;
           content: userMessage,
         },
       ];
-      // 🎯 AGENTE 4: Check monthly limits BEFORE calling OpenAI
-      // 🎯 AGENTE 4: Check monthly limits BEFORE calling OpenAI
-      // 🧠 AGENTE 2: Detectar complejidad del mensaje y seleccionar modelo
-      const complexity = this._detectMessageComplexity(userMessage);
-      const selectedModel = this._selectModel(complexity);
-      const userId = sessionData.user_id;
 
-      logger.getLogger().info('🤖 AI Model selected', {
-        complexity,
-        model: selectedModel,
-        messageLength: userMessage.length,
-        userId
-      });
+      // 🎯 AGENTE 4: Check monthly limits BEFORE calling OpenAI
+      // TODO AGENTE 2: Detectar complejidad del mensaje y pasar 'complex' o 'simple'
+      const complexity = 'complex'; // PLACEHOLDER - Will be replaced by Agent 2's complexity detector
+      const userId = sessionData.user_id;
 
       const monthlyCheck = await this._checkMonthlyLimits(userId, complexity);
       if (!monthlyCheck.allowed) {
@@ -1540,7 +1399,7 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       }
 
       const completion = await this.openai.chat.completions.create({
-        model: selectedModel,
+        model: this.config.defaultModel,
         messages: messages,
         max_tokens: persona.maxTokens,
         temperature: 0.7,
@@ -1554,20 +1413,18 @@ FOCUS: 100% immediate safety, 0% astrology.`;
 
       // 🎯 AGENTE 4: Increment monthly usage AFTER successful response
       await this._incrementMonthlyUsage(userId, complexity);
-      // 📉 Decrement daily balance
-      await this._decrementBalance(userId);
 
       return {
         success: true,
         content: response,
-        model: selectedModel,
+        model: this.config.defaultModel,
         tokensUsed,
         responseTime,
         confidenceScore: 0.85, // Default confidence score
         messageId: completion.id,
         // 🤖 NEW: Confirm AI is responding (for user transparency)
         aiPowered: true,
-        aiModel: `ChatGPT (${selectedModel})`,
+        aiModel: `ChatGPT (${this.config.defaultModel})`,
         // 💚 NEW: Include emotional context metadata
         emotionalContext: emotionalState.needsExtraSupport
           ? {
@@ -1621,8 +1478,6 @@ FOCUS: 100% immediate safety, 0% astrology.`;
 
           // 🎯 AGENTE 4: Increment monthly usage for fallback too
           await this._incrementMonthlyUsage(userId, complexity);
-          // 📉 Decrement daily balance for fallback too
-          await this._decrementBalance(userId);
 
           return {
             success: true,
