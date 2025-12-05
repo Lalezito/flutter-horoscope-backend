@@ -113,10 +113,11 @@ CREATE INDEX IF NOT EXISTS idx_predictions_pending
   ON predictions(user_id, predicted_for_date, user_feedback)
   WHERE user_feedback IS NULL OR user_feedback = 'pending';
 
--- Yesterday's predictions for feedback requests
-CREATE INDEX IF NOT EXISTS idx_predictions_yesterday
-  ON predictions(user_id, predicted_for_date)
-  WHERE predicted_for_date = CURRENT_DATE - INTERVAL '1 day';
+-- ✅ FIX DIC-05-2025: Removed volatile CURRENT_DATE function from index predicate
+-- Old problematic index caused: "functions in index predicate must be marked IMMUTABLE"
+-- Predictions by user and date (for efficient queries)
+CREATE INDEX IF NOT EXISTS idx_predictions_user_date
+  ON predictions(user_id, predicted_for_date DESC);
 
 -- Active predictions by focus area
 CREATE INDEX IF NOT EXISTS idx_predictions_focus_area
