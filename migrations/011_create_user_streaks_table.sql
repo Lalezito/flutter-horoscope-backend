@@ -12,7 +12,9 @@ DROP TABLE IF EXISTS user_streaks CASCADE;
 -- Create user_streaks table
 CREATE TABLE user_streaks (
   -- Primary identification
-  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  -- ✅ FIX DIC-06-2025: Removed FK to users table (doesn't exist in Railway PostgreSQL)
+  -- Original: user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID PRIMARY KEY,
 
   -- Streak tracking
   current_streak INT DEFAULT 0 NOT NULL CHECK (current_streak >= 0),
