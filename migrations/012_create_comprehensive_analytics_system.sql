@@ -23,12 +23,12 @@ CREATE TABLE IF NOT EXISTS analytics_events (
   indexed_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_events_user_id ON analytics_events(user_id);
-CREATE INDEX idx_events_type ON analytics_events(event_type);
-CREATE INDEX idx_events_category ON analytics_events(event_category);
-CREATE INDEX idx_events_created_at ON analytics_events(created_at DESC);
-CREATE INDEX idx_events_session ON analytics_events(session_id);
-CREATE INDEX idx_events_properties ON analytics_events USING GIN(event_properties);
+CREATE INDEX IF NOT EXISTS idx_events_user_id ON analytics_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_events_type ON analytics_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_events_category ON analytics_events(event_category);
+CREATE INDEX IF NOT EXISTS idx_events_created_at ON analytics_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_events_session ON analytics_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_events_properties ON analytics_events USING GIN(event_properties);
 
 -- ============================================================================
 -- REVENUE & SUBSCRIPTION ANALYTICS
@@ -61,11 +61,11 @@ CREATE TABLE IF NOT EXISTS subscription_analytics (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_subscription_user ON subscription_analytics(user_id);
-CREATE INDEX idx_subscription_tier ON subscription_analytics(subscription_tier);
-CREATE INDEX idx_subscription_status ON subscription_analytics(subscription_status);
-CREATE INDEX idx_subscription_dates ON subscription_analytics(start_date, end_date);
-CREATE INDEX idx_subscription_renewal ON subscription_analytics(renewal_date) WHERE renewal_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_subscription_user ON subscription_analytics(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscription_tier ON subscription_analytics(subscription_tier);
+CREATE INDEX IF NOT EXISTS idx_subscription_status ON subscription_analytics(subscription_status);
+CREATE INDEX IF NOT EXISTS idx_subscription_dates ON subscription_analytics(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_subscription_renewal ON subscription_analytics(renewal_date) WHERE renewal_date IS NOT NULL;
 
 -- Revenue metrics snapshot (updated daily)
 CREATE TABLE IF NOT EXISTS revenue_metrics (
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS revenue_metrics (
   UNIQUE(metric_date)
 );
 
-CREATE INDEX idx_revenue_metrics_date ON revenue_metrics(metric_date DESC);
+CREATE INDEX IF NOT EXISTS idx_revenue_metrics_date ON revenue_metrics(metric_date DESC);
 
 -- ============================================================================
 -- USER COHORT ANALYSIS
@@ -123,12 +123,12 @@ CREATE TABLE IF NOT EXISTS user_cohorts (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_cohorts_user ON user_cohorts(user_id);
-CREATE INDEX idx_cohorts_date ON user_cohorts(cohort_date);
-CREATE INDEX idx_cohorts_source ON user_cohorts(signup_source);
-CREATE INDEX idx_cohorts_country ON user_cohorts(signup_country);
-CREATE INDEX idx_cohorts_sign ON user_cohorts(zodiac_sign);
-CREATE INDEX idx_cohorts_churned ON user_cohorts(is_churned, churn_date);
+CREATE INDEX IF NOT EXISTS idx_cohorts_user ON user_cohorts(user_id);
+CREATE INDEX IF NOT EXISTS idx_cohorts_date ON user_cohorts(cohort_date);
+CREATE INDEX IF NOT EXISTS idx_cohorts_source ON user_cohorts(signup_source);
+CREATE INDEX IF NOT EXISTS idx_cohorts_country ON user_cohorts(signup_country);
+CREATE INDEX IF NOT EXISTS idx_cohorts_sign ON user_cohorts(zodiac_sign);
+CREATE INDEX IF NOT EXISTS idx_cohorts_churned ON user_cohorts(is_churned, churn_date);
 
 -- Cohort retention metrics (calculated periodically)
 CREATE TABLE IF NOT EXISTS cohort_retention_metrics (
@@ -146,8 +146,8 @@ CREATE TABLE IF NOT EXISTS cohort_retention_metrics (
   UNIQUE(cohort_date, period_number, period_type)
 );
 
-CREATE INDEX idx_retention_cohort ON cohort_retention_metrics(cohort_date);
-CREATE INDEX idx_retention_period ON cohort_retention_metrics(period_number, period_type);
+CREATE INDEX IF NOT EXISTS idx_retention_cohort ON cohort_retention_metrics(cohort_date);
+CREATE INDEX IF NOT EXISTS idx_retention_period ON cohort_retention_metrics(period_number, period_type);
 
 -- ============================================================================
 -- FEATURE USAGE ANALYTICS
@@ -173,9 +173,9 @@ CREATE TABLE IF NOT EXISTS feature_usage_analytics (
   UNIQUE(feature_name, usage_date)
 );
 
-CREATE INDEX idx_feature_usage_name ON feature_usage_analytics(feature_name);
-CREATE INDEX idx_feature_usage_date ON feature_usage_analytics(usage_date DESC);
-CREATE INDEX idx_feature_usage_category ON feature_usage_analytics(feature_category);
+CREATE INDEX IF NOT EXISTS idx_feature_usage_name ON feature_usage_analytics(feature_name);
+CREATE INDEX IF NOT EXISTS idx_feature_usage_date ON feature_usage_analytics(usage_date DESC);
+CREATE INDEX IF NOT EXISTS idx_feature_usage_category ON feature_usage_analytics(feature_category);
 
 -- ============================================================================
 -- A/B TESTING FRAMEWORK
@@ -210,9 +210,9 @@ CREATE TABLE IF NOT EXISTS ab_test_assignments (
   UNIQUE(experiment_id, user_id)
 );
 
-CREATE INDEX idx_ab_assignments_experiment ON ab_test_assignments(experiment_id);
-CREATE INDEX idx_ab_assignments_user ON ab_test_assignments(user_id);
-CREATE INDEX idx_ab_assignments_variant ON ab_test_assignments(experiment_id, variant);
+CREATE INDEX IF NOT EXISTS idx_ab_assignments_experiment ON ab_test_assignments(experiment_id);
+CREATE INDEX IF NOT EXISTS idx_ab_assignments_user ON ab_test_assignments(user_id);
+CREATE INDEX IF NOT EXISTS idx_ab_assignments_variant ON ab_test_assignments(experiment_id, variant);
 
 -- A/B test results
 CREATE TABLE IF NOT EXISTS ab_test_results (
@@ -231,9 +231,9 @@ CREATE TABLE IF NOT EXISTS ab_test_results (
   UNIQUE(experiment_id, variant, result_date)
 );
 
-CREATE INDEX idx_ab_results_experiment ON ab_test_results(experiment_id);
-CREATE INDEX idx_ab_results_variant ON ab_test_results(experiment_id, variant);
-CREATE INDEX idx_ab_results_date ON ab_test_results(result_date DESC);
+CREATE INDEX IF NOT EXISTS idx_ab_results_experiment ON ab_test_results(experiment_id);
+CREATE INDEX IF NOT EXISTS idx_ab_results_variant ON ab_test_results(experiment_id, variant);
+CREATE INDEX IF NOT EXISTS idx_ab_results_date ON ab_test_results(result_date DESC);
 
 -- ============================================================================
 -- INSIGHTS & ALERTS
@@ -257,11 +257,11 @@ CREATE TABLE IF NOT EXISTS analytics_insights (
   expires_at TIMESTAMP
 );
 
-CREATE INDEX idx_insights_type ON analytics_insights(insight_type);
-CREATE INDEX idx_insights_category ON analytics_insights(category);
-CREATE INDEX idx_insights_severity ON analytics_insights(severity);
-CREATE INDEX idx_insights_created ON analytics_insights(created_at DESC);
-CREATE INDEX idx_insights_actionable ON analytics_insights(is_actionable) WHERE is_actionable = TRUE;
+CREATE INDEX IF NOT EXISTS idx_insights_type ON analytics_insights(insight_type);
+CREATE INDEX IF NOT EXISTS idx_insights_category ON analytics_insights(category);
+CREATE INDEX IF NOT EXISTS idx_insights_severity ON analytics_insights(severity);
+CREATE INDEX IF NOT EXISTS idx_insights_created ON analytics_insights(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_insights_actionable ON analytics_insights(is_actionable) WHERE is_actionable = TRUE;
 
 -- Automated alerts for anomalies
 CREATE TABLE IF NOT EXISTS analytics_alerts (
@@ -282,10 +282,10 @@ CREATE TABLE IF NOT EXISTS analytics_alerts (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_alerts_type ON analytics_alerts(alert_type);
-CREATE INDEX idx_alerts_severity ON analytics_alerts(severity);
-CREATE INDEX idx_alerts_created ON analytics_alerts(created_at DESC);
-CREATE INDEX idx_alerts_unresolved ON analytics_alerts(resolved) WHERE resolved = FALSE;
+CREATE INDEX IF NOT EXISTS idx_alerts_type ON analytics_alerts(alert_type);
+CREATE INDEX IF NOT EXISTS idx_alerts_severity ON analytics_alerts(severity);
+CREATE INDEX IF NOT EXISTS idx_alerts_created ON analytics_alerts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_alerts_unresolved ON analytics_alerts(resolved) WHERE resolved = FALSE;
 
 -- ============================================================================
 -- PREDICTIVE ANALYTICS
@@ -308,8 +308,9 @@ CREATE TABLE IF NOT EXISTS revenue_predictions (
   UNIQUE(prediction_date, prediction_type, horizon)
 );
 
-CREATE INDEX idx_predictions_date ON revenue_predictions(prediction_date DESC);
-CREATE INDEX idx_predictions_type ON revenue_predictions(prediction_type);
+-- ✅ FIX DIC-06-2025: Renamed index to avoid conflict with existing idx_predictions_date
+CREATE INDEX IF NOT EXISTS idx_revenue_predictions_date ON revenue_predictions(prediction_date DESC);
+CREATE INDEX IF NOT EXISTS idx_revenue_predictions_type ON revenue_predictions(prediction_type);
 
 -- User churn predictions
 CREATE TABLE IF NOT EXISTS churn_predictions (
@@ -327,9 +328,9 @@ CREATE TABLE IF NOT EXISTS churn_predictions (
   UNIQUE(user_id, prediction_date)
 );
 
-CREATE INDEX idx_churn_user ON churn_predictions(user_id);
-CREATE INDEX idx_churn_risk ON churn_predictions(risk_level, churn_probability DESC);
-CREATE INDEX idx_churn_date ON churn_predictions(prediction_date DESC);
+CREATE INDEX IF NOT EXISTS idx_churn_user ON churn_predictions(user_id);
+CREATE INDEX IF NOT EXISTS idx_churn_risk ON churn_predictions(risk_level, churn_probability DESC);
+CREATE INDEX IF NOT EXISTS idx_churn_date ON churn_predictions(prediction_date DESC);
 
 -- ============================================================================
 -- GEOGRAPHIC & DEMOGRAPHIC ANALYTICS
@@ -355,9 +356,9 @@ CREATE TABLE IF NOT EXISTS geographic_metrics (
   UNIQUE(metric_date, country_code)
 );
 
-CREATE INDEX idx_geo_date ON geographic_metrics(metric_date DESC);
-CREATE INDEX idx_geo_country ON geographic_metrics(country_code);
-CREATE INDEX idx_geo_revenue ON geographic_metrics(revenue DESC);
+CREATE INDEX IF NOT EXISTS idx_geo_date ON geographic_metrics(metric_date DESC);
+CREATE INDEX IF NOT EXISTS idx_geo_country ON geographic_metrics(country_code);
+CREATE INDEX IF NOT EXISTS idx_geo_revenue ON geographic_metrics(revenue DESC);
 
 -- ============================================================================
 -- DASHBOARD CACHE TABLES
@@ -372,8 +373,8 @@ CREATE TABLE IF NOT EXISTS dashboard_realtime_cache (
   expires_at TIMESTAMP NOT NULL
 );
 
-CREATE INDEX idx_dashboard_cache_key ON dashboard_realtime_cache(metric_key);
-CREATE INDEX idx_dashboard_cache_expires ON dashboard_realtime_cache(expires_at);
+CREATE INDEX IF NOT EXISTS idx_dashboard_cache_key ON dashboard_realtime_cache(metric_key);
+CREATE INDEX IF NOT EXISTS idx_dashboard_cache_expires ON dashboard_realtime_cache(expires_at);
 
 -- ============================================================================
 -- COMMENTS & DOCUMENTATION
