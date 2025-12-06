@@ -289,7 +289,8 @@ CREATE INDEX IF NOT EXISTS idx_support_alerts_type ON support_alerts(alert_type)
 CREATE INDEX IF NOT EXISTS idx_support_alerts_resolved ON support_alerts(resolved);
 
 -- revenue_metrics indexes
-CREATE INDEX IF NOT EXISTS idx_revenue_metrics_date ON revenue_metrics(date);
+-- ✅ FIX DIC-07-2025: Escape reserved word "date" with double quotes
+CREATE INDEX IF NOT EXISTS idx_revenue_metrics_date ON revenue_metrics("date");
 
 -- users table indexes
 CREATE INDEX IF NOT EXISTS idx_users_country ON users(country);
