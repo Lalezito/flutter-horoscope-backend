@@ -8,46 +8,53 @@
 
 -- Table: users (extended with revenue optimization fields)
 -- Add columns to existing users table if they don't exist
+-- ✅ FIX DIC-07-2025: Only alter users table if it exists (doesn't exist in Railway PostgreSQL)
 DO $$
 BEGIN
-  -- Add country field if not exists
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'users' AND column_name = 'country'
+  -- First check if users table exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'users'
   ) THEN
-    ALTER TABLE users ADD COLUMN country VARCHAR(2);
-  END IF;
+    -- Add country field if not exists
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'country'
+    ) THEN
+      ALTER TABLE users ADD COLUMN country VARCHAR(2);
+    END IF;
 
-  -- Add last_active field if not exists
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'users' AND column_name = 'last_active'
-  ) THEN
-    ALTER TABLE users ADD COLUMN last_active TIMESTAMP DEFAULT NOW();
-  END IF;
+    -- Add last_active field if not exists
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'last_active'
+    ) THEN
+      ALTER TABLE users ADD COLUMN last_active TIMESTAMP DEFAULT NOW();
+    END IF;
 
-  -- Add subscription_tier field if not exists
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'users' AND column_name = 'subscription_tier'
-  ) THEN
-    ALTER TABLE users ADD COLUMN subscription_tier VARCHAR(20) DEFAULT 'free';
-  END IF;
+    -- Add subscription_tier field if not exists
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'subscription_tier'
+    ) THEN
+      ALTER TABLE users ADD COLUMN subscription_tier VARCHAR(20) DEFAULT 'free';
+    END IF;
 
-  -- Add birth_date field if not exists (for birthday offers)
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'users' AND column_name = 'birth_date'
-  ) THEN
-    ALTER TABLE users ADD COLUMN birth_date DATE;
-  END IF;
+    -- Add birth_date field if not exists (for birthday offers)
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'birth_date'
+    ) THEN
+      ALTER TABLE users ADD COLUMN birth_date DATE;
+    END IF;
 
-  -- Add name field if not exists
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'users' AND column_name = 'name'
-  ) THEN
-    ALTER TABLE users ADD COLUMN name VARCHAR(100);
+    -- Add name field if not exists
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'name'
+    ) THEN
+      ALTER TABLE users ADD COLUMN name VARCHAR(100);
+    END IF;
   END IF;
 END $$;
 
