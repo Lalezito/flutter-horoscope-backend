@@ -815,10 +815,12 @@ QUESTION: "Should I ask for a raise?"
    */
   async _validatePremiumAccess(userId, receiptData, premiumTier = null) {
     try {
-      // ✅ FIX DIC-05-2025: If frontend sends premiumTier (from RevenueCat), trust it
-      // This bypasses receipt validation since RevenueCat handles it on the frontend
+      // ✅ FIX DIC-06-2025: PRIORITY 1 - Trust premiumTier from RevenueCat frontend validation
+      // Railway was caching old code - this forces rebuild - timestamp: 2025-12-06 10:05 GMT-3
+      logger.getLogger().info(`🔍 Premium validation check - tier: ${premiumTier}, hasReceipt: ${!!receiptData}`);
+
       if (premiumTier && (premiumTier === 'stellar' || premiumTier === 'cosmic')) {
-        logger.getLogger().info(`✅ Premium tier validated from frontend: ${premiumTier} for user ${userId}`);
+        logger.getLogger().info(`✅✅✅ PREMIUM ACCESS GRANTED - ${premiumTier} tier for user ${userId} ✅✅✅`);
         return {
           hasAccess: true,
           isPremium: true,
