@@ -815,9 +815,10 @@ QUESTION: "Should I ask for a raise?"
    */
   async _validatePremiumAccess(userId, receiptData, premiumTier = null) {
     try {
-      // ✅ FIX DIC-06-2025: PRIORITY 1 - Trust premiumTier from RevenueCat frontend validation
-      // Railway was caching old code - this forces rebuild - timestamp: 2025-12-06 10:05 GMT-3
-      logger.getLogger().info(`🔍 Premium validation check - tier: ${premiumTier}, hasReceipt: ${!!receiptData}`);
+      // ✅✅✅ CRITICAL FIX DIC-07-2025 00:30 - PRIORITY 1 - Trust premiumTier from RevenueCat
+      // Railway must deploy THIS code with premium tier bypass - NOT old commit 222601c0
+      // This is the CORRECT code that accepts premiumTier without receiptData
+      logger.getLogger().info(`🔍 [DIC-07-00:30] Premium validation - tier: ${premiumTier}, hasReceipt: ${!!receiptData}`);
 
       if (premiumTier && (premiumTier === 'stellar' || premiumTier === 'cosmic')) {
         logger.getLogger().info(`✅✅✅ PREMIUM ACCESS GRANTED - ${premiumTier} tier for user ${userId} ✅✅✅`);
