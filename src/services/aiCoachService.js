@@ -1593,10 +1593,22 @@ FOCUS: 100% immediate safety, 0% astrology.`;
           : null,
       };
     } catch (error) {
+      // 🔥🔥🔥 DIC-07-2025 03:30 - CRITICAL DEBUG LOGGING 🔥🔥🔥
+      console.error('❌❌❌ OPENAI ERROR DETAILS ❌❌❌');
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error type:', error.type);
+      console.error('Error status:', error.status);
+      console.error('Full error:', JSON.stringify(error, null, 2));
+
       logger.logError(error, {
         context: "openai_response_generation",
         sessionId: sessionData.session_id,
         responseTime: Date.now() - startTime,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorType: error.type,
+        errorStatus: error.status,
       });
 
       // Try fallback model
