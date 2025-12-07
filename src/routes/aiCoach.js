@@ -126,12 +126,13 @@ router.post('/chat/start',
     const startTime = Date.now();
 
     try {
-      const { persona, languageCode, receiptData, preferences, platform, appVersion } = req.body;
-      
+      const { persona, languageCode, receiptData, premiumTier, preferences, platform, appVersion } = req.body;
+
       logger.getLogger().info('AI Coach session start request', {
         userId: req.userId,
         persona: persona || 'general',
         platform,
+        premiumTier,
         ip: req.ip
       });
 
@@ -139,6 +140,7 @@ router.post('/chat/start',
         persona,
         languageCode,
         receiptData,
+        premiumTier,
         preferences,
         platform,
         appVersion,
