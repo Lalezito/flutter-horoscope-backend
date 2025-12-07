@@ -1148,9 +1148,10 @@ QUESTION: "Should I ask for a raise?"
 
     try {
       const persona = this.personas[sessionData.ai_coach_persona];
-      const conversationContext = JSON.parse(
-        sessionData.conversation_context || "{}"
-      );
+      // 🔧 DIC-07-2025: Fix JSON.parse on already-parsed JSONB object
+      const conversationContext = typeof sessionData.conversation_context === 'string'
+        ? JSON.parse(sessionData.conversation_context || "{}")
+        : (sessionData.conversation_context || {});
 
       // ✨ Get horoscope data first (for metadata)
       const zodiacSign = options.zodiacSign || sessionData.zodiac_sign || "Leo";
@@ -2615,7 +2616,11 @@ TONO: Comprensivo, empoderador, orientado a la acción. Como un coach que lo ent
 
       if (result.rows.length === 0) return;
 
-      const context = JSON.parse(result.rows[0].conversation_context || "{}");
+      // 🔧 DIC-07-2025: Fix JSON.parse on already-parsed JSONB object
+      const rawContext = result.rows[0].conversation_context;
+      const context = typeof rawContext === 'string'
+        ? JSON.parse(rawContext || "{}")
+        : (rawContext || {});
 
       // Update message history (keep last N messages)
       if (!context.messageHistory) context.messageHistory = [];
