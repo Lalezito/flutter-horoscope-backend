@@ -204,17 +204,19 @@ router.post('/chat/message',
     const startTime = Date.now();
 
     try {
-      const { sessionId, message, receiptData } = req.body;
-      
+      const { sessionId, message, receiptData, premiumTier } = req.body;
+
       logger.getLogger().info('AI Coach message request', {
         userId: req.userId,
         sessionId,
         messageLength: message.length,
+        premiumTier,
         ip: req.ip
       });
 
       const options = {
         receiptData,
+        premiumTier,
         userAgent: req.get('User-Agent'),
       };
 
