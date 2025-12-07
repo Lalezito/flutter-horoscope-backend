@@ -653,8 +653,8 @@ QUESTION: "Should I ask for a raise?"
       await this._updateUsageStats(userId, premiumStatus.isPremium);
 
       // 🔥 NEW: Check in user for daily streak (gamification)
-      // Detect language from options or default to Spanish
-      const userLanguage = options.language || "es";
+      // Detect language from options (accept both 'language' and 'languageCode')
+      const userLanguage = options.language || options.languageCode || "en";
       const streakInfo = await streakService.checkIn(userId, userLanguage);
 
       const totalResponseTime = Date.now() - startTime;
@@ -1164,7 +1164,7 @@ QUESTION: "Should I ask for a raise?"
 
       // ✨ Get horoscope data first (for metadata)
       const zodiacSign = options.zodiacSign || sessionData.zodiac_sign || "Leo";
-      const language = options.language || sessionData.language_code || "en";
+      const language = options.language || options.languageCode || sessionData.language_code || "en";
       console.log('🌟 [STEP 5] Getting horoscope for:', zodiacSign, language);
       const horoscopeData = await this._getDailyHoroscope(zodiacSign, language);
       console.log('✅ [STEP 6] Horoscope data received:', !!horoscopeData);
@@ -1638,7 +1638,7 @@ FOCUS: 100% immediate safety, 0% astrology.`;
           const fallbackPrompt = await this._buildAstrologicalPrompt(
             this.personas[sessionData.ai_coach_persona].systemPrompt,
             options.zodiacSign || sessionData.zodiac_sign || "Leo",
-            options.language || sessionData.language_code || "en"
+            options.language || options.languageCode || sessionData.language_code || "en"
           );
 
           const fallbackCompletion = await this.openai.chat.completions.create({
