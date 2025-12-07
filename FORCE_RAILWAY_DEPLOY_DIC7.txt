@@ -1,0 +1,11 @@
+RAILWAY DEPLOYMENT VERIFICATION - December 7, 2025
+
+This file was created to force Railway to detect a new commit and deploy fresh code.
+
+Expected behavior after deployment:
+1. Backend should accept premiumTier parameter without receiptData
+2. /api/ai-coach/chat/start should return {"success": true} for stellar tier
+3. Logs should show: "✅✅✅ PREMIUM ACCESS GRANTED - stellar tier"
+
+Commit: 1591698 (should include premium tier bypass fix)
+Timestamp: 2025-12-07 01:45 GMT-3
