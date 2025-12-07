@@ -1147,24 +1147,36 @@ QUESTION: "Should I ask for a raise?"
     const startTime = Date.now();
 
     try {
+      // 🔥🔥🔥 DIC-07-2025 STEP-BY-STEP DEBUG 🔥🔥🔥
+      console.log('🚀 [STEP 1] _generateAIResponse STARTED');
+      console.log('🔑 OpenAI API Key exists:', !!process.env.OPENAI_API_KEY);
+      console.log('🔑 OpenAI API Key length:', process.env.OPENAI_API_KEY?.length || 0);
+      console.log('📝 ai_coach_persona:', sessionData.ai_coach_persona);
+
       const persona = this.personas[sessionData.ai_coach_persona];
+      console.log('🎭 [STEP 2] Persona found:', !!persona, persona?.name);
       // 🔧 DIC-07-2025: Fix JSON.parse on already-parsed JSONB object
+      console.log('📋 [STEP 3] conversation_context type:', typeof sessionData.conversation_context);
       const conversationContext = typeof sessionData.conversation_context === 'string'
         ? JSON.parse(sessionData.conversation_context || "{}")
         : (sessionData.conversation_context || {});
+      console.log('✅ [STEP 4] conversationContext parsed OK');
 
       // ✨ Get horoscope data first (for metadata)
       const zodiacSign = options.zodiacSign || sessionData.zodiac_sign || "Leo";
       const language = options.language || sessionData.language_code || "en";
+      console.log('🌟 [STEP 5] Getting horoscope for:', zodiacSign, language);
       const horoscopeData = await this._getDailyHoroscope(zodiacSign, language);
+      console.log('✅ [STEP 6] Horoscope data received:', !!horoscopeData);
 
       // 💚 NEW: Detect emotional state in user's message
       const emotionalState = this._detectEmotionalState(userMessage);
+      console.log('💚 [STEP 7] Emotional state detected:', emotionalState.primaryEmotion);
 
       // Log emotional analysis for debugging
       if (emotionalState.needsExtraSupport) {
         logger.logInfo("💙 Emotional support needed", {
-          sessionId,
+          sessionId: sessionData.session_id, // 🔧 FIX: Use sessionData.session_id instead of undefined sessionId
           emotion: emotionalState.primaryEmotion,
           intensity: emotionalState.emotionalIntensity,
           sentiment: emotionalState.sentiment,
@@ -1533,7 +1545,9 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         userId
       });
 
+      console.log('📊 [STEP 10] Checking monthly limits for userId:', userId);
       const monthlyCheck = await this._checkMonthlyLimits(userId, complexity);
+      console.log('📊 [STEP 11] Monthly check result:', monthlyCheck.allowed);
       if (!monthlyCheck.allowed) {
         return {
           success: false,
@@ -1543,6 +1557,8 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         };
       }
 
+      console.log('🤖 [STEP 12] Calling OpenAI with model:', selectedModel);
+      console.log('🤖 [STEP 12b] this.openai exists:', !!this.openai);
       const completion = await this.openai.chat.completions.create({
         model: selectedModel,
         messages: messages,
