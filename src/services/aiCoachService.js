@@ -1175,8 +1175,8 @@ QUESTION: "Should I ask for a raise?"
 
       // Log emotional analysis for debugging
       if (emotionalState.needsExtraSupport) {
-        logger.logInfo("💙 Emotional support needed", {
-          sessionId: sessionData.session_id, // 🔧 FIX: Use sessionData.session_id instead of undefined sessionId
+        logger.getLogger().info("💙 Emotional support needed", {
+          sessionId: sessionData.session_id,
           emotion: emotionalState.primaryEmotion,
           intensity: emotionalState.emotionalIntensity,
           sentiment: emotionalState.sentiment,
@@ -1709,7 +1709,7 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       // Check cache first (24h TTL)
       const cached = await redisService.get(cacheKey);
       if (cached) {
-        logger.logInfo("✨ AI-generated horoscope retrieved from cache", {
+        logger.getLogger().info("✨ AI-generated horoscope retrieved from cache", {
           sign,
           language,
           date: today,
@@ -1717,7 +1717,7 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         return JSON.parse(cached);
       }
 
-      logger.logInfo("🤖 Generating horoscope with OpenAI", {
+      logger.getLogger().info("🤖 Generating horoscope with OpenAI", {
         sign,
         language,
         date: today,
@@ -1802,7 +1802,7 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
 
       const responseTime = Date.now() - startTime;
 
-      logger.logInfo("✅ AI horoscope generated and cached", {
+      logger.getLogger().info("✅ AI horoscope generated and cached", {
         sign,
         language,
         tokensUsed: horoscope.tokens_used,
@@ -1911,7 +1911,7 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
       const cached = await redisService.get(cacheKey);
 
       if (cached) {
-        logger.logInfo("Daily horoscope retrieved from cache", {
+        logger.getLogger().info("Daily horoscope retrieved from cache", {
           sign,
           language,
           date: today,
@@ -1920,7 +1920,7 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
       }
 
       // Not in cache, query database
-      logger.logInfo("Querying database for daily horoscope", {
+      logger.getLogger().info("Querying database for daily horoscope", {
         sign,
         language,
         date: today,
@@ -1949,7 +1949,7 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
       const result = await db.query(query, [sign, language]);
 
       if (result.rows.length === 0) {
-        logger.logWarning(
+        logger.getLogger().warn(
           "💾 No horoscope in DB, falling back to AI generation",
           {
             sign,
@@ -1967,7 +1967,7 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
       // Cache for 1 hour (3600 seconds)
       await redisService.setex(cacheKey, 3600, JSON.stringify(horoscope));
 
-      logger.logInfo("Daily horoscope cached successfully", {
+      logger.getLogger().info("Daily horoscope cached successfully", {
         sign,
         language,
         cacheKey,
@@ -1999,7 +1999,7 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
 
     // If no horoscope found, return base prompt
     if (!horoscope) {
-      logger.logWarning("No horoscope available, using generic prompt", {
+      logger.getLogger().warn("No horoscope available, using generic prompt", {
         zodiacSign,
         language,
       });
@@ -2070,7 +2070,7 @@ REMEMBER: You're not just a life coach - you're a COSMIC LIFE COACH who blends
 psychology, practical wisdom, and astrological insight. Make every response feel
 uniquely tailored to this ${zodiacSign} user on this specific day.`;
 
-    logger.logInfo("Built personalized astrological prompt", {
+    logger.getLogger().info("Built personalized astrological prompt", {
       zodiacSign,
       language,
       hasHoroscope: true,
