@@ -3109,9 +3109,13 @@ Return ONLY a valid JSON object with this structure:
         throw new Error(session.message || "Failed to create chat session");
       }
 
+      // Extract sessionId from nested response structure
+      // startChatSession returns { success: true, session: { sessionId: ... } }
+      const sessionId = session.session?.sessionId || session.sessionId;
+
       // Send message and get AI response
       const response = await this.sendMessage(
-        session.sessionId,
+        sessionId,
         message,
         userContext.userId,
         {
@@ -3124,7 +3128,7 @@ Return ONLY a valid JSON object with this structure:
       if (!response.success) {
         logger.getLogger().error("generateCoachResponse: Message send failed", {
           error: response.error,
-          sessionId: session.sessionId,
+          sessionId: sessionId,
         });
         throw new Error(response.error || "Failed to generate response");
       }
