@@ -36,6 +36,10 @@ const voiceAIRoutes = require("./routes/voiceAI");
 
 // Middleware imports
 const { securityHeaders, requestValidation, endpointLimits, adaptiveRateLimit } = require("./middleware/rateLimiter");
+const { apiLimiter, authLimiter, premiumLimiter } = require('./middleware/rateLimiter');
+const securityMiddleware = require('./middleware/security');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { sanitizeInput } = require('./middleware/validation');
 const monitoringController = require("./controllers/monitoringController");
 
 // Load environment-specific configuration
@@ -106,6 +110,12 @@ if (process.env.NODE_ENV === 'production') {
     next();
   });
 }
+
+// Apply security middleware early
+app.use(securityMiddleware);
+
+// Input sanitization
+app.use(sanitizeInput);
 
 // Enhanced security with Helmet - Production hardened
 app.use(helmet({
@@ -262,6 +272,11 @@ app.get('/ping', (req, res) => res.json({
   version: '2.2.0'
 }));
 
+// Apply rate limiting
+app.use('/api/', apiLimiter);
+app.use('/api/auth/', authLimiter);
+app.use('/api/premium/', premiumLimiter);
+
 // API routes with appropriate rate limiting
 app.use("/api/coaching", endpointLimits.api, coachingRoutes);
 app.use("/api/weekly", endpointLimits.api, weeklyRoutes);
@@ -383,36 +398,9 @@ app.get('/api/docs', (req, res) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    error: 'Endpoint not found',
-    available_endpoints: '/api/docs',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Enhanced global error handler
-app.use((error, req, res, next) => {
-  // Enhanced error logging
-  logger.logError(error, {
-    url: req.url,
-    method: req.method,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    body: req.body,
-    query: req.query,
-    params: req.params
-  });
-  
-  // Send error response
-  res.status(error.status || 500).json({
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-    timestamp: new Date().toISOString(),
-    requestId: req.ip + '_' + Date.now()
-  });
-});
+// Error handling (must be last)
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // Initialize cron jobs for automatic horoscope generation
 const cronJobs = require("./services/cronJobs");
