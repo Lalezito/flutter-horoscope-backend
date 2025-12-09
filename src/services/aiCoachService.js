@@ -3034,6 +3034,91 @@ Return ONLY a valid JSON object with this structure:
   /**
    * 🧪 HEALTH CHECK
    */
+  /**
+   * 💬 GENERATE COACH RESPONSE (Simplified API for Controller)
+   * Creates/gets session and generates AI response in one call
+   *
+   * @param {string} message - User's message
+   * @param {Object} userContext - User context
+   * @param {string} userContext.userId - User identifier
+   * @param {string} userContext.zodiacSign - User's zodiac sign
+   * @param {string} userContext.language - Language code
+   * @returns {Promise<Object>} Coach response
+   */
+  async generateCoachResponse(message, userContext) {
+    const startTime = Date.now();
+
+    try {
+      logger.getLogger().info("generateCoachResponse: Starting", {
+        userId: userContext.userId,
+        zodiacSign: userContext.zodiacSign,
+        language: userContext.language,
+        messageLength: message?.length,
+      });
+
+      // Normalize zodiac sign
+      const normalizedSign = normalizeSignName(userContext.zodiacSign || "Leo");
+
+      // Create or get session
+      const session = await this.startChatSession(userContext.userId, {
+        zodiacSign: normalizedSign,
+        language: userContext.language || "en",
+      });
+
+      if (!session.success) {
+        logger.getLogger().error("generateCoachResponse: Session creation failed", {
+          error: session.message,
+          userId: userContext.userId,
+        });
+        throw new Error(session.message || "Failed to create chat session");
+      }
+
+      // Send message and get AI response
+      const response = await this.sendMessage(
+        session.sessionId,
+        message,
+        userContext.userId,
+        {
+          zodiacSign: normalizedSign,
+          language: userContext.language || "en",
+        }
+      );
+
+      if (!response.success) {
+        logger.getLogger().error("generateCoachResponse: Message send failed", {
+          error: response.error,
+          sessionId: session.sessionId,
+        });
+        throw new Error(response.error || "Failed to generate response");
+      }
+
+      const responseTime = Date.now() - startTime;
+
+      logger.getLogger().info("generateCoachResponse: Success", {
+        responseTime,
+        tokensUsed: response.response?.tokensUsed,
+      });
+
+      return {
+        content: response.response?.content || response.response,
+        scenario: "general",
+        qualityScore: response.response?.confidenceScore || 0.9,
+        timestamp: new Date().toISOString(),
+        tokensUsed: response.response?.tokensUsed || 0,
+        model: response.response?.model || "gpt-4-turbo",
+        responseType: "ai",
+        cached: false,
+      };
+    } catch (error) {
+      logger.logError(error, {
+        context: "generateCoachResponse",
+        userId: userContext?.userId,
+        zodiacSign: userContext?.zodiacSign,
+      });
+      throw error;
+    }
+  }
+
   async healthCheck() {
     try {
       // Test database connection
