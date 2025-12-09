@@ -815,19 +815,41 @@ QUESTION: "Should I ask for a raise?"
    */
   async _validatePremiumAccess(userId, receiptData, premiumTier = null) {
     try {
-      // ✅✅✅ CRITICAL FIX DIC-07-2025 00:30 - PRIORITY 1 - Trust premiumTier from RevenueCat
-      // Railway must deploy THIS code with premium tier bypass - NOT old commit 222601c0
-      // This is the CORRECT code that accepts premiumTier without receiptData
-      logger.getLogger().info(`🔍 [DIC-07-00:30] Premium validation - tier: ${premiumTier}, hasReceipt: ${!!receiptData}`);
+      // ═══════════════════════════════════════════════════════════════════════════
+      // 🌟 COSMIC COACH ACCESS: STELLAR TIER ONLY
+      // ═══════════════════════════════════════════════════════════════════════════
+      // Premium Tiers (from RevenueCat):
+      //   - "free"    → No access to Cosmic Coach
+      //   - "cosmic"  → Basic premium, NO access to Cosmic Coach
+      //   - "stellar" → Full premium, HAS access to Cosmic Coach ✅
+      //
+      // IMPORTANT: Only STELLAR tier users can use the AI Cosmic Coach.
+      // Cosmic tier is the basic premium but does NOT include AI Coach.
+      // ═══════════════════════════════════════════════════════════════════════════
+      logger.getLogger().info(`🔍 Premium validation - tier: ${premiumTier}, hasReceipt: ${!!receiptData}`);
 
-      if (premiumTier && (premiumTier === 'stellar' || premiumTier === 'cosmic')) {
-        logger.getLogger().info(`✅✅✅ PREMIUM ACCESS GRANTED - ${premiumTier} tier for user ${userId} ✅✅✅`);
+      // Only STELLAR tier has access to Cosmic Coach
+      if (premiumTier === 'stellar') {
+        logger.getLogger().info(`✅ STELLAR ACCESS GRANTED - AI Coach enabled for user ${userId}`);
         return {
           hasAccess: true,
           isPremium: true,
           tier: premiumTier,
           allowedFeatures: this.premiumLimits.premium,
-          message: `Premium access granted - ${premiumTier} tier`,
+          message: "Stellar tier - Full AI Coach access",
+        };
+      }
+
+      // Cosmic tier does NOT have access to AI Coach
+      if (premiumTier === 'cosmic') {
+        logger.getLogger().info(`⚠️ COSMIC TIER - No AI Coach access for user ${userId}`);
+        return {
+          hasAccess: false,
+          isPremium: true,
+          tier: premiumTier,
+          allowedFeatures: this.premiumLimits.free,
+          message: "Cosmic tier does not include AI Coach. Upgrade to Stellar for AI Coach access.",
+          upgradeRequired: true,
         };
       }
 
