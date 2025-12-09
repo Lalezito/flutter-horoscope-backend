@@ -103,10 +103,10 @@ app.use(cors({
 app.use(compression());
 
 // Rate limiting - protect against abuse
-const { rateLimit } = require('./middleware/rateLimiter');
-app.use('/api/', rateLimit(60000, 100)); // 100 requests per minute for API
-app.use('/api/ai-coach/', rateLimit(60000, 30)); // 30 requests per minute for AI Coach
-app.use('/api/generate/', rateLimit(60000, 10)); // 10 requests per minute for generation
+const { apiLimiter, authLimiter, premiumLimiter } = require('./middleware/rateLimiter');
+app.use('/api/', apiLimiter);
+app.use('/api/auth/', authLimiter);
+app.use('/api/premium/', premiumLimiter);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
