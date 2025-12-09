@@ -77,15 +77,18 @@ class CoachingController {
       });
     }
 
-    const { message, userId, zodiacSign, language } = req.body;
+    const { message, userId, zodiacSign, language, premiumTier } = req.body;
     const startTime = Date.now();
 
     try {
       // Build user context for personalized coaching
+      // NOTE: premiumTier comes from RevenueCat via frontend
+      // Only "stellar" tier has access to Cosmic Coach
       const userContext = {
         userId: userId || `anonymous_${Date.now()}`,
         zodiacSign: zodiacSign || "Leo", // Default to Leo if not provided
         language: language || "en",
+        premiumTier: premiumTier || null, // From RevenueCat: "stellar" = full access, "cosmic" = no AI access
         requestId: `req_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}`,

@@ -3075,6 +3075,7 @@ Return ONLY a valid JSON object with this structure:
         userId: userContext.userId,
         zodiacSign: userContext.zodiacSign,
         language: userContext.language,
+        premiumTier: userContext.premiumTier,
         messageLength: message?.length,
       });
 
@@ -3082,16 +3083,29 @@ Return ONLY a valid JSON object with this structure:
       const normalizedSign = normalizeSignName(userContext.zodiacSign || "Leo");
 
       // Create or get session
+      // IMPORTANT: premiumTier must be passed for access validation
+      // Only "stellar" tier has access to Cosmic Coach
       const session = await this.startChatSession(userContext.userId, {
         zodiacSign: normalizedSign,
         language: userContext.language || "en",
+        premiumTier: userContext.premiumTier, // From RevenueCat
       });
 
       if (!session.success) {
         logger.getLogger().error("generateCoachResponse: Session creation failed", {
-          error: session.message,
+          error: session.message || session.error,
           userId: userContext.userId,
+          premiumTier: userContext.premiumTier,
         });
+        // Return error with upgrade info if premium required
+        if (session.error === "premium_required" || session.upgradeRequired) {
+          return {
+            success: false,
+            error: session.error,
+            message: session.message,
+            upgradeRequired: true,
+          };
+        }
         throw new Error(session.message || "Failed to create chat session");
       }
 
@@ -3103,6 +3117,7 @@ Return ONLY a valid JSON object with this structure:
         {
           zodiacSign: normalizedSign,
           language: userContext.language || "en",
+          premiumTier: userContext.premiumTier,
         }
       );
 
