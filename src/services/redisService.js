@@ -589,6 +589,29 @@ class RedisService {
     return Date.now() - start;
   }
 
+  /**
+   * Ping Redis to check if connection is alive
+   * Used by health checks in other services
+   */
+  async ping() {
+    // If using fallback (in-memory), return success
+    if (this.fallbackStorage) {
+      return 'PONG';
+    }
+
+    // If Redis client not connected, throw error
+    if (!this.isConnected || !this.client) {
+      throw new Error('Redis not connected');
+    }
+
+    try {
+      return await this.client.ping();
+    } catch (error) {
+      console.error('Redis ping failed:', error.message);
+      throw error;
+    }
+  }
+
   parseRedisInfo(infoString) {
     const lines = infoString.split('\r\n');
     const info = {};
