@@ -2,7 +2,7 @@
 # Optimized for Node.js 20 with PostgreSQL and PM2
 
 [phases.setup]
-nixPkgs = ['nodejs-20_x', 'npm-9_x']
+nixPkgs = ['nodejs_20']
 
 [phases.install]
 cmds = ['npm ci --legacy-peer-deps --production=false --prefer-offline --no-audit && npm install -g pm2']
