@@ -1346,7 +1346,13 @@ QUESTION: "Should I ask for a raise?"
 
 Remember: Users are seeking PERSONALIZED cosmic guidance that feels unique to them
 and their situation. Every response should demonstrate you understand their chart,
-their question, and today's specific cosmic energies.`;
+their question, and today's specific cosmic energies.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌍 MANDATORY LANGUAGE REQUIREMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**RESPOND ENTIRELY IN: ${language.toUpperCase()}**
+${language === 'es' ? '🇪🇸 Toda tu respuesta DEBE estar en español.' : ''}${language === 'en' ? '🇬🇧 Your entire response MUST be in English.' : ''}${language === 'it' ? '🇮🇹 Tutta la tua risposta DEVE essere in italiano.' : ''}${language === 'fr' ? '🇫🇷 Toute ta réponse DOIT être en français.' : ''}${language === 'de' ? '🇩🇪 Deine gesamte Antwort MUSS auf Deutsch sein.' : ''}${language === 'pt' ? '🇧🇷 Toda a sua resposta DEVE estar em português.' : ''}`;
 
       // 🚨 Crisis intervention notice (if detected)
       if (emotionalState.hasCrisisIndicators) {
@@ -2125,6 +2131,19 @@ ${
 
 5. **Be Authentically Astrological**: This is a PREMIUM feature. Users are paying
    for personalized astrological guidance, not generic life coaching.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌍 CRITICAL: RESPONSE LANGUAGE REQUIREMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**USER'S PREFERRED LANGUAGE CODE: ${language}**
+
+YOU MUST RESPOND IN THE FOLLOWING LANGUAGE:
+${language === 'es' ? '🇪🇸 SPANISH (Español) - Responde completamente en español.' : ''}${language === 'en' ? '🇬🇧 ENGLISH - Respond completely in English.' : ''}${language === 'it' ? '🇮🇹 ITALIAN (Italiano) - Rispondi completamente in italiano.' : ''}${language === 'fr' ? '🇫🇷 FRENCH (Français) - Réponds entièrement en français.' : ''}${language === 'de' ? '🇩🇪 GERMAN (Deutsch) - Antworte vollständig auf Deutsch.' : ''}${language === 'pt' ? '🇧🇷 PORTUGUESE (Português) - Responda completamente em português.' : ''}
+
+⚠️ IMPORTANT: Even if the horoscope data above is in a different language,
+YOU MUST TRANSLATE AND RESPOND IN ${language.toUpperCase()} ONLY.
+Do NOT mix languages. The entire response must be in ${language.toUpperCase()}.
 
 REMEMBER: You're not just a life coach - you're a COSMIC LIFE COACH who blends
 psychology, practical wisdom, and astrological insight. Make every response feel
