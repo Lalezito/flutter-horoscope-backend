@@ -197,20 +197,25 @@ router.post('/chat/message',
     body('message').isString().isLength({ min: 1, max: 2000 })
       .withMessage('Message must be 1-2000 characters'),
     body('receiptData').optional().isString()
-      .withMessage('Receipt data must be a string')
+      .withMessage('Receipt data must be a string'),
+    body('language').optional().isIn(['en', 'es', 'fr', 'de', 'it', 'pt'])
+      .withMessage('Invalid language code'),
+    body('zodiacSign').optional().isString()
+      .withMessage('Zodiac sign must be a string')
   ],
   validateRequest,
   async (req, res) => {
     const startTime = Date.now();
 
     try {
-      const { sessionId, message, receiptData, premiumTier } = req.body;
+      const { sessionId, message, receiptData, premiumTier, language, zodiacSign } = req.body;
 
       logger.getLogger().info('AI Coach message request', {
         userId: req.userId,
         sessionId,
         messageLength: message.length,
         premiumTier,
+        language,  // 🌍 Log language for debugging
         ip: req.ip
       });
 
@@ -218,6 +223,8 @@ router.post('/chat/message',
         receiptData,
         premiumTier,
         userAgent: req.get('User-Agent'),
+        language,      // 🌍 CRITICAL: Pass language to service on EVERY message
+        zodiacSign,    // Also pass zodiacSign if provided
       };
 
       const result = await aiCoachService.sendMessage(sessionId, message, req.userId, options);

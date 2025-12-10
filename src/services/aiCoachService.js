@@ -1225,7 +1225,10 @@ QUESTION: "Should I ask for a raise?"
 
       // ✨ Get horoscope data first (for metadata)
       const zodiacSign = options.zodiacSign || sessionData.zodiac_sign || "Leo";
+      // 🌍 CRITICAL: Language from current request ALWAYS takes priority
+      // This ensures users who change device language get responses in the new language immediately
       const language = options.language || options.languageCode || sessionData.language_code || "en";
+      console.log('🌍 [LANGUAGE] Using language:', language, '(from options:', options.language, ', session:', sessionData.language_code, ')');
       console.log('🌟 [STEP 5] Getting horoscope for:', zodiacSign, language);
       const horoscopeData = await this._getDailyHoroscope(zodiacSign, language);
       console.log('✅ [STEP 6] Horoscope data received:', !!horoscopeData);
