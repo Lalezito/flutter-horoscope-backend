@@ -1,10 +1,12 @@
-// Database Configuration with Resilience
-// Auto-reconnection, connection pooling, circuit breakers, and retry logic
+// Resilient Database Configuration
+// Auto-reconnection, connection pooling, and retry logic
 
 const { Pool } = require("pg");
-const dotenv = require('dotenv');
+const { resilientDatabaseQuery, circuitBreakers } = require('./resilience');
+const logger = require('../services/loggingService');
 
 // Load environment variables
+const dotenv = require('dotenv');
 if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: '.env.production' });
   dotenv.config({ path: '.env' });
@@ -12,51 +14,17 @@ if (process.env.NODE_ENV === 'production') {
   dotenv.config();
 }
 
-// Import resilience utilities (with fallback if not available)
-let resilientDatabaseQuery, circuitBreakers, logger;
-
-try {
-  const resilience = require('./resilience');
-  resilientDatabaseQuery = resilience.resilientDatabaseQuery;
-  circuitBreakers = resilience.circuitBreakers;
-} catch (e) {
-  // Fallback if resilience module not available
-  resilientDatabaseQuery = async (fn) => fn();
-  circuitBreakers = {
-    database: {
-      execute: async (fn) => fn(),
-      getState: () => ({ state: 'DISABLED', failures: 0 })
-    }
-  };
-}
-
-try {
-  logger = require('../services/loggingService');
-} catch (e) {
-  // Fallback logger
-  logger = {
-    getLogger: () => ({
-      info: console.log,
-      warn: console.warn,
-      error: console.error,
-      debug: () => {}
-    }),
-    logError: (err, ctx) => console.error('Error:', err.message, ctx)
-  };
-}
-
 let pool = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
-const RECONNECT_DELAY_BASE = 1000;
+const RECONNECT_DELAY_BASE = 1000; // 1 second
 
 /**
  * Create database connection pool with resilient configuration
  */
 function createPool() {
   if (!pool) {
-    console.log('🔄 Creating resilient database connection pool...');
-    console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
+    logger.getLogger().info('Creating resilient database connection pool');
 
     const poolConfig = {
       connectionString: process.env.DATABASE_URL,
@@ -69,16 +37,19 @@ function createPool() {
       min: parseInt(process.env.DATABASE_POOL_MIN) || (process.env.NODE_ENV === 'production' ? 5 : 2),
 
       // Timeout configuration
-      idleTimeoutMillis: 60000,
-      connectionTimeoutMillis: 15000,
-      query_timeout: 90000,
+      idleTimeoutMillis: 60000, // Close idle connections after 60s
+      connectionTimeoutMillis: 15000, // Wait 15s for new connection
+      query_timeout: 90000, // 90s query timeout
 
       // Advanced pool settings
       acquireTimeoutMillis: 30000,
       createTimeoutMillis: 30000,
       createRetryIntervalMillis: 200,
       reapIntervalMillis: 1000,
-      fifo: false,
+      fifo: false, // LIFO for better cache locality
+
+      // Statement timeout for long queries
+      statement_timeout: 90000,
 
       // Application name for monitoring
       application_name: 'zodiac-backend'
@@ -87,17 +58,17 @@ function createPool() {
     pool = new Pool(poolConfig);
 
     // Enhanced error handling with auto-reconnection
-    pool.on('error', async (err) => {
+    pool.on('error', async (err, client) => {
       logger.logError(err, {
         context: 'database_pool_error',
         reconnectAttempts,
-        poolSize: pool?.totalCount || 0
+        poolSize: pool.totalCount
       });
 
       // Critical errors that require reconnection
       const criticalErrors = ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'Connection terminated'];
       const isCritical = criticalErrors.some(code =>
-        err.code === code || err.message?.includes(code)
+        err.code === code || err.message.includes(code)
       );
 
       if (isCritical && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
@@ -107,8 +78,7 @@ function createPool() {
 
     // Connection lifecycle events
     pool.on('connect', (client) => {
-      reconnectAttempts = 0;
-      console.log('✅ Connected to PostgreSQL database');
+      reconnectAttempts = 0; // Reset on successful connection
       logger.getLogger().info('Database client connected', {
         totalCount: pool.totalCount,
         idleCount: pool.idleCount,
@@ -116,10 +86,12 @@ function createPool() {
       });
 
       // Set application-level connection parameters
-      client.query('SET application_name = $1', ['zodiac-backend']).catch(() => {});
+      client.query('SET application_name = $1', ['zodiac-backend']).catch(err => {
+        logger.getLogger().warn('Failed to set application name', { error: err.message });
+      });
     });
 
-    pool.on('acquire', () => {
+    pool.on('acquire', (client) => {
       logger.getLogger().debug('Database client acquired', {
         totalCount: pool.totalCount,
         idleCount: pool.idleCount,
@@ -127,10 +99,10 @@ function createPool() {
       });
     });
 
-    pool.on('remove', () => {
+    pool.on('remove', (client) => {
       logger.getLogger().debug('Database client removed', {
-        totalCount: pool?.totalCount || 0,
-        idleCount: pool?.idleCount || 0
+        totalCount: pool.totalCount,
+        idleCount: pool.idleCount
       });
     });
 
@@ -185,7 +157,7 @@ async function attemptReconnection() {
     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
       await attemptReconnection();
     } else {
-      logger.getLogger().error('Max reconnection attempts reached', {
+      logger.getLogger().error('Max reconnection attempts reached, giving up', {
         maxAttempts: MAX_RECONNECT_ATTEMPTS
       });
     }
@@ -196,24 +168,19 @@ async function attemptReconnection() {
  * Test database connection with circuit breaker
  */
 async function testConnection() {
-  try {
-    return await circuitBreakers.database.execute(async () => {
-      const client = await getPool().connect();
-      try {
-        const result = await client.query('SELECT NOW() as now');
-        console.log('✅ Database connection test successful');
-        logger.getLogger().info('Database connection test successful', {
-          serverTime: result.rows[0].now
-        });
-        return true;
-      } finally {
-        client.release();
-      }
-    });
-  } catch (err) {
-    console.error('❌ Database connection test failed:', err.message);
-    return false;
-  }
+  return circuitBreakers.database.execute(async () => {
+    const client = await getPool().connect();
+    try {
+      const result = await client.query('SELECT NOW() as now, version() as version');
+      logger.getLogger().info('Database connection test successful', {
+        serverTime: result.rows[0].now,
+        version: result.rows[0].version.split(' ')[0]
+      });
+      return true;
+    } finally {
+      client.release();
+    }
+  });
 }
 
 /**

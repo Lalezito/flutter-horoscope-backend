@@ -1,10 +1,17 @@
-# Nixpacks config for Node.js backend
+# Nixpacks configuration for Railway
+# Optimized for Node.js 20 with PostgreSQL and PM2
 
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ['nodejs-20_x', 'npm-9_x']
 
 [phases.install]
-cmds = ["npm ci --legacy-peer-deps --ignore-scripts"]
+cmds = ['npm ci --legacy-peer-deps --production=false --prefer-offline --no-audit && npm install -g pm2']
 
-[start]
-cmd = "npm run start"
+[phases.build]
+cmds = ['mkdir -p logs']
+
+# Note: Start command defined in Procfile (Railway prefers Procfile)
+
+[variables]
+NODE_ENV = 'production'
+NPM_CONFIG_PRODUCTION = 'false'
