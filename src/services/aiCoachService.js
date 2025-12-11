@@ -394,7 +394,8 @@ QUESTION: "Should I ask for a raise?"
         options.persona && this.personas[options.persona]
           ? options.persona
           : "general";
-      const languageCode = options.languageCode || "en";
+      // Support both 'language' and 'languageCode' for backwards compatibility
+      const languageCode = options.language || options.languageCode || "en";
 
       // Validate persona access based on subscription
       if (!premiumStatus.allowedFeatures.personas.includes(persona)) {
