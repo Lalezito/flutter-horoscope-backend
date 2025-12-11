@@ -447,18 +447,11 @@ class CoachingController {
       body("zodiacSign")
         .optional()
         .isIn([
-          "Aries",
-          "Tauro",
-          "Géminis",
-          "Cáncer",
-          "Leo",
-          "Virgo",
-          "Libra",
-          "Escorpio",
-          "Sagitario",
-          "Capricornio",
-          "Acuario",
-          "Piscis",
+          // Spanish names
+          "Aries", "Tauro", "Géminis", "Cáncer", "Leo", "Virgo",
+          "Libra", "Escorpio", "Sagitario", "Capricornio", "Acuario", "Piscis",
+          // English names (for frontend compatibility)
+          "Taurus", "Gemini", "Cancer", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
         ])
         .withMessage("Invalid zodiac sign"),
       body("language")
