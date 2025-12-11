@@ -1293,6 +1293,7 @@ QUESTION: "Should I ask for a raise?"
         pt: 'Portuguese (Português)'
       };
       const langName = languageNames[language] || 'English';
+      console.log('🌍🌍🌍 [LANGUAGE-FIX-DEBUG] Building prompt with language:', language, '-> langName:', langName);
       const languagePrefix = `[CRITICAL INSTRUCTION - HIGHEST PRIORITY]
 You MUST respond ONLY in ${langName}. This is non-negotiable.
 Do NOT respond in English unless the language is "en".
@@ -1301,6 +1302,7 @@ Every single word of your response must be in ${langName}.
 ---
 
 `;
+      console.log('🌍🌍🌍 [LANGUAGE-FIX-DEBUG] Language prefix first 100 chars:', languagePrefix.substring(0, 100));
       let finalSystemPrompt = languagePrefix + personalizedPrompt;
       if (empathyContext) {
         finalSystemPrompt += "\n\n" + empathyContext;
