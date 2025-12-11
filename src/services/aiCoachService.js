@@ -265,11 +265,11 @@ QUESTION: "Should I ask for a raise?"
       premium: {
         hasAccess: true,
         dailyMessages: 100,
-        complexMessages: 500,      // GPT-4o - 500/mes
-        simpleMessages: 12500,     // GPT-4o-mini - 12,500/mes
-        minBalance: 30,            // Mínimo garantizado
-        dailyAccrual: 20,          // +20/día acumulables
-        maxBalance: 500,           // Tope máximo acumulado
+        complexMessages: 500, // GPT-4o - 500/mes
+        simpleMessages: 12500, // GPT-4o-mini - 12,500/mes
+        minBalance: 30, // Mínimo garantizado
+        dailyAccrual: 20, // +20/día acumulables
+        maxBalance: 500, // Tope máximo acumulado
         sessionMinutes: 120,
         personas: Object.keys(this.personas),
         features: [
@@ -311,19 +311,19 @@ QUESTION: "Should I ask for a raise?"
     if (lowerMessage.length < 15) {
       for (const pattern of simplePatterns) {
         if (pattern.test(lowerMessage)) {
-          return 'simple';
+          return "simple";
         }
       }
     }
 
     // Si tiene menos de 5 palabras y no tiene signos de pregunta complejos
     const wordCount = lowerMessage.split(/\s+/).length;
-    if (wordCount <= 3 && !lowerMessage.includes('?')) {
-      return 'simple';
+    if (wordCount <= 3 && !lowerMessage.includes("?")) {
+      return "simple";
     }
 
     // Todo lo demás es complejo
-    return 'complex';
+    return "complex";
   }
 
   /**
@@ -334,7 +334,7 @@ QUESTION: "Should I ask for a raise?"
    * @returns {string} - Model name to use
    */
   _selectModel(complexity) {
-    return complexity === 'simple'
+    return complexity === "simple"
       ? this.config.simpleModel
       : this.config.complexModel;
   }
@@ -358,17 +358,20 @@ QUESTION: "Should I ask for a raise?"
         options.premiumTier
       );
       if (!premiumStatus.hasAccess) {
-        logger.getLogger().info('Free user attempted to access AI Coach', { userId });
+        logger
+          .getLogger()
+          .info("Free user attempted to access AI Coach", { userId });
         return {
           success: false,
           error: "premium_required",
-          message: "El Cosmic Coach es una función exclusiva Premium. Actualiza tu suscripción para acceder a consejos personalizados ilimitados.",
+          message:
+            "El Cosmic Coach es una función exclusiva Premium. Actualiza tu suscripción para acceder a consejos personalizados ilimitados.",
           upgradeUrl: "/premium",
           features: [
             "Consejos astrológicos personalizados",
             "Memoria de conversaciones",
             "Respuestas ilimitadas",
-            "Acceso a todos los coaches especializados"
+            "Acceso a todos los coaches especializados",
           ],
           premiumStatus,
         };
@@ -569,17 +572,23 @@ QUESTION: "Should I ask for a raise?"
         options.premiumTier
       );
       if (!premiumStatus.hasAccess) {
-        logger.getLogger().info('Free user attempted to send message to AI Coach', { userId, sessionId });
+        logger
+          .getLogger()
+          .info("Free user attempted to send message to AI Coach", {
+            userId,
+            sessionId,
+          });
         return {
           success: false,
           error: "premium_required",
-          message: "El Cosmic Coach es una función exclusiva Premium. Actualiza tu suscripción para acceder a consejos personalizados ilimitados.",
+          message:
+            "El Cosmic Coach es una función exclusiva Premium. Actualiza tu suscripción para acceder a consejos personalizados ilimitados.",
           upgradeUrl: "/premium",
           features: [
             "Consejos astrológicos personalizados",
             "Memoria de conversaciones",
             "Respuestas ilimitadas",
-            "Acceso a todos los coaches especializados"
+            "Acceso a todos los coaches especializados",
           ],
         };
       }
@@ -866,11 +875,19 @@ QUESTION: "Should I ask for a raise?"
       // IMPORTANT: Only STELLAR tier users can use the AI Cosmic Coach.
       // Cosmic tier is the basic premium but does NOT include AI Coach.
       // ═══════════════════════════════════════════════════════════════════════════
-      logger.getLogger().info(`🔍 Premium validation - tier: ${premiumTier}, hasReceipt: ${!!receiptData}`);
+      logger
+        .getLogger()
+        .info(
+          `🔍 Premium validation - tier: ${premiumTier}, hasReceipt: ${!!receiptData}`
+        );
 
       // Only STELLAR tier has access to Cosmic Coach
-      if (premiumTier === 'stellar') {
-        logger.getLogger().info(`✅ STELLAR ACCESS GRANTED - AI Coach enabled for user ${userId}`);
+      if (premiumTier === "stellar") {
+        logger
+          .getLogger()
+          .info(
+            `✅ STELLAR ACCESS GRANTED - AI Coach enabled for user ${userId}`
+          );
         return {
           hasAccess: true,
           isPremium: true,
@@ -881,14 +898,17 @@ QUESTION: "Should I ask for a raise?"
       }
 
       // Cosmic tier does NOT have access to AI Coach
-      if (premiumTier === 'cosmic') {
-        logger.getLogger().info(`⚠️ COSMIC TIER - No AI Coach access for user ${userId}`);
+      if (premiumTier === "cosmic") {
+        logger
+          .getLogger()
+          .info(`⚠️ COSMIC TIER - No AI Coach access for user ${userId}`);
         return {
           hasAccess: false,
           isPremium: true,
           tier: premiumTier,
           allowedFeatures: this.premiumLimits.free,
-          message: "Cosmic tier does not include AI Coach. Upgrade to Stellar for AI Coach access.",
+          message:
+            "Cosmic tier does not include AI Coach. Upgrade to Stellar for AI Coach access.",
           upgradeRequired: true,
         };
       }
@@ -927,7 +947,9 @@ QUESTION: "Should I ask for a raise?"
         isPremium,
         allowedFeatures,
         subscriptionStatus,
-        message: isPremium ? "Premium access granted" : "Premium subscription required for AI Coach access",
+        message: isPremium
+          ? "Premium access granted"
+          : "Premium subscription required for AI Coach access",
       };
     } catch (error) {
       logger.logError(error, { context: "premium_validation", userId });
@@ -956,14 +978,14 @@ QUESTION: "Should I ask for a raise?"
       if (!isPremium) {
         return {
           allowed: false,
-          reason: 'premium_required',
+          reason: "premium_required",
           balance: 0,
-          message: 'El Cosmic Coach es exclusivo para usuarios Premium'
+          message: "El Cosmic Coach es exclusivo para usuarios Premium",
         };
       }
 
       const cacheKey = `ai_coach_balance:${userId}`;
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       const limits = this.premiumLimits.premium;
 
       // Obtener balance actual
@@ -975,14 +997,19 @@ QUESTION: "Should I ask for a raise?"
         balanceData = {
           balance: limits.minBalance,
           lastAccrualDate: today,
-          createdAt: today
+          createdAt: today,
         };
-        logger.getLogger().info('New premium user, initial balance', { userId, balance: limits.minBalance });
+        logger.getLogger().info("New premium user, initial balance", {
+          userId,
+          balance: limits.minBalance,
+        });
       } else {
         // Calcular días desde última acumulación
         const lastDate = new Date(balanceData.lastAccrualDate);
         const todayDate = new Date(today);
-        const daysDiff = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.floor(
+          (todayDate - lastDate) / (1000 * 60 * 60 * 24)
+        );
 
         if (daysDiff > 0) {
           // Acumular +20 por cada día que pasó
@@ -990,11 +1017,11 @@ QUESTION: "Should I ask for a raise?"
           balanceData.balance += accrual;
           balanceData.lastAccrualDate = today;
 
-          logger.getLogger().info('Balance accrual', {
+          logger.getLogger().info("Balance accrual", {
             userId,
             daysDiff,
             accrual,
-            newBalance: balanceData.balance
+            newBalance: balanceData.balance,
           });
         }
 
@@ -1021,16 +1048,18 @@ QUESTION: "Should I ask for a raise?"
         maxAccumulated: limits.maxBalance,
         dailyAccrual: limits.dailyAccrual,
         lastAccrualDate: balanceData.lastAccrualDate,
-        isPremium: true
+        isPremium: true,
       };
-
     } catch (error) {
-      logger.logError(error, { context: 'check_daily_usage_accumulation', userId });
+      logger.logError(error, {
+        context: "check_daily_usage_accumulation",
+        userId,
+      });
       // En caso de error, permitir con balance mínimo
       return {
         allowed: true,
         balance: 30,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -1048,15 +1077,15 @@ QUESTION: "Should I ask for a raise?"
         balanceData.balance = Math.max(0, balanceData.balance - 1);
         await redisService.set(cacheKey, JSON.stringify(balanceData), 7776000);
 
-        logger.getLogger().info('Balance decremented', {
+        logger.getLogger().info("Balance decremented", {
           userId,
-          newBalance: balanceData.balance
+          newBalance: balanceData.balance,
         });
       }
 
       return balanceData?.balance || 0;
     } catch (error) {
-      logger.logError(error, { context: 'decrement_balance', userId });
+      logger.logError(error, { context: "decrement_balance", userId });
       return 0;
     }
   }
@@ -1068,35 +1097,38 @@ QUESTION: "Should I ask for a raise?"
   async _checkMonthlyLimits(userId, complexity) {
     try {
       const now = new Date();
-      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const cacheKey = `ai_coach_monthly:${userId}:${monthKey}`;
 
       let monthlyData = await redisService.get(cacheKey);
-      monthlyData = monthlyData ? JSON.parse(monthlyData) : {
-        complexUsed: 0,
-        simpleUsed: 0,
-        month: monthKey
-      };
+      monthlyData = monthlyData
+        ? JSON.parse(monthlyData)
+        : {
+            complexUsed: 0,
+            simpleUsed: 0,
+            month: monthKey,
+          };
 
       const limits = this.premiumLimits.premium;
 
-      if (complexity === 'complex') {
+      if (complexity === "complex") {
         if (monthlyData.complexUsed >= limits.complexMessages) {
           return {
             allowed: false,
-            reason: 'complex_limit_reached',
+            reason: "complex_limit_reached",
             used: monthlyData.complexUsed,
             limit: limits.complexMessages,
-            suggestion: 'Tu límite de consultas complejas se renovará el próximo mes'
+            suggestion:
+              "Tu límite de consultas complejas se renovará el próximo mes",
           };
         }
       } else {
         if (monthlyData.simpleUsed >= limits.simpleMessages) {
           return {
             allowed: false,
-            reason: 'simple_limit_reached',
+            reason: "simple_limit_reached",
             used: monthlyData.simpleUsed,
-            limit: limits.simpleMessages
+            limit: limits.simpleMessages,
           };
         }
       }
@@ -1107,11 +1139,10 @@ QUESTION: "Should I ask for a raise?"
         complexUsed: monthlyData.complexUsed,
         complexLimit: limits.complexMessages,
         simpleUsed: monthlyData.simpleUsed,
-        simpleLimit: limits.simpleMessages
+        simpleLimit: limits.simpleMessages,
       };
-
     } catch (error) {
-      logger.logError(error, { context: 'check_monthly_limits', userId });
+      logger.logError(error, { context: "check_monthly_limits", userId });
       return { allowed: true }; // En caso de error, permitir
     }
   }
@@ -1123,17 +1154,19 @@ QUESTION: "Should I ask for a raise?"
   async _incrementMonthlyUsage(userId, complexity) {
     try {
       const now = new Date();
-      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const cacheKey = `ai_coach_monthly:${userId}:${monthKey}`;
 
       let monthlyData = await redisService.get(cacheKey);
-      monthlyData = monthlyData ? JSON.parse(monthlyData) : {
-        complexUsed: 0,
-        simpleUsed: 0,
-        month: monthKey
-      };
+      monthlyData = monthlyData
+        ? JSON.parse(monthlyData)
+        : {
+            complexUsed: 0,
+            simpleUsed: 0,
+            month: monthKey,
+          };
 
-      if (complexity === 'complex') {
+      if (complexity === "complex") {
         monthlyData.complexUsed += 1;
       } else {
         monthlyData.simpleUsed += 1;
@@ -1144,7 +1177,7 @@ QUESTION: "Should I ask for a raise?"
 
       return monthlyData;
     } catch (error) {
-      logger.logError(error, { context: 'increment_monthly_usage', userId });
+      logger.logError(error, { context: "increment_monthly_usage", userId });
     }
   }
 
@@ -1210,33 +1243,55 @@ QUESTION: "Should I ask for a raise?"
 
     try {
       // 🔥🔥🔥 DIC-07-2025 STEP-BY-STEP DEBUG 🔥🔥🔥
-      console.log('🚀 [STEP 1] _generateAIResponse STARTED');
-      console.log('🔑 OpenAI API Key exists:', !!process.env.OPENAI_API_KEY);
-      console.log('🔑 OpenAI API Key length:', process.env.OPENAI_API_KEY?.length || 0);
-      console.log('📝 ai_coach_persona:', sessionData.ai_coach_persona);
+      console.log("🚀 [STEP 1] _generateAIResponse STARTED");
+      console.log("🔑 OpenAI API Key exists:", !!process.env.OPENAI_API_KEY);
+      console.log(
+        "🔑 OpenAI API Key length:",
+        process.env.OPENAI_API_KEY?.length || 0
+      );
+      console.log("📝 ai_coach_persona:", sessionData.ai_coach_persona);
 
       const persona = this.personas[sessionData.ai_coach_persona];
-      console.log('🎭 [STEP 2] Persona found:', !!persona, persona?.name);
+      console.log("🎭 [STEP 2] Persona found:", !!persona, persona?.name);
       // 🔧 DIC-07-2025: Fix JSON.parse on already-parsed JSONB object
-      console.log('📋 [STEP 3] conversation_context type:', typeof sessionData.conversation_context);
-      const conversationContext = typeof sessionData.conversation_context === 'string'
-        ? JSON.parse(sessionData.conversation_context || "{}")
-        : (sessionData.conversation_context || {});
-      console.log('✅ [STEP 4] conversationContext parsed OK');
+      console.log(
+        "📋 [STEP 3] conversation_context type:",
+        typeof sessionData.conversation_context
+      );
+      const conversationContext =
+        typeof sessionData.conversation_context === "string"
+          ? JSON.parse(sessionData.conversation_context || "{}")
+          : sessionData.conversation_context || {};
+      console.log("✅ [STEP 4] conversationContext parsed OK");
 
       // ✨ Get horoscope data first (for metadata)
       const zodiacSign = options.zodiacSign || sessionData.zodiac_sign || "Leo";
       // 🌍 CRITICAL: Language from current request ALWAYS takes priority
       // This ensures users who change device language get responses in the new language immediately
-      const language = options.language || options.languageCode || sessionData.language_code || "en";
-      console.log('🌍 [LANGUAGE] Using language:', language, '(from options:', options.language, ', session:', sessionData.language_code, ')');
-      console.log('🌟 [STEP 5] Getting horoscope for:', zodiacSign, language);
+      const language =
+        options.language ||
+        options.languageCode ||
+        sessionData.language_code ||
+        "en";
+      console.log(
+        "🌍 [LANGUAGE] Using language:",
+        language,
+        "(from options:",
+        options.language,
+        ", session:",
+        sessionData.language_code,
+        ")"
+      );
+      console.log("🌟 [STEP 5] Getting horoscope for:", zodiacSign, language);
       const horoscopeData = await this._getDailyHoroscope(zodiacSign, language);
-      console.log('✅ [STEP 6] Horoscope data received:', !!horoscopeData);
+      console.log("✅ [STEP 6] Horoscope data received:", !!horoscopeData);
 
       // 💚 NEW: Detect emotional state in user's message
       const emotionalState = this._detectEmotionalState(userMessage);
-      console.log('💚 [STEP 7] Emotional state detected:', emotionalState.primaryEmotion);
+      console.log(
+        "💚 [STEP 7] Emotional state detected:",
+        emotionalState.primaryEmotion
+      );
 
       // Log emotional analysis for debugging
       if (emotionalState.needsExtraSupport) {
@@ -1286,24 +1341,47 @@ QUESTION: "Should I ask for a raise?"
       // Build final system prompt with all enhancements
       // 🌍 CRITICAL: Language instruction MUST be at the START for GPT-4o to respect it
       const languageNames = {
-        en: 'English',
-        es: 'Spanish (Español)',
-        it: 'Italian (Italiano)',
-        fr: 'French (Français)',
-        de: 'German (Deutsch)',
-        pt: 'Portuguese (Português)'
+        en: "English",
+        es: "Spanish (Español)",
+        de: "German (Deutsch)",
+        fr: "French (Français)",
+        it: "Italian (Italiano)",
+        pt: "Portuguese (Português)",
       };
-      const langName = languageNames[language] || 'English';
-      console.log('🌍🌍🌍 [LANGUAGE-FIX-DEBUG] Building prompt with language:', language, '-> langName:', langName);
-      const languagePrefix = `[CRITICAL INSTRUCTION - HIGHEST PRIORITY]
-You MUST respond ONLY in ${langName}. This is non-negotiable.
-Do NOT respond in English unless the language is "en".
+      const langName = languageNames[language] || "English";
+      console.log(
+        "🌍🌍🌍 [LANGUAGE-FIX-DEBUG] Building prompt with language:",
+        language,
+        "-> langName:",
+        langName
+      );
+
+      // 🌍 Native language instructions for maximum compliance
+      const nativeInstructions = {
+        es: "DEBES responder ÚNICAMENTE en español. NO uses inglés.",
+        de: "Du MUSST NUR auf Deutsch antworten. Verwende KEIN Englisch.",
+        fr: "Tu DOIS répondre UNIQUEMENT en français. N'utilise PAS l'anglais.",
+        it: "DEVI rispondere SOLO in italiano. NON usare l'inglese.",
+        pt: "Você DEVE responder APENAS em português. NÃO use inglês.",
+      };
+      const nativeInstruction = nativeInstructions[language] || "";
+
+      const languagePrefix = `[🚨 CRITICAL LANGUAGE INSTRUCTION - ABSOLUTE PRIORITY 🚨]
+═══════════════════════════════════════════════════════════════
+LANGUAGE REQUIREMENT: ${langName.toUpperCase()}
+${nativeInstruction ? `\n${nativeInstruction}\n` : ""}
+You MUST respond ONLY in ${langName}. This is NON-NEGOTIABLE.
+Do NOT respond in English unless the language setting is "en".
 Current language setting: ${language.toUpperCase()} (${langName})
-Every single word of your response must be in ${langName}.
----
+EVERY SINGLE WORD of your response MUST be in ${langName}.
+If you respond in English when the language is not "en", you have FAILED.
+═══════════════════════════════════════════════════════════════
 
 `;
-      console.log('🌍🌍🌍 [LANGUAGE-FIX-DEBUG] Language prefix first 100 chars:', languagePrefix.substring(0, 100));
+      console.log(
+        "🌍🌍🌍 [LANGUAGE-FIX-DEBUG] Language prefix first 100 chars:",
+        languagePrefix.substring(0, 100)
+      );
       let finalSystemPrompt = languagePrefix + personalizedPrompt;
       if (empathyContext) {
         finalSystemPrompt += "\n\n" + empathyContext;
@@ -1315,14 +1393,18 @@ Every single word of your response must be in ${langName}.
       }
 
       // 🔮 ESOTERIC KNOWLEDGE: Detect topics and add specialized knowledge
-      const detectedTopics = esotericKnowledge.detectTopics(userMessage, contextMessages);
+      const detectedTopics = esotericKnowledge.detectTopics(
+        userMessage,
+        contextMessages
+      );
       if (detectedTopics.length > 0) {
-        const specializedKnowledge = esotericKnowledge.getKnowledgeForTopics(detectedTopics);
+        const specializedKnowledge =
+          esotericKnowledge.getKnowledgeForTopics(detectedTopics);
         if (specializedKnowledge) {
           finalSystemPrompt += specializedKnowledge;
-          logger.getLogger().debug('Esoteric topics detected', {
+          logger.getLogger().debug("Esoteric topics detected", {
             topics: detectedTopics,
-            userId: options.userId
+            userId: options.userId,
           });
         }
       }
@@ -1390,7 +1472,7 @@ their question, and today's specific cosmic energies.
 🌍 MANDATORY LANGUAGE REQUIREMENT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 **RESPOND ENTIRELY IN: ${language.toUpperCase()}**
-${language === 'es' ? '🇪🇸 Toda tu respuesta DEBE estar en español.' : ''}${language === 'en' ? '🇬🇧 Your entire response MUST be in English.' : ''}${language === 'it' ? '🇮🇹 Tutta la tua risposta DEVE essere in italiano.' : ''}${language === 'fr' ? '🇫🇷 Toute ta réponse DOIT être en français.' : ''}${language === 'de' ? '🇩🇪 Deine gesamte Antwort MUSS auf Deutsch sein.' : ''}${language === 'pt' ? '🇧🇷 Toda a sua resposta DEVE estar em português.' : ''}`;
+${language === "es" ? "🇪🇸 Toda tu respuesta DEBE estar en español." : ""}${language === "en" ? "🇬🇧 Your entire response MUST be in English." : ""}${language === "it" ? "🇮🇹 Tutta la tua risposta DEVE essere in italiano." : ""}${language === "fr" ? "🇫🇷 Toute ta réponse DOIT être en français." : ""}${language === "de" ? "🇩🇪 Deine gesamte Antwort MUSS auf Deutsch sein." : ""}${language === "pt" ? "🇧🇷 Toda a sua resposta DEVE estar em português." : ""}`;
 
       // 🚨 Crisis intervention notice (if detected)
       if (emotionalState.hasCrisisIndicators) {
@@ -1624,10 +1706,27 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         finalSystemPrompt += crisisNotice;
       }
 
-      // 🌍 CRITICAL: Also add language reminder to user message for double enforcement
-      const userMessageWithLang = language !== 'en'
-        ? `[Respond in ${langName} only]\n\n${userMessage}`
-        : userMessage;
+      // 🌍 CRITICAL: Also add language reminder to user message for TRIPLE enforcement
+      // GPT-4o sometimes ignores language instructions, so we need to be very explicit
+      const languageReminders = {
+        es: "[OBLIGATORIO: Responde ÚNICAMENTE en español. NO uses inglés bajo ninguna circunstancia.]",
+        de: "[PFLICHT: Antworte NUR auf Deutsch. Verwende KEIN Englisch unter keinen Umständen.]",
+        fr: "[OBLIGATOIRE: Réponds UNIQUEMENT en français. N'utilise PAS l'anglais en aucun cas.]",
+        it: "[OBBLIGATORIO: Rispondi SOLO in italiano. NON usare l'inglese in nessun caso.]",
+        pt: "[OBRIGATÓRIO: Responda APENAS em português. NÃO use inglês em nenhuma circunstância.]",
+      };
+      const langReminder = languageReminders[language] || "";
+      const userMessageWithLang =
+        language !== "en" && langReminder
+          ? `${langReminder}\n\n${userMessage}`
+          : userMessage;
+
+      console.log(
+        "🌍🌍🌍 [LANGUAGE-FINAL] Sending to OpenAI with language:",
+        language,
+        "| Reminder added:",
+        !!langReminder
+      );
 
       const messages = [
         {
@@ -1647,27 +1746,27 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       const selectedModel = this._selectModel(complexity);
       const userId = sessionData.user_id;
 
-      logger.getLogger().info('🤖 AI Model selected', {
+      logger.getLogger().info("🤖 AI Model selected", {
         complexity,
         model: selectedModel,
         messageLength: userMessage.length,
-        userId
+        userId,
       });
 
-      console.log('📊 [STEP 10] Checking monthly limits for userId:', userId);
+      console.log("📊 [STEP 10] Checking monthly limits for userId:", userId);
       const monthlyCheck = await this._checkMonthlyLimits(userId, complexity);
-      console.log('📊 [STEP 11] Monthly check result:', monthlyCheck.allowed);
+      console.log("📊 [STEP 11] Monthly check result:", monthlyCheck.allowed);
       if (!monthlyCheck.allowed) {
         return {
           success: false,
           error: monthlyCheck.reason,
-          message: monthlyCheck.suggestion || 'Límite mensual alcanzado',
-          usage: monthlyCheck
+          message: monthlyCheck.suggestion || "Límite mensual alcanzado",
+          usage: monthlyCheck,
         };
       }
 
-      console.log('🤖 [STEP 12] Calling OpenAI with model:', selectedModel);
-      console.log('🤖 [STEP 12b] this.openai exists:', !!this.openai);
+      console.log("🤖 [STEP 12] Calling OpenAI with model:", selectedModel);
+      console.log("🤖 [STEP 12b] this.openai exists:", !!this.openai);
       const completion = await this.openai.chat.completions.create({
         model: selectedModel,
         messages: messages,
@@ -1720,12 +1819,12 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       };
     } catch (error) {
       // 🔥🔥🔥 DIC-07-2025 03:30 - CRITICAL DEBUG LOGGING 🔥🔥🔥
-      console.error('❌❌❌ OPENAI ERROR DETAILS ❌❌❌');
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      console.error('Error type:', error.type);
-      console.error('Error status:', error.status);
-      console.error('Full error:', JSON.stringify(error, null, 2));
+      console.error("❌❌❌ OPENAI ERROR DETAILS ❌❌❌");
+      console.error("Error message:", error.message);
+      console.error("Error code:", error.code);
+      console.error("Error type:", error.type);
+      console.error("Error status:", error.status);
+      console.error("Full error:", JSON.stringify(error, null, 2));
 
       logger.logError(error, {
         context: "openai_response_generation",
@@ -1744,7 +1843,11 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       ) {
         try {
           // ✅ FIX: Fallback también debe usar personalización astrológica
-          const fallbackLang = options.language || options.languageCode || sessionData.language_code || "en";
+          const fallbackLang =
+            options.language ||
+            options.languageCode ||
+            sessionData.language_code ||
+            "en";
           const fallbackPrompt = await this._buildAstrologicalPrompt(
             this.personas[sessionData.ai_coach_persona].systemPrompt,
             options.zodiacSign || sessionData.zodiac_sign || "Leo",
@@ -1753,14 +1856,19 @@ FOCUS: 100% immediate safety, 0% astrology.`;
 
           // 🌍 Apply same language prefix to fallback
           const fallbackLangNames = {
-            en: 'English', es: 'Spanish (Español)', it: 'Italian (Italiano)',
-            fr: 'French (Français)', de: 'German (Deutsch)', pt: 'Portuguese (Português)'
+            en: "English",
+            es: "Spanish (Español)",
+            it: "Italian (Italiano)",
+            fr: "French (Français)",
+            de: "German (Deutsch)",
+            pt: "Portuguese (Português)",
           };
-          const fallbackLangName = fallbackLangNames[fallbackLang] || 'English';
+          const fallbackLangName = fallbackLangNames[fallbackLang] || "English";
           const fallbackLangPrefix = `[CRITICAL: Respond ONLY in ${fallbackLangName}]\n\n`;
-          const fallbackUserMsg = fallbackLang !== 'en'
-            ? `[Respond in ${fallbackLangName} only]\n\n${userMessage}`
-            : userMessage;
+          const fallbackUserMsg =
+            fallbackLang !== "en"
+              ? `[Respond in ${fallbackLangName} only]\n\n${userMessage}`
+              : userMessage;
 
           const fallbackCompletion = await this.openai.chat.completions.create({
             model: this.config.fallbackModel,
@@ -1830,11 +1938,13 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       // Check cache first (24h TTL)
       const cached = await redisService.get(cacheKey);
       if (cached) {
-        logger.getLogger().info("✨ AI-generated horoscope retrieved from cache", {
-          sign,
-          language,
-          date: today,
-        });
+        logger
+          .getLogger()
+          .info("✨ AI-generated horoscope retrieved from cache", {
+            sign,
+            language,
+            date: today,
+          });
         return JSON.parse(cached);
       }
 
@@ -2065,14 +2175,13 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
       const result = await db.query(query, [sign, language]);
 
       if (result.rows.length === 0) {
-        logger.getLogger().warn(
-          "💾 No horoscope in DB, falling back to AI generation",
-          {
+        logger
+          .getLogger()
+          .warn("💾 No horoscope in DB, falling back to AI generation", {
             sign,
             language,
             date: today,
-          }
-        );
+          });
 
         // 🔄 FALLBACK: Generate horoscope with AI
         return await this._generateDailyHoroscope(zodiacSign, language);
@@ -2115,10 +2224,15 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
 
     // If no horoscope found, still add language instructions
     if (!horoscope) {
-      logger.getLogger().warn("No horoscope available, using generic prompt with language instructions", {
-        zodiacSign,
-        language,
-      });
+      logger
+        .getLogger()
+        .warn(
+          "No horoscope available, using generic prompt with language instructions",
+          {
+            zodiacSign,
+            language,
+          }
+        );
       // 🌍 CRITICAL: Even without horoscope, we MUST include language instructions
       const languageInstruction = `
 
@@ -2129,7 +2243,7 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
 **USER'S PREFERRED LANGUAGE CODE: ${language}**
 
 YOU MUST RESPOND IN THE FOLLOWING LANGUAGE:
-${language === 'es' ? '🇪🇸 SPANISH (Español) - Responde completamente en español.' : ''}${language === 'en' ? '🇬🇧 ENGLISH - Respond completely in English.' : ''}${language === 'it' ? '🇮🇹 ITALIAN (Italiano) - Rispondi completamente in italiano.' : ''}${language === 'fr' ? '🇫🇷 FRENCH (Français) - Réponds entièrement en français.' : ''}${language === 'de' ? '🇩🇪 GERMAN (Deutsch) - Antworte vollständig auf Deutsch.' : ''}${language === 'pt' ? '🇧🇷 PORTUGUESE (Português) - Responda completamente em português.' : ''}
+${language === "es" ? "🇪🇸 SPANISH (Español) - Responde completamente en español." : ""}${language === "en" ? "🇬🇧 ENGLISH - Respond completely in English." : ""}${language === "it" ? "🇮🇹 ITALIAN (Italiano) - Rispondi completamente in italiano." : ""}${language === "fr" ? "🇫🇷 FRENCH (Français) - Réponds entièrement en français." : ""}${language === "de" ? "🇩🇪 GERMAN (Deutsch) - Antworte vollständig auf Deutsch." : ""}${language === "pt" ? "🇧🇷 PORTUGUESE (Português) - Responda completamente em português." : ""}
 
 ⚠️ IMPORTANT: You MUST respond ONLY in ${language.toUpperCase()}.
 Do NOT respond in English unless ${language} IS 'en'.
@@ -2205,7 +2319,7 @@ ${
 **USER'S PREFERRED LANGUAGE CODE: ${language}**
 
 YOU MUST RESPOND IN THE FOLLOWING LANGUAGE:
-${language === 'es' ? '🇪🇸 SPANISH (Español) - Responde completamente en español.' : ''}${language === 'en' ? '🇬🇧 ENGLISH - Respond completely in English.' : ''}${language === 'it' ? '🇮🇹 ITALIAN (Italiano) - Rispondi completamente in italiano.' : ''}${language === 'fr' ? '🇫🇷 FRENCH (Français) - Réponds entièrement en français.' : ''}${language === 'de' ? '🇩🇪 GERMAN (Deutsch) - Antworte vollständig auf Deutsch.' : ''}${language === 'pt' ? '🇧🇷 PORTUGUESE (Português) - Responda completamente em português.' : ''}
+${language === "es" ? "🇪🇸 SPANISH (Español) - Responde completamente en español." : ""}${language === "en" ? "🇬🇧 ENGLISH - Respond completely in English." : ""}${language === "it" ? "🇮🇹 ITALIAN (Italiano) - Rispondi completamente in italiano." : ""}${language === "fr" ? "🇫🇷 FRENCH (Français) - Réponds entièrement en français." : ""}${language === "de" ? "🇩🇪 GERMAN (Deutsch) - Antworte vollständig auf Deutsch." : ""}${language === "pt" ? "🇧🇷 PORTUGUESE (Português) - Responda completamente em português." : ""}
 
 ⚠️ IMPORTANT: Even if the horoscope data above is in a different language,
 YOU MUST TRANSLATE AND RESPOND IN ${language.toUpperCase()} ONLY.
@@ -2611,8 +2725,8 @@ uniquely tailored to this ${zodiacSign} user on this specific day.`;
         emotionalIntensity >= 2
           ? "negative"
           : emotionalIntensity === 1
-          ? "neutral"
-          : "positive",
+            ? "neutral"
+            : "positive",
     };
   }
 
@@ -2779,9 +2893,10 @@ TONO: Comprensivo, empoderador, orientado a la acción. Como un coach que lo ent
 
       // 🔧 DIC-07-2025: Fix JSON.parse on already-parsed JSONB object
       const rawContext = result.rows[0].conversation_context;
-      const context = typeof rawContext === 'string'
-        ? JSON.parse(rawContext || "{}")
-        : (rawContext || {});
+      const context =
+        typeof rawContext === "string"
+          ? JSON.parse(rawContext || "{}")
+          : rawContext || {};
 
       // Update message history (keep last N messages)
       if (!context.messageHistory) context.messageHistory = [];
@@ -3041,7 +3156,8 @@ Return ONLY a valid JSON object with this structure:
           ...currentMemory.preferences,
           ...updatedMemory.preferences,
         },
-        recentContext: updatedMemory.recentContext || currentMemory.recentContext,
+        recentContext:
+          updatedMemory.recentContext || currentMemory.recentContext,
         messageCount: currentMemory.messageCount,
         updatedAt: new Date().toISOString(),
       };
@@ -3083,7 +3199,8 @@ Return ONLY a valid JSON object with this structure:
       // Profile (if exists)
       if (Object.keys(memory.profile).length > 0) {
         const profileParts = [];
-        if (memory.profile.name) profileParts.push(`Name: ${memory.profile.name}`);
+        if (memory.profile.name)
+          profileParts.push(`Name: ${memory.profile.name}`);
         if (memory.profile.zodiacSign)
           profileParts.push(`Sign: ${memory.profile.zodiacSign}`);
         if (memory.profile.ascendant)
@@ -3215,11 +3332,13 @@ Return ONLY a valid JSON object with this structure:
       });
 
       if (!session.success) {
-        logger.getLogger().error("generateCoachResponse: Session creation failed", {
-          error: session.message || session.error,
-          userId: userContext.userId,
-          premiumTier: userContext.premiumTier,
-        });
+        logger
+          .getLogger()
+          .error("generateCoachResponse: Session creation failed", {
+            error: session.message || session.error,
+            userId: userContext.userId,
+            premiumTier: userContext.premiumTier,
+          });
         // Return error with upgrade info if premium required
         if (session.error === "premium_required" || session.upgradeRequired) {
           return {
