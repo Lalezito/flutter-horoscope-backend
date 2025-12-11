@@ -428,20 +428,36 @@ QUESTION: "Should I ask for a raise?"
       };
 
       // Insert session into database
+      console.log('🔧 [SESSION] Attempting to insert session for user:', userId);
+      console.log('🔧 [SESSION] Session data:', JSON.stringify({
+        session_id: sessionData.session_id,
+        user_id: sessionData.user_id,
+        persona: sessionData.ai_coach_persona,
+        language: sessionData.language_code
+      }));
+
       const insertQuery = `
         INSERT INTO chat_sessions (session_id, user_id, ai_coach_persona, language_code, session_metadata, conversation_context)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
       `;
 
-      const result = await db.query(insertQuery, [
-        sessionData.session_id,
-        sessionData.user_id,
-        sessionData.ai_coach_persona,
-        sessionData.language_code,
-        sessionData.session_metadata,
-        sessionData.conversation_context,
-      ]);
+      let result;
+      try {
+        result = await db.query(insertQuery, [
+          sessionData.session_id,
+          sessionData.user_id,
+          sessionData.ai_coach_persona,
+          sessionData.language_code,
+          sessionData.session_metadata,
+          sessionData.conversation_context,
+        ]);
+        console.log('✅ [SESSION] Insert successful, rows:', result.rows.length);
+      } catch (dbError) {
+        console.error('❌ [SESSION] DB Insert failed:', dbError.message);
+        console.error('❌ [SESSION] DB Error code:', dbError.code);
+        throw dbError;
+      }
 
       const session = result.rows[0];
 
