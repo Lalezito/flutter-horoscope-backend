@@ -1,4 +1,4 @@
 # Procfile for Railway deployment
-# Uses PM2 for process management and auto-restart
+# Direct Node.js execution - Railway handles restarts automatically
 
-web: npm install -g pm2 && pm2-runtime start ecosystem.config.js --env production
+web: node src/app.js
