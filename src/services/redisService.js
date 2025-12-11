@@ -596,20 +596,21 @@ class RedisService {
   async ping() {
     // If using fallback (in-memory), return success
     if (this.fallbackStorage) {
-      return 'PONG';
+      return 'PONG (fallback)';
     }
 
-    // If Redis client not connected, throw error
-    if (!this.isConnected || !this.client) {
-      throw new Error('Redis not connected');
+    // If Redis client exists and connected
+    if (this.isConnected && this.client) {
+      try {
+        return await this.client.ping();
+      } catch (error) {
+        console.error('Redis ping failed:', error.message);
+        throw error;
+      }
     }
 
-    try {
-      return await this.client.ping();
-    } catch (error) {
-      console.error('Redis ping failed:', error.message);
-      throw error;
-    }
+    // Not connected and no fallback
+    throw new Error('Redis not connected');
   }
 
   parseRedisInfo(infoString) {
