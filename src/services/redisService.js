@@ -609,8 +609,11 @@ class RedisService {
       }
     }
 
-    // Not connected and no fallback
-    throw new Error('Redis not connected');
+    // If neither connected nor fallback initialized, initialize fallback now
+    // This can happen if ping() is called before initialize()
+    console.warn('Redis ping called before initialization, initializing fallback...');
+    this.initializeFallback();
+    return 'PONG (late-init fallback)';
   }
 
   parseRedisInfo(infoString) {
