@@ -664,11 +664,28 @@ class RedisService {
    * UTILITY METHODS
    */
   isRedisRequired() {
-    // Redis is only required when explicitly configured
-    return process.env.REDIS_URL || 
-           process.env.REDIS_PRIVATE_URL ||
-           process.env.REDIS_HOST || 
-           process.env.ENABLE_REDIS === 'true';
+    // Redis is only required when a real Redis URL is configured (not localhost)
+    // In Railway without Redis addon, we use in-memory fallback
+    const redisUrl = process.env.REDIS_URL || process.env.REDIS_PRIVATE_URL;
+    const redisHost = process.env.REDIS_HOST;
+
+    // If REDIS_URL contains a real host (not localhost), use Redis
+    if (redisUrl && !redisUrl.includes('localhost') && !redisUrl.includes('127.0.0.1')) {
+      return true;
+    }
+
+    // If REDIS_HOST is set to something other than localhost, use Redis
+    if (redisHost && redisHost !== 'localhost' && redisHost !== '127.0.0.1') {
+      return true;
+    }
+
+    // Explicit enable flag
+    if (process.env.ENABLE_REDIS === 'true') {
+      return true;
+    }
+
+    // Default: use fallback (in-memory)
+    return false;
   }
 
   getReconnectDelay(retries) {
