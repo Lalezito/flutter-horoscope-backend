@@ -1283,7 +1283,25 @@ QUESTION: "Should I ask for a raise?"
       );
 
       // Build final system prompt with all enhancements
-      let finalSystemPrompt = personalizedPrompt;
+      // 🌍 CRITICAL: Language instruction MUST be at the START for GPT-4o to respect it
+      const languageNames = {
+        en: 'English',
+        es: 'Spanish (Español)',
+        it: 'Italian (Italiano)',
+        fr: 'French (Français)',
+        de: 'German (Deutsch)',
+        pt: 'Portuguese (Português)'
+      };
+      const langName = languageNames[language] || 'English';
+      const languagePrefix = `[CRITICAL INSTRUCTION - HIGHEST PRIORITY]
+You MUST respond ONLY in ${langName}. This is non-negotiable.
+Do NOT respond in English unless the language is "en".
+Current language setting: ${language.toUpperCase()} (${langName})
+Every single word of your response must be in ${langName}.
+---
+
+`;
+      let finalSystemPrompt = languagePrefix + personalizedPrompt;
       if (empathyContext) {
         finalSystemPrompt += "\n\n" + empathyContext;
       }
@@ -1603,6 +1621,11 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         finalSystemPrompt += crisisNotice;
       }
 
+      // 🌍 CRITICAL: Also add language reminder to user message for double enforcement
+      const userMessageWithLang = language !== 'en'
+        ? `[Respond in ${langName} only]\n\n${userMessage}`
+        : userMessage;
+
       const messages = [
         {
           role: "system",
@@ -1611,7 +1634,7 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         ...contextMessages,
         {
           role: "user",
-          content: userMessage,
+          content: userMessageWithLang,
         },
       ];
       // 🎯 AGENTE 4: Check monthly limits BEFORE calling OpenAI
@@ -1718,17 +1741,29 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       ) {
         try {
           // ✅ FIX: Fallback también debe usar personalización astrológica
+          const fallbackLang = options.language || options.languageCode || sessionData.language_code || "en";
           const fallbackPrompt = await this._buildAstrologicalPrompt(
             this.personas[sessionData.ai_coach_persona].systemPrompt,
             options.zodiacSign || sessionData.zodiac_sign || "Leo",
-            options.language || options.languageCode || sessionData.language_code || "en"
+            fallbackLang
           );
+
+          // 🌍 Apply same language prefix to fallback
+          const fallbackLangNames = {
+            en: 'English', es: 'Spanish (Español)', it: 'Italian (Italiano)',
+            fr: 'French (Français)', de: 'German (Deutsch)', pt: 'Portuguese (Português)'
+          };
+          const fallbackLangName = fallbackLangNames[fallbackLang] || 'English';
+          const fallbackLangPrefix = `[CRITICAL: Respond ONLY in ${fallbackLangName}]\n\n`;
+          const fallbackUserMsg = fallbackLang !== 'en'
+            ? `[Respond in ${fallbackLangName} only]\n\n${userMessage}`
+            : userMessage;
 
           const fallbackCompletion = await this.openai.chat.completions.create({
             model: this.config.fallbackModel,
             messages: [
-              { role: "system", content: fallbackPrompt },
-              { role: "user", content: userMessage },
+              { role: "system", content: fallbackLangPrefix + fallbackPrompt },
+              { role: "user", content: fallbackUserMsg },
             ],
             max_tokens: 300,
             temperature: 0.7,
