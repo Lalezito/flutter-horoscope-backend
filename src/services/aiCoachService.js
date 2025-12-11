@@ -2080,13 +2080,29 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
     // Get today's horoscope
     const horoscope = await this._getDailyHoroscope(zodiacSign, language);
 
-    // If no horoscope found, return base prompt
+    // If no horoscope found, still add language instructions
     if (!horoscope) {
-      logger.getLogger().warn("No horoscope available, using generic prompt", {
+      logger.getLogger().warn("No horoscope available, using generic prompt with language instructions", {
         zodiacSign,
         language,
       });
-      return basePrompt;
+      // 🌍 CRITICAL: Even without horoscope, we MUST include language instructions
+      const languageInstruction = `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌍 CRITICAL: RESPONSE LANGUAGE REQUIREMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**USER'S PREFERRED LANGUAGE CODE: ${language}**
+
+YOU MUST RESPOND IN THE FOLLOWING LANGUAGE:
+${language === 'es' ? '🇪🇸 SPANISH (Español) - Responde completamente en español.' : ''}${language === 'en' ? '🇬🇧 ENGLISH - Respond completely in English.' : ''}${language === 'it' ? '🇮🇹 ITALIAN (Italiano) - Rispondi completamente in italiano.' : ''}${language === 'fr' ? '🇫🇷 FRENCH (Français) - Réponds entièrement en français.' : ''}${language === 'de' ? '🇩🇪 GERMAN (Deutsch) - Antworte vollständig auf Deutsch.' : ''}${language === 'pt' ? '🇧🇷 PORTUGUESE (Português) - Responda completamente em português.' : ''}
+
+⚠️ IMPORTANT: You MUST respond ONLY in ${language.toUpperCase()}.
+Do NOT respond in English unless ${language} IS 'en'.
+The ENTIRE response must be in ${language.toUpperCase()}.`;
+
+      return basePrompt + languageInstruction;
     }
 
     // Build enriched prompt with astrological context
