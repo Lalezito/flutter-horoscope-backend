@@ -9,7 +9,7 @@ class CircuitBreakerService {
   constructor() {
     this.breakers = new Map();
     this.defaultOptions = {
-      timeout: 10000, // 10 seconds
+      timeout: 30000, // 30 seconds - increased for OpenAI API calls
       errorThresholdPercentage: 50, // Trip when 50% of requests fail
       resetTimeout: 30000, // Try again after 30 seconds
       rollingCountTimeout: 60000, // 1 minute rolling window

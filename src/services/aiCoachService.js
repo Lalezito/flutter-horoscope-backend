@@ -2009,19 +2009,14 @@ Rispondi SOLO con JSON: {"energy_level":"...","lucky_colors":"...","favorable_ti
         date: today,
       });
 
+      // Query only columns that exist in production database
       const query = `
         SELECT
           id,
           sign,
           date,
           language_code,
-          content,
-          energy_level,
-          lucky_colors,
-          favorable_times,
-          love_focus,
-          career_focus,
-          wellness_focus
+          content
         FROM daily_horoscopes
         WHERE date = CURRENT_DATE
           AND sign ILIKE $1
