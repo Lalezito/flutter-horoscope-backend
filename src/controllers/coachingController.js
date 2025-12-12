@@ -133,6 +133,7 @@ class CoachingController {
           languageFromOptions: coachResponse._debug_languageFromOptions,
           languageFromSession: coachResponse._debug_languageFromSession,
           requestedLanguage: userContext.language,
+          sessionId: coachResponse._debug_sessionId,
         },
       });
     } catch (error) {

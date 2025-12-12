@@ -29,7 +29,8 @@ const redisService = require("./redisService");
 const receiptValidationService = require("./receiptValidationService");
 const logger = require("./loggingService");
 const { normalizeSignName } = require("../utils/signTranslations");
-const circuitBreaker = require("./circuitBreakerService");
+// NOTE: circuitBreaker removed - was causing language contamination bug
+// (opossum caches the action function which captured stale closures)
 const retroactivePredictionService = require("./retroactivePredictionService");
 const streakService = require("./streakService");
 const localContextService = require("./localContextService");
@@ -638,13 +639,11 @@ QUESTION: "Should I ask for a raise?"
         timestamp: new Date().toISOString(),
       });
 
-      // Generate AI response using circuit breaker for reliability
-      const aiResponse = await circuitBreaker.execute(
-        "openai_chat",
-        async () => {
-          return await this._generateAIResponse(sessionData, message, options);
-        }
-      );
+      // Generate AI response
+      // NOTE: Removed circuit breaker wrapper because opossum caches the action function
+      // on first call, which caused language contamination between requests (the closure
+      // captured the first user's `options` including language). Each request needs fresh options.
+      const aiResponse = await this._generateAIResponse(sessionData, message, options);
 
       if (!aiResponse.success) {
         // Store error message for user feedback
@@ -3307,6 +3306,8 @@ Return ONLY a valid JSON object with this structure:
       // Extract sessionId from nested response structure
       // startChatSession returns { success: true, session: { sessionId: ... } }
       const sessionId = session.session?.sessionId || session.sessionId;
+      console.log('🔑🔑🔑 [generateCoachResponse] sessionId:', sessionId);
+      console.log('🔑🔑🔑 [generateCoachResponse] session.session?.languageCode:', session.session?.languageCode);
 
       // Send message and get AI response
       console.log('🌍🌍🌍 [generateCoachResponse] About to call sendMessage with language:', userContext.language);
