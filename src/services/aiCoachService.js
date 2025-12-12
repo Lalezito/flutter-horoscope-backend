@@ -1758,6 +1758,10 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         responseTime,
         confidenceScore: 0.85, // Default confidence score
         messageId: completion.id,
+        // 🌍 DEBUG: Include language used for debugging
+        languageUsed: language,
+        languageFromOptions: options.language,
+        languageFromSession: sessionData.language_code,
         // 🤖 NEW: Confirm AI is responding (for user transparency)
         aiPowered: true,
         aiModel: `ChatGPT (${selectedModel})`,
@@ -3336,6 +3340,10 @@ Return ONLY a valid JSON object with this structure:
         model: response.response?.model || "gpt-4-turbo",
         responseType: "ai",
         cached: false,
+        // 🌍 DEBUG: Language debugging info
+        _debug_languageUsed: response.response?.languageUsed,
+        _debug_languageFromOptions: response.response?.languageFromOptions,
+        _debug_languageFromSession: response.response?.languageFromSession,
       };
     } catch (error) {
       logger.logError(error, {

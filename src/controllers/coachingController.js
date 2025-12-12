@@ -127,6 +127,13 @@ class CoachingController {
           responseType: coachResponse.responseType,
           cached: coachResponse.cached || false,
         },
+        // 🌍 DEBUG: Language debugging info (will be removed after fixing)
+        _debug: {
+          languageUsed: coachResponse._debug_languageUsed,
+          languageFromOptions: coachResponse._debug_languageFromOptions,
+          languageFromSession: coachResponse._debug_languageFromSession,
+          requestedLanguage: userContext.language,
+        },
       });
     } catch (error) {
       const responseTime = Date.now() - startTime;
