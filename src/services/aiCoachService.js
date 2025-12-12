@@ -1667,12 +1667,25 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         ? `${nativeInstruction}\n\n${userMessage}\n\n${nativeInstruction}`
         : userMessage;
 
+      // 🌍 CRITICAL FIX: Add FINAL language enforcement message BEFORE user message
+      // This is the most effective position for GPT-4o to respect language instructions
+      const languageEnforcementMessages = {
+        es: { role: 'system', content: '⚠️ RECORDATORIO FINAL: RESPONDE EXCLUSIVAMENTE EN ESPAÑOL. NO uses inglés bajo ninguna circunstancia.' },
+        it: { role: 'system', content: '⚠️ PROMEMORIA FINALE: RISPONDI ESCLUSIVAMENTE IN ITALIANO. NON usare inglese in nessun caso.' },
+        fr: { role: 'system', content: '⚠️ RAPPEL FINAL: RÉPONDS EXCLUSIVEMENT EN FRANÇAIS. N\'utilise PAS l\'anglais.' },
+        de: { role: 'system', content: '⚠️ LETZTE ERINNERUNG: ANTWORTE AUSSCHLIESSLICH AUF DEUTSCH. Verwende KEIN Englisch.' },
+        pt: { role: 'system', content: '⚠️ LEMBRETE FINAL: RESPONDA EXCLUSIVAMENTE EM PORTUGUÊS. NÃO use inglês.' }
+      };
+      const finalLangEnforcement = languageEnforcementMessages[language];
+
       const messages = [
         {
           role: "system",
           content: finalSystemPrompt,
         },
         ...contextMessages,
+        // 🌍 Add language enforcement as LAST system message (most effective position)
+        ...(finalLangEnforcement ? [finalLangEnforcement] : []),
         {
           role: "user",
           content: userMessageWithLang,
