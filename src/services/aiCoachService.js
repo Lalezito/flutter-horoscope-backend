@@ -1719,6 +1719,10 @@ FOCUS: 100% immediate safety, 0% astrology.`;
 
       console.log('🤖 [STEP 12] Calling OpenAI with model:', selectedModel);
       console.log('🤖 [STEP 12b] this.openai exists:', !!this.openai);
+      console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] language variable =', language);
+      console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] finalLangEnforcement =', finalLangEnforcement?.content?.substring(0, 50));
+      console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] messages count =', messages.length);
+      console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] last system msg role =', messages[messages.length - 2]?.role);
       const completion = await this.openai.chat.completions.create({
         model: selectedModel,
         messages: messages,
