@@ -1244,6 +1244,8 @@ QUESTION: "Should I ask for a raise?"
         ? JSON.parse(sessionData.conversation_context || "{}")
         : (sessionData.conversation_context || {});
       console.log('✅ [STEP 4] conversationContext parsed OK');
+      console.log('📜 [STEP 4b] conversationContext.messageHistory length:', conversationContext.messageHistory?.length || 0);
+      console.log('📜 [STEP 4c] sessionData.session_id:', sessionData.session_id);
 
       // ✨ Get horoscope data first (for metadata)
       const zodiacSign = options.zodiacSign || sessionData.zodiac_sign || "Leo";
