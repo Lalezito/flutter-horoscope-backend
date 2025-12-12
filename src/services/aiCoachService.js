@@ -759,6 +759,10 @@ QUESTION: "Should I ask for a raise?"
           // 🔮 NEW: Prediction metadata for frontend
           hasPredictionCheck: !!predictionCheckMessage,
           hasPredictionFeedback: !!predictionFeedback,
+          // 🌍 DEBUG: Language debugging info
+          languageUsed: aiResponse.languageUsed,
+          languageFromOptions: aiResponse.languageFromOptions,
+          languageFromSession: aiResponse.languageFromSession,
         },
         usage: {
           remainingMessages: Math.max(
