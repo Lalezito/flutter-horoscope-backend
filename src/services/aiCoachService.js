@@ -1730,6 +1730,8 @@ FOCUS: 100% immediate safety, 0% astrology.`;
       console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] finalLangEnforcement =', finalLangEnforcement?.content?.substring(0, 50));
       console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] messages count =', messages.length);
       console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] last system msg role =', messages[messages.length - 2]?.role);
+      console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] finalSystemPrompt first 300 chars =', finalSystemPrompt.substring(0, 300));
+      console.log('🌍🌍🌍 [LANGUAGE-FINAL-CHECK] userMessageWithLang =', userMessageWithLang.substring(0, 100));
       const completion = await this.openai.chat.completions.create({
         model: selectedModel,
         messages: messages,
