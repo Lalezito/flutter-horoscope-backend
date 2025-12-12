@@ -3309,6 +3309,7 @@ Return ONLY a valid JSON object with this structure:
       const sessionId = session.session?.sessionId || session.sessionId;
 
       // Send message and get AI response
+      console.log('🌍🌍🌍 [generateCoachResponse] About to call sendMessage with language:', userContext.language);
       const response = await this.sendMessage(
         sessionId,
         message,
@@ -3319,6 +3320,7 @@ Return ONLY a valid JSON object with this structure:
           premiumTier: userContext.premiumTier,
         }
       );
+      console.log('🌍🌍🌍 [generateCoachResponse] sendMessage response.response.languageUsed:', response.response?.languageUsed);
 
       if (!response.success) {
         logger.getLogger().error("generateCoachResponse: Message send failed", {
