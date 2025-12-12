@@ -1311,12 +1311,25 @@ QUESTION: "Should I ask for a raise?"
       };
       const langName = languageNames[language] || 'English';
       console.log('🌍🌍🌍 [LANGUAGE-FIX-DEBUG] Building prompt with language:', language, '-> langName:', langName);
-      const languagePrefix = `[CRITICAL INSTRUCTION - HIGHEST PRIORITY]
-You MUST respond ONLY in ${langName}. This is non-negotiable.
-Do NOT respond in English unless the language is "en".
-Current language setting: ${language.toUpperCase()} (${langName})
-Every single word of your response must be in ${langName}.
----
+
+      // Native language instructions at the START of prompt
+      const nativePrefixes = {
+        es: '🇪🇸 IDIOMA: ESPAÑOL\nDEBES responder ÚNICAMENTE en español. NO uses inglés bajo ninguna circunstancia.',
+        it: '🇮🇹 LINGUA: ITALIANO\nDEVI rispondere SOLO in italiano. NON usare inglese in nessun caso.',
+        fr: '🇫🇷 LANGUE: FRANÇAIS\nTu DOIS répondre UNIQUEMENT en français. N\'utilise PAS l\'anglais.',
+        de: '🇩🇪 SPRACHE: DEUTSCH\nDu MUSST NUR auf Deutsch antworten. Verwende KEIN Englisch.',
+        pt: '🇧🇷 IDIOMA: PORTUGUÊS\nVocê DEVE responder APENAS em português. NÃO use inglês.'
+      };
+      const nativePrefix = nativePrefixes[language] || '';
+
+      const languagePrefix = `[🚨 CRITICAL LANGUAGE INSTRUCTION - ABSOLUTE HIGHEST PRIORITY 🚨]
+═══════════════════════════════════════════════════════════════════
+${nativePrefix ? nativePrefix + '\n\n' : ''}MANDATORY LANGUAGE: ${langName.toUpperCase()}
+You MUST respond ONLY in ${langName}. This is NON-NEGOTIABLE.
+Do NOT respond in English or Spanish unless that is the requested language.
+Current language setting: ${language.toUpperCase()}
+FAILURE TO RESPOND IN ${langName.toUpperCase()} IS A CRITICAL ERROR.
+═══════════════════════════════════════════════════════════════════
 
 `;
       console.log('🌍🌍🌍 [LANGUAGE-FIX-DEBUG] Language prefix first 100 chars:', languagePrefix.substring(0, 100));
@@ -1640,9 +1653,18 @@ FOCUS: 100% immediate safety, 0% astrology.`;
         finalSystemPrompt += crisisNotice;
       }
 
-      // 🌍 CRITICAL: Also add language reminder to user message for double enforcement
-      const userMessageWithLang = language !== 'en'
-        ? `[Respond in ${langName} only]\n\n${userMessage}`
+      // 🌍 CRITICAL: Also add language reminder to user message for TRIPLE enforcement
+      // Use native language instructions for maximum compliance
+      const nativeLangInstructions = {
+        es: '[RESPONDE SOLO EN ESPAÑOL - NO USES INGLÉS]',
+        it: '[RISPONDI SOLO IN ITALIANO - NON USARE INGLESE]',
+        fr: '[RÉPONDS UNIQUEMENT EN FRANÇAIS - NE PAS UTILISER ANGLAIS]',
+        de: '[ANTWORTE NUR AUF DEUTSCH - KEIN ENGLISCH VERWENDEN]',
+        pt: '[RESPONDA APENAS EM PORTUGUÊS - NÃO USE INGLÊS]'
+      };
+      const nativeInstruction = nativeLangInstructions[language] || '';
+      const userMessageWithLang = language !== 'en' && nativeInstruction
+        ? `${nativeInstruction}\n\n${userMessage}\n\n${nativeInstruction}`
         : userMessage;
 
       const messages = [
