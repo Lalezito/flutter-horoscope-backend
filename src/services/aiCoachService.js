@@ -564,10 +564,15 @@ QUESTION: "Should I ask for a raise?"
     const startTime = Date.now();
 
     try {
+      // 🌍🌍🌍 DEBUG: Log options to verify language is being passed
+      console.log('🌍🌍🌍 [sendMessage] options received:', JSON.stringify(options));
+      console.log('🌍🌍🌍 [sendMessage] options.language =', options.language);
+
       logger.getLogger().info("Processing AI Coach message", {
         sessionId,
         userId,
         messageLength: message.length,
+        language: options.language, // Added for debugging
       });
 
       // Validate and get session
