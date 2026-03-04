@@ -153,7 +153,7 @@ app.use(requestValidation);
 
 // CORS configuration - Enhanced for Flutter app
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true, // Allow all origins in development
+  origin: process.env.ALLOWED_ORIGINS === '*' ? true : process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type', 
@@ -408,7 +408,7 @@ const cronJobs = require("./services/cronJobs");
 
 // Automated monitoring setup (legacy - now handled by cron jobs)
 if (process.env.NODE_ENV === 'production') {
-  console.log('🔄 Production monitoring enabled via cron jobs');
+  // // console.log('🔄 Production monitoring enabled via cron jobs');
 }
 
 // Enhanced graceful shutdown handling
@@ -436,10 +436,10 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 // Start server immediately, initialize services in background
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Enhanced Zodiac Backend v2.0 running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔒 Security: PRODUCTION-READY with zero vulnerabilities`);
-  console.log(`⚡ Initializing services in background...`);
+  // // console.log(`🚀 Enhanced Zodiac Backend v2.0 running on port ${PORT}`);
+  // // console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  // // console.log(`🔒 Security: PRODUCTION-READY with zero vulnerabilities`);
+  // // console.log(`⚡ Initializing services in background...`);
 
   // Initialize services after server is listening
   initializeServices().then(() => {
@@ -453,7 +453,7 @@ const server = app.listen(PORT, () => {
     logger.getLogger().info(`⚡ Features: Automated Daily + Weekly horoscopes with Circuit Breakers`);
     logger.getLogger().info(`🎯 Manual generation: /api/generate endpoints with enhanced reliability`);
 
-    console.log(`✅ All services initialized successfully`);
+    // // console.log(`✅ All services initialized successfully`);
 
     // Initialize cron jobs after services are ready
     cronJobs.init();

@@ -396,6 +396,26 @@ class CompatibilityController {
         10: 'Pareja Perfecta', 9: 'Excelente', 8: 'Muy Bueno', 7: 'Bueno',
         6: 'Regular', 5: 'Promedio', 4: 'Desafiante', 3: 'Difícil',
         2: 'Muy Difícil', 1: 'Incompatible'
+      },
+      fr: {
+        10: 'Couple Parfait', 9: 'Excellent', 8: 'Très Bon', 7: 'Bon',
+        6: 'Correct', 5: 'Moyen', 4: 'Difficile', 3: 'Compliqué',
+        2: 'Très Difficile', 1: 'Incompatible'
+      },
+      de: {
+        10: 'Perfektes Paar', 9: 'Ausgezeichnet', 8: 'Sehr Gut', 7: 'Gut',
+        6: 'Ordentlich', 5: 'Durchschnittlich', 4: 'Herausfordernd', 3: 'Schwierig',
+        2: 'Sehr Schwierig', 1: 'Inkompatibel'
+      },
+      it: {
+        10: 'Coppia Perfetta', 9: 'Eccellente', 8: 'Molto Buono', 7: 'Buono',
+        6: 'Discreto', 5: 'Nella Media', 4: 'Impegnativo', 3: 'Difficile',
+        2: 'Molto Difficile', 1: 'Incompatibile'
+      },
+      pt: {
+        10: 'Par Perfeito', 9: 'Excelente', 8: 'Muito Bom', 7: 'Bom',
+        6: 'Razoável', 5: 'Médio', 4: 'Desafiador', 3: 'Difícil',
+        2: 'Muito Difícil', 1: 'Incompatível'
       }
     };
 
@@ -416,6 +436,26 @@ class CompatibilityController {
         high: `${sign1} y ${sign2} tienen excelente compatibilidad con gran potencial para armonía duradera.`,
         medium: `${sign1} y ${sign2} pueden funcionar bien juntos con comprensión mutua y esfuerzo.`,
         low: `${sign1} y ${sign2} pueden enfrentar desafíos pero pueden crecer a través de sus diferencias.`
+      },
+      fr: {
+        high: `${sign1} et ${sign2} ont une excellente compatibilité avec un fort potentiel d'harmonie durable.`,
+        medium: `${sign1} et ${sign2} peuvent bien fonctionner ensemble avec compréhension et effort mutuels.`,
+        low: `${sign1} et ${sign2} peuvent rencontrer des défis mais peuvent grandir grâce à leurs différences.`
+      },
+      de: {
+        high: `${sign1} und ${sign2} haben ausgezeichnete Kompatibilität mit starkem Potenzial für dauerhafte Harmonie.`,
+        medium: `${sign1} und ${sign2} können gut zusammenarbeiten mit gegenseitigem Verständnis und Einsatz.`,
+        low: `${sign1} und ${sign2} können Herausforderungen begegnen, aber durch ihre Unterschiede wachsen.`
+      },
+      it: {
+        high: `${sign1} e ${sign2} hanno un'eccellente compatibilità con un forte potenziale di armonia duratura.`,
+        medium: `${sign1} e ${sign2} possono funzionare bene insieme con comprensione e impegno reciproci.`,
+        low: `${sign1} e ${sign2} possono affrontare sfide ma possono crescere attraverso le loro differenze.`
+      },
+      pt: {
+        high: `${sign1} e ${sign2} têm excelente compatibilidade com forte potencial para harmonia duradoura.`,
+        medium: `${sign1} e ${sign2} podem funcionar bem juntos com compreensão mútua e esforço.`,
+        low: `${sign1} e ${sign2} podem enfrentar desafios mas podem crescer através das suas diferenças.`
       }
     };
 
@@ -457,6 +497,34 @@ class CompatibilityController {
         'Fuerte potencial de comunicación',
         'Respeto y admiración mutua',
         'Intercambio de energía equilibrado'
+      ],
+      fr: [
+        'Valeurs et objectifs partagés',
+        'Traits de personnalité complémentaires',
+        'Fort potentiel de communication',
+        'Respect et admiration mutuels',
+        'Échange d\'énergie équilibré'
+      ],
+      de: [
+        'Gemeinsame Werte und Ziele',
+        'Ergänzende Persönlichkeitsmerkmale',
+        'Starkes Kommunikationspotenzial',
+        'Gegenseitiger Respekt und Bewunderung',
+        'Ausgewogener Energieaustausch'
+      ],
+      it: [
+        'Valori e obiettivi condivisi',
+        'Tratti di personalità complementari',
+        'Forte potenziale comunicativo',
+        'Rispetto e ammirazione reciproci',
+        'Scambio di energia equilibrato'
+      ],
+      pt: [
+        'Valores e objetivos compartilhados',
+        'Traços de personalidade complementares',
+        'Forte potencial de comunicação',
+        'Respeito e admiração mútuos',
+        'Troca de energia equilibrada'
       ]
     };
 
@@ -479,6 +547,30 @@ class CompatibilityController {
         'Necesidades emocionales variadas',
         'Enfoques conflictivos de la vida',
         'Necesidad de compromiso y comprensión'
+      ],
+      fr: [
+        'Styles de communication différents',
+        'Besoins émotionnels variés',
+        'Approches de vie conflictuelles',
+        'Besoin de compromis et de compréhension'
+      ],
+      de: [
+        'Unterschiedliche Kommunikationsstile',
+        'Verschiedene emotionale Bedürfnisse',
+        'Gegensätzliche Lebensansätze',
+        'Bedarf an Kompromiss und Verständnis'
+      ],
+      it: [
+        'Stili di comunicazione diversi',
+        'Esigenze emotive diverse',
+        'Approcci alla vita contrastanti',
+        'Necessità di compromesso e comprensione'
+      ],
+      pt: [
+        'Estilos de comunicação diferentes',
+        'Necessidades emocionais variadas',
+        'Abordagens de vida conflitantes',
+        'Necessidade de compromisso e compreensão'
       ]
     };
 
@@ -501,6 +593,30 @@ class CompatibilityController {
         'Respeten las diferencias del otro',
         'Encuentren puntos en común e intereses compartidos',
         'Sean pacientes y comprensivos entre ustedes'
+      ],
+      fr: [
+        'Misez sur une communication ouverte et honnête',
+        'Respectez les différences de l\'autre',
+        'Trouvez des points communs et des intérêts partagés',
+        'Soyez patients et compréhensifs l\'un envers l\'autre'
+      ],
+      de: [
+        'Setzt auf offene und ehrliche Kommunikation',
+        'Respektiert die Unterschiede des anderen',
+        'Findet Gemeinsamkeiten und gemeinsame Interessen',
+        'Seid geduldig und verständnisvoll miteinander'
+      ],
+      it: [
+        'Puntate su una comunicazione aperta e onesta',
+        'Rispettate le differenze dell\'altro',
+        'Trovate punti in comune e interessi condivisi',
+        'Siate pazienti e comprensivi l\'uno con l\'altro'
+      ],
+      pt: [
+        'Foquem na comunicação aberta e honesta',
+        'Respeitem as diferenças um do outro',
+        'Encontrem pontos em comum e interesses partilhados',
+        'Sejam pacientes e compreensivos um com o outro'
       ]
     };
 
@@ -521,8 +637,18 @@ class CompatibilityController {
     const element1 = elements[sign1];
     const element2 = elements[sign2];
 
+    const strings = {
+      en: { strong: 'Strong elemental harmony', complementary: 'Complementary elements', contrasting: 'Contrasting elements' },
+      es: { strong: 'Armonía elemental fuerte', complementary: 'Elementos complementarios', contrasting: 'Elementos contrastantes' },
+      fr: { strong: 'Forte harmonie élémentaire', complementary: 'Éléments complémentaires', contrasting: 'Éléments contrastants' },
+      de: { strong: 'Starke elementare Harmonie', complementary: 'Komplementäre Elemente', contrasting: 'Gegensätzliche Elemente' },
+      it: { strong: 'Forte armonia elementale', complementary: 'Elementi complementari', contrasting: 'Elementi contrastanti' },
+      pt: { strong: 'Forte harmonia elemental', complementary: 'Elementos complementares', contrasting: 'Elementos contrastantes' }
+    };
+    const s = strings[language] || strings.en;
+
     if (element1 === element2) {
-      return language === 'es' ? 'Armonía elemental fuerte' : 'Strong elemental harmony';
+      return s.strong;
     }
 
     const compatible = {
@@ -533,10 +659,10 @@ class CompatibilityController {
     };
 
     if (compatible[element1]?.includes(element2)) {
-      return language === 'es' ? 'Elementos complementarios' : 'Complementary elements';
+      return s.complementary;
     }
 
-    return language === 'es' ? 'Elementos contrastantes' : 'Contrasting elements';
+    return s.contrasting;
   }
 
   /**
@@ -552,11 +678,21 @@ class CompatibilityController {
     const modality1 = modalities[sign1];
     const modality2 = modalities[sign2];
 
+    const strings = {
+      en: { similar: 'Similar life approach', different: 'Different life approaches' },
+      es: { similar: 'Enfoque similar de vida', different: 'Enfoques de vida diferentes' },
+      fr: { similar: 'Approche de vie similaire', different: 'Approches de vie différentes' },
+      de: { similar: 'Ähnlicher Lebensansatz', different: 'Unterschiedliche Lebensansätze' },
+      it: { similar: 'Approccio alla vita simile', different: 'Approcci alla vita diversi' },
+      pt: { similar: 'Abordagem de vida semelhante', different: 'Abordagens de vida diferentes' }
+    };
+    const s = strings[language] || strings.en;
+
     if (modality1 === modality2) {
-      return language === 'es' ? 'Enfoque similar de vida' : 'Similar life approach';
+      return s.similar;
     }
 
-    return language === 'es' ? 'Enfoques de vida diferentes' : 'Different life approaches';
+    return s.different;
   }
 
   /**
@@ -612,6 +748,74 @@ class CompatibilityController {
           'Los límites claros mejoran la cooperación',
           'La visión compartida impulsa el progreso'
         ]
+      },
+      fr: {
+        relationship: [
+          'La communication est la clé du succès',
+          'Respectez les différences individuelles',
+          'Construisez sur des valeurs partagées'
+        ],
+        friendship: [
+          'La compréhension naturelle se développe avec le temps',
+          'Les aventures partagées renforcent le lien',
+          'Le soutien mutuel est essentiel'
+        ],
+        business: [
+          'Les compétences complémentaires créent le succès',
+          'Des limites claires améliorent la coopération',
+          'Une vision partagée stimule le progrès'
+        ]
+      },
+      de: {
+        relationship: [
+          'Kommunikation ist der Schlüssel zum Erfolg',
+          'Respektiere individuelle Unterschiede',
+          'Baue auf gemeinsamen Werten auf'
+        ],
+        friendship: [
+          'Natürliches Verständnis entwickelt sich mit der Zeit',
+          'Gemeinsame Abenteuer stärken die Bindung',
+          'Gegenseitige Unterstützung ist wesentlich'
+        ],
+        business: [
+          'Ergänzende Fähigkeiten schaffen Erfolg',
+          'Klare Grenzen verbessern die Zusammenarbeit',
+          'Eine gemeinsame Vision treibt den Fortschritt an'
+        ]
+      },
+      it: {
+        relationship: [
+          'La comunicazione è la chiave del successo',
+          'Rispetta le differenze individuali',
+          'Costruisci su valori condivisi'
+        ],
+        friendship: [
+          'La comprensione naturale si sviluppa nel tempo',
+          'Le avventure condivise rafforzano il legame',
+          'Il supporto reciproco è essenziale'
+        ],
+        business: [
+          'Le competenze complementari creano successo',
+          'Confini chiari migliorano la cooperazione',
+          'Una visione condivisa guida il progresso'
+        ]
+      },
+      pt: {
+        relationship: [
+          'A comunicação é a chave para o sucesso',
+          'Respeite as diferenças individuais',
+          'Construa sobre valores compartilhados'
+        ],
+        friendship: [
+          'A compreensão natural desenvolve-se com o tempo',
+          'Aventuras compartilhadas fortalecem o vínculo',
+          'O apoio mútuo é essencial'
+        ],
+        business: [
+          'Habilidades complementares criam sucesso',
+          'Limites claros melhoram a cooperação',
+          'Uma visão compartilhada impulsiona o progresso'
+        ]
       }
     };
 
@@ -634,6 +838,30 @@ class CompatibilityController {
         'Celebra las diferencias como fortalezas',
         'Practica la escucha activa',
         'Crea metas compartidas juntos'
+      ],
+      fr: [
+        'Planifiez des bilans réguliers',
+        'Célébrez les différences comme des forces',
+        'Pratiquez l\'écoute active',
+        'Créez des objectifs communs ensemble'
+      ],
+      de: [
+        'Plant regelmäßige Gespräche ein',
+        'Feiert Unterschiede als Stärken',
+        'Übt aktives Zuhören',
+        'Setzt euch gemeinsame Ziele'
+      ],
+      it: [
+        'Programmate confronti regolari',
+        'Celebrate le differenze come punti di forza',
+        'Praticate l\'ascolto attivo',
+        'Create obiettivi condivisi insieme'
+      ],
+      pt: [
+        'Agendem conversas regulares',
+        'Celebrem as diferenças como pontos fortes',
+        'Pratiquem a escuta ativa',
+        'Criem objetivos compartilhados juntos'
       ]
     };
 
@@ -644,11 +872,15 @@ class CompatibilityController {
    * 📅 GET COMPATIBILITY TIMELINE
    */
   getCompatibilityTimeline(sign1, sign2, language = 'en') {
-    return {
-      initial: language === 'es' ? 'Atracción inicial fuerte' : 'Strong initial attraction',
-      developing: language === 'es' ? 'Comprensión gradual' : 'Gradual understanding',
-      mature: language === 'es' ? 'Armonía establecida' : 'Established harmony'
+    const strings = {
+      en: { initial: 'Strong initial attraction', developing: 'Gradual understanding', mature: 'Established harmony' },
+      es: { initial: 'Atracción inicial fuerte', developing: 'Comprensión gradual', mature: 'Armonía establecida' },
+      fr: { initial: 'Forte attraction initiale', developing: 'Compréhension progressive', mature: 'Harmonie établie' },
+      de: { initial: 'Starke anfängliche Anziehung', developing: 'Allmähliches Verständnis', mature: 'Etablierte Harmonie' },
+      it: { initial: 'Forte attrazione iniziale', developing: 'Comprensione graduale', mature: 'Armonia consolidata' },
+      pt: { initial: 'Forte atração inicial', developing: 'Compreensão gradual', mature: 'Harmonia estabelecida' }
     };
+    return strings[language] || strings.en;
   }
 
   /**
