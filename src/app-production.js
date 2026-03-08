@@ -44,7 +44,7 @@ try {
   logger = {
     getLogger: () => ({ info: console.log, error: console.error }),
     logError: (err, ctx) => console.error('Error:', err.message, ctx),
-    logRequest: (req, res, time) => // // console.log(`${req.method} ${req.path} - ${res.statusCode} (${time}ms)`)
+    logRequest: () => {}
   };
 }
 
@@ -75,7 +75,7 @@ try {
 } catch (e) {
   // // console.log('⚠️ Database init not available');
   databaseInit = {
-    createTables: async () => // // console.log('Database init skipped')
+    createTables: async () => {}
   };
 }
 
@@ -86,7 +86,7 @@ try {
 } catch (e) {
   // // console.log('⚠️ Cron jobs service not available');
   cronJobs = {
-    init: () => // // console.log('Cron jobs skipped')
+    init: () => {}
   };
 }
 
