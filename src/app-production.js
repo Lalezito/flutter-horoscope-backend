@@ -182,7 +182,8 @@ app.get('/health', async (req, res) => {
       version: '2.2.0'
     };
 
-    res.status(isHealthy ? 200 : 503).json(health);
+    // Always return 200 for Railway health check (status in body for monitoring)
+    res.json(health);
   } catch (error) {
     logger.logError(error, { endpoint: 'health' });
     res.status(500).json({
