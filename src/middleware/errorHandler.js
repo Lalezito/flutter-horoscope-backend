@@ -29,13 +29,14 @@ const errorHandler = (err, req, res, next) => {
   // Don't leak error details in production
   const isDevelopment = process.env.NODE_ENV === 'development';
 
-  // 🔧 TEMP DEBUG: Show error in production for debugging
   res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-    errorType: err.name || 'UnknownError',
-    errorCode: err.code || 'UNKNOWN',
-    path: req.path,
-    ...(isDevelopment && { stack: err.stack })
+    error: isDevelopment ? err.message : 'Internal server error',
+    ...(isDevelopment && {
+      errorType: err.name,
+      errorCode: err.code,
+      stack: err.stack
+    }),
+    path: req.path
   });
 };
 

@@ -16,7 +16,7 @@
 const logger = require('../services/loggingService');
 const compatibilityEngine = require('../services/compatibilityEngine');
 const reportGenerator = require('../services/compatibilityReportGenerator');
-const pool = require('../config/database');
+const db = require('../config/db');
 
 class AdvancedCompatibilityController {
   /**
@@ -372,7 +372,7 @@ class AdvancedCompatibilityController {
       const { userId } = req.params;
 
       const query = 'SELECT * FROM user_compatibility_profiles WHERE user_id = $1';
-      const result = await pool.query(query, [userId]);
+      const result = await db.query(query, [userId]);
 
       if (result.rows.length === 0) {
         return res.status(404).json({
@@ -472,7 +472,7 @@ class AdvancedCompatibilityController {
         RETURNING *
       `;
 
-      const result = await pool.query(query, [
+      const result = await db.query(query, [
         profileData.userId,
         profileData.sunSign,
         profileData.moonSign || null,
@@ -535,7 +535,7 @@ class AdvancedCompatibilityController {
         LIMIT $2 OFFSET $3
       `;
 
-      const result = await pool.query(query, [userId, limit, offset]);
+      const result = await db.query(query, [userId, limit, offset]);
 
       res.json({
         success: true,
@@ -594,7 +594,7 @@ class AdvancedCompatibilityController {
         RETURNING *
       `;
 
-      const result = await pool.query(query, [
+      const result = await db.query(query, [
         checkId,
         userId,
         accuracyRating,
@@ -713,7 +713,7 @@ class AdvancedCompatibilityController {
             AND created_at::date = $2
         `;
 
-        const result = await pool.query(query, [userId, today]);
+        const result = await db.query(query, [userId, today]);
         const count = parseInt(result.rows[0].count);
 
         if (count >= tierLimits.daily) {
@@ -742,7 +742,7 @@ class AdvancedCompatibilityController {
             AND created_at >= $2
         `;
 
-        const result = await pool.query(query, [userId, firstDayOfMonth]);
+        const result = await db.query(query, [userId, firstDayOfMonth]);
         const count = parseInt(result.rows[0].count);
 
         if (count >= tierLimits.monthly) {
@@ -787,7 +787,7 @@ class AdvancedCompatibilityController {
           ${tier}_tier_checks = compatibility_analytics.${tier}_tier_checks + 1
       `;
 
-      await pool.query(query, [date, hour]);
+      await db.query(query, [date, hour]);
 
     } catch (error) {
       logger.logError(error, {
@@ -803,7 +803,7 @@ class AdvancedCompatibilityController {
   async getCompatibilityCheck(checkId) {
     try {
       const query = 'SELECT * FROM compatibility_checks WHERE check_id = $1';
-      const result = await pool.query(query, [checkId]);
+      const result = await db.query(query, [checkId]);
 
       if (result.rows.length === 0) {
         return null;

@@ -8,6 +8,18 @@ const Sentry = require("@sentry/node");
 // Load environment
 dotenv.config();
 
+// Validate critical environment variables
+const requiredEnvVars = ['DATABASE_URL'];
+const recommendedEnvVars = ['OPENAI_API_KEY', 'NODE_ENV'];
+const missingRequired = requiredEnvVars.filter(v => !process.env[v]);
+const missingRecommended = recommendedEnvVars.filter(v => !process.env[v]);
+if (missingRequired.length > 0) {
+  console.error(`CRITICAL: Missing required env vars: ${missingRequired.join(', ')}`);
+}
+if (missingRecommended.length > 0) {
+  console.warn(`Warning: Missing recommended env vars: ${missingRecommended.join(', ')}`);
+}
+
 // Initialize Sentry for error tracking
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -16,7 +28,7 @@ if (process.env.SENTRY_DSN) {
     sendDefaultPii: true,
     tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
   });
-  console.log('🛡️ Sentry error tracking initialized');
+  // // console.log('🛡️ Sentry error tracking initialized');
 }
 
 const app = express();
@@ -28,18 +40,18 @@ let logger, cacheService, firebaseService;
 try {
   logger = require("./services/loggingService");
 } catch (e) {
-  console.log('⚠️ Logger service not available, using console');
+  // // console.log('⚠️ Logger service not available, using console');
   logger = {
     getLogger: () => ({ info: console.log, error: console.error }),
     logError: (err, ctx) => console.error('Error:', err.message, ctx),
-    logRequest: (req, res, time) => console.log(`${req.method} ${req.path} - ${res.statusCode} (${time}ms)`)
+    logRequest: (req, res, time) => // // console.log(`${req.method} ${req.path} - ${res.statusCode} (${time}ms)`)
   };
 }
 
 try {
   cacheService = require("./services/cacheService");
 } catch (e) {
-  console.log('⚠️ Cache service not available');
+  // // console.log('⚠️ Cache service not available');
   cacheService = {
     initialize: async () => {},
     getStats: () => ({ mode: 'unavailable' })
@@ -49,7 +61,7 @@ try {
 try {
   firebaseService = require("./services/firebaseService");
 } catch (e) {
-  console.log('⚠️ Firebase service not available');
+  // // console.log('⚠️ Firebase service not available');
   firebaseService = {
     initialize: async () => {},
     getStatus: () => ({ initialized: false, error: 'Service not loaded' })
@@ -61,9 +73,9 @@ let databaseInit;
 try {
   databaseInit = require("./config/database-init");
 } catch (e) {
-  console.log('⚠️ Database init not available');
+  // // console.log('⚠️ Database init not available');
   databaseInit = {
-    createTables: async () => console.log('Database init skipped')
+    createTables: async () => // // console.log('Database init skipped')
   };
 }
 
@@ -72,9 +84,9 @@ let cronJobs;
 try {
   cronJobs = require("./services/cronJobs");
 } catch (e) {
-  console.log('⚠️ Cron jobs service not available');
+  // // console.log('⚠️ Cron jobs service not available');
   cronJobs = {
-    init: () => console.log('Cron jobs skipped')
+    init: () => // // console.log('Cron jobs skipped')
   };
 }
 
@@ -112,6 +124,16 @@ app.use('/api/premium/', premiumLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Request timeout - prevent hanging requests
+app.use('/api/', (req, res, next) => {
+  req.setTimeout(30000, () => {
+    if (!res.headersSent) {
+      res.status(408).json({ error: 'Request timeout', timeout: '30s' });
+    }
+  });
+  next();
+});
+
 // Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
@@ -122,16 +144,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health endpoint with service status
-app.get('/health', (req, res) => {
+// Health endpoint with service status (includes database check)
+app.get('/health', async (req, res) => {
   try {
     const firebaseStatus = firebaseService.getStatus();
     const cacheStats = cacheService.getStats();
 
+    // Database health check with 5s timeout
+    let dbHealth = { status: 'unknown' };
+    try {
+      const db = require('./config/db');
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 5000)
+      );
+      dbHealth = await Promise.race([db.healthCheck(), timeoutPromise]);
+    } catch (dbError) {
+      dbHealth = { status: 'unhealthy', error: dbError.message };
+    }
+
+    const isHealthy = dbHealth.status === 'healthy';
+
     const health = {
-      status: 'healthy',
+      status: isHealthy ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
       services: {
+        database: dbHealth,
         firebase: firebaseStatus,
         cache: cacheStats
       },
@@ -145,7 +182,7 @@ app.get('/health', (req, res) => {
       version: '2.2.0'
     };
 
-    res.json(health);
+    res.status(isHealthy ? 200 : 503).json(health);
   } catch (error) {
     logger.logError(error, { endpoint: 'health' });
     res.status(500).json({
@@ -187,11 +224,11 @@ function loadRoute(path, routePath, description) {
     const route = require(routePath);
     app.use(path, route);
     loadedRoutes.push({ path, description, status: 'loaded' });
-    console.log(`✅ ${description} loaded`);
+    // // console.log(`✅ ${description} loaded`);
     return true;
   } catch (e) {
     loadedRoutes.push({ path, description, status: 'failed', error: e.message });
-    console.log(`⚠️ ${description} not available:`, e.message);
+    // // console.log(`⚠️ ${description} not available:`, e.message);
     return false;
   }
 }
@@ -256,9 +293,27 @@ app.use((error, req, res, next) => {
 });
 
 // Graceful shutdown
+let server; // Populated in app.listen callback
+
 async function gracefulShutdown(signal) {
   console.log(`${signal} received, shutting down gracefully`);
+
+  // Force exit after 30s if graceful shutdown hangs
+  const forceTimer = setTimeout(() => {
+    console.error('Forced shutdown after 30s timeout');
+    process.exit(1);
+  }, 30000);
+  forceTimer.unref();
+
   try {
+    // Stop accepting new connections
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    // Close database pool
+    const db = require('./config/db');
+    await db.end();
+    // Close cache
     await cacheService.close?.();
     console.log('Shutdown complete');
     process.exit(0);
@@ -271,43 +326,64 @@ async function gracefulShutdown(signal) {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
+// Catch unhandled promise rejections (prevents silent crashes)
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+  logger.logError(reason instanceof Error ? reason : new Error(String(reason)), {
+    type: 'unhandledRejection'
+  });
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(reason);
+  }
+});
+
+// Catch uncaught exceptions (log + exit — process is in undefined state)
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  logger.logError(error, { type: 'uncaughtException' });
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(error);
+  }
+  // Must exit — process state is unreliable after uncaught exception
+  process.exit(1);
+});
+
 // Start server
-app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`🚀 Zodiac Backend Production v2.2.0 running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Health: http://localhost:${PORT}/health`);
+server = app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`Zodiac Backend Production v2.2.0 running on port ${PORT}`);
 
   // Initialize services after server is listening
   try {
     await cacheService.initialize();
-    console.log('✅ Cache service initialized');
   } catch (error) {
-    console.error('⚠️ Cache initialization failed:', error.message);
+    console.error('Cache initialization failed:', error.message);
   }
 
   try {
     await firebaseService.initialize();
-    const status = firebaseService.getStatus();
-    console.log(`🔥 Firebase: ${status.initialized ? 'Initialized ✅' : 'Mock mode ⚠️'}`);
   } catch (error) {
-    console.error('⚠️ Firebase initialization failed:', error.message);
+    console.error('Firebase initialization failed:', error.message);
   }
 
-  // Initialize database tables
+  // Initialize database tables — cron jobs depend on this
+  let dbReady = false;
   try {
     await databaseInit.createTables();
-    console.log('🗄️ Database tables initialized');
+    dbReady = true;
   } catch (error) {
-    console.error('⚠️ Database initialization failed:', error.message);
+    console.error('Database initialization failed:', error.message);
   }
 
-  // Initialize cron jobs for automatic horoscope generation
-  try {
-    cronJobs.init();
-    console.log('⏰ Cron jobs initialized');
-  } catch (error) {
-    console.error('⚠️ Cron jobs initialization failed:', error.message);
+  // Only start cron jobs if database initialized successfully
+  if (dbReady) {
+    try {
+      cronJobs.init();
+    } catch (error) {
+      console.error('Cron jobs initialization failed:', error.message);
+    }
+  } else {
+    console.error('Cron jobs skipped — database not ready');
   }
 
-  console.log('✅ Server ready to accept requests');
+  console.log('Server ready to accept requests');
 });

@@ -16,7 +16,7 @@
  */
 
 const logger = require('./loggingService');
-const pool = require('../config/database');
+const db = require('../config/db');
 const swisseph = require('swisseph');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
@@ -851,7 +851,7 @@ class CompatibilityEngine {
           updated_at = NOW()
       `;
 
-      await pool.query(query, [
+      await db.query(query, [
         compatibility.checkId,
         compatibility.user1.userId,
         compatibility.user2.userId,
@@ -891,7 +891,7 @@ class CompatibilityEngine {
   async getUserProfile(userId) {
     try {
       const query = 'SELECT * FROM user_compatibility_profiles WHERE user_id = $1';
-      const result = await pool.query(query, [userId]);
+      const result = await db.query(query, [userId]);
       return result.rows[0] || null;
     } catch (error) {
       logger.logError(error, { service: 'compatibility_engine', operation: 'get_profile' });
@@ -917,7 +917,7 @@ class CompatibilityEngine {
 
       query += ` LIMIT 100`; // Limit for performance
 
-      const result = await pool.query(query, params);
+      const result = await db.query(query, params);
       return result.rows;
     } catch (error) {
       logger.logError(error, { service: 'compatibility_engine', operation: 'get_potential_matches' });
@@ -941,7 +941,7 @@ class CompatibilityEngine {
           ON CONFLICT (match_id) DO NOTHING
         `;
 
-        await pool.query(query, [
+        await db.query(query, [
           matchId,
           userId,
           match.userId,

@@ -1,4 +1,4 @@
 # Procfile for Railway deployment
 # Direct Node.js execution - Railway handles restarts automatically
 
-web: node src/app.js
+web: node src/app-production.js

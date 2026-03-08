@@ -1,11 +1,6 @@
-const { Pool } = require('pg');
 const { v4: uuidv4 } = require('uuid');
 const goalGenerationService = require('../services/goalGenerationService');
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
+const db = require('../config/db');
 
 /**
  * Goal Planner Controller
@@ -28,7 +23,7 @@ class GoalPlannerController {
     }
 
     try {
-      console.log(`[Goal Planner] Generating goal for user ${userId}, focus: ${focusArea}`);
+      // // console.log(`[Goal Planner] Generating goal for user ${userId}, focus: ${focusArea}`);
 
       // Generate with AI
       const goalData = await goalGenerationService.generateGoal({
@@ -43,7 +38,7 @@ class GoalPlannerController {
       const goalId = `goal_${uuidv4()}`;
 
       // Insert into database
-      const client = await pool.connect();
+      const client = await db.connect();
 
       try {
         await client.query('BEGIN');
@@ -117,7 +112,7 @@ class GoalPlannerController {
 
         await client.query('COMMIT');
 
-        console.log(`[Goal Planner] Goal created successfully: ${goalId}`);
+        // // console.log(`[Goal Planner] Goal created successfully: ${goalId}`);
 
         // Fetch complete goal
         const completeGoal = await this._fetchGoalById(goalId, client);
@@ -171,7 +166,7 @@ class GoalPlannerController {
 
       query += ` ORDER BY created_at DESC`;
 
-      const result = await pool.query(query, params);
+      const result = await db.query(query, params);
 
       // Fetch related data for each goal
       const goalsWithDetails = await Promise.all(
@@ -209,7 +204,7 @@ class GoalPlannerController {
 
     try {
       // Verify ownership
-      const ownerCheck = await pool.query('SELECT user_id FROM goals WHERE goal_id = $1', [goalId]);
+      const ownerCheck = await db.query('SELECT user_id FROM goals WHERE goal_id = $1', [goalId]);
 
       if (ownerCheck.rows.length === 0) {
         return res.status(404).json({
@@ -230,7 +225,7 @@ class GoalPlannerController {
         ? 'UPDATE goals SET status = $1, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE goal_id = $2 RETURNING *'
         : 'UPDATE goals SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE goal_id = $2 RETURNING *';
 
-      const result = await pool.query(updateQuery, [status, goalId]);
+      const result = await db.query(updateQuery, [status, goalId]);
 
       res.json({
         success: true,
@@ -263,7 +258,7 @@ class GoalPlannerController {
 
     try {
       // Verify ownership
-      const ownerCheck = await pool.query('SELECT user_id FROM goals WHERE goal_id = $1', [goalId]);
+      const ownerCheck = await db.query('SELECT user_id FROM goals WHERE goal_id = $1', [goalId]);
 
       if (ownerCheck.rows.length === 0) {
         return res.status(404).json({
@@ -280,7 +275,7 @@ class GoalPlannerController {
       }
 
       // Soft delete
-      await pool.query(
+      await db.query(
         'UPDATE goals SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE goal_id = $2',
         ['deleted', goalId]
       );
@@ -316,7 +311,7 @@ class GoalPlannerController {
     try {
       const checkinId = `checkin_${uuidv4()}`;
 
-      const result = await pool.query(
+      const result = await db.query(
         `INSERT INTO goal_checkins (checkin_id, goal_id, progress, mood, feedback)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING *`,
@@ -341,7 +336,7 @@ class GoalPlannerController {
    * Helper: Fetch complete goal with all related data
    */
   async _fetchGoalById(goalId, clientParam = null) {
-    const client = clientParam || pool;
+    const client = clientParam || db;
 
     const goalResult = await client.query('SELECT * FROM goals WHERE goal_id = $1', [goalId]);
 

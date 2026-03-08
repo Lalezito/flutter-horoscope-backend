@@ -7,6 +7,16 @@ const { endpointLimits } = require("../middleware/rateLimiter");
 // Apply strict rate limiting to all admin endpoints
 router.use(endpointLimits.admin);
 
+// Admin authentication middleware (checks header or query param)
+const adminAuth = (req, res, next) => {
+  const adminKey = req.headers['x-admin-key'] || req.query.admin_key;
+  if (!process.env.ADMIN_KEY || adminKey !== process.env.ADMIN_KEY) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid admin key' });
+  }
+  next();
+};
+router.use(adminAuth);
+
 /**
  * @route GET /api/admin/health
  * @description Comprehensive system health check

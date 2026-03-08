@@ -20,19 +20,13 @@
  */
 
 const logger = require('./loggingService');
-const { Pool } = require('pg');
+const db = require('../config/db');
 const promClient = require('prom-client');
 
 class AnalyticsEngine {
   constructor() {
     this.version = '2.0.0';
-    this.db = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
-    });
+    this.db = db;
 
     // Cache for real-time metrics (5-minute TTL)
     this.metricsCache = new Map();

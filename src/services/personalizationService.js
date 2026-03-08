@@ -8,7 +8,7 @@
 const sweph = require('sweph');
 const moment = require('moment-timezone');
 const redisService = require('./redisService');
-const { Pool } = require('pg');
+const db = require('../config/db');
 
 class PersonalizationService {
     constructor() {
@@ -71,7 +71,7 @@ class PersonalizationService {
         // Initialize Swiss Ephemerus
         this.initializeSwissEphemeris();
         
-        console.log('🌟 Personalization Service initialized with Swiss Ephemeris');
+        // // console.log('🌟 Personalization Service initialized with Swiss Ephemeris');
     }
 
     /**
@@ -86,7 +86,7 @@ class PersonalizationService {
             const testJD = sweph.julday(2024, 1, 1, 12.0, 1); // 1 for SE_GREG_CAL
 
             if (testJD && testJD > 0) {
-                console.log('✅ Swiss Ephemeris initialized successfully');
+                // // console.log('✅ Swiss Ephemeris initialized successfully');
             } else {
                 console.warn('⚠️ Swiss Ephemeris test failed - using fallback');
             }
@@ -106,11 +106,11 @@ class PersonalizationService {
             // Check cache first
             const cachedChart = await redisService.get(cacheKey);
             if (cachedChart) {
-                console.log('📊 Retrieved birth chart from cache for user:', userId);
+                // // console.log('📊 Retrieved birth chart from cache for user:', userId);
                 return cachedChart;
             }
 
-            console.log('🔄 Calculating new birth chart for user:', userId);
+            // // console.log('🔄 Calculating new birth chart for user:', userId);
 
             // Convert birth time to Julian Day
             const julianDay = this.calculateJulianDay(birthData);
@@ -151,7 +151,7 @@ class PersonalizationService {
             // Cache the birth chart (no expiration since birth data doesn't change)
             await redisService.set(cacheKey, birthChart, this.config.birthChartCacheDuration);
             
-            console.log('✅ Birth chart calculated and cached for user:', userId);
+            // // console.log('✅ Birth chart calculated and cached for user:', userId);
             return birthChart;
 
         } catch (error) {
@@ -171,11 +171,11 @@ class PersonalizationService {
             // Check cache first
             const cachedHoroscope = await redisService.get(cacheKey);
             if (cachedHoroscope) {
-                console.log('📖 Retrieved personalized horoscope from cache for user:', userId);
+                // // console.log('📖 Retrieved personalized horoscope from cache for user:', userId);
                 return cachedHoroscope;
             }
 
-            console.log('🔮 Generating personalized horoscope for user:', userId, 'date:', dateStr);
+            // // console.log('🔮 Generating personalized horoscope for user:', userId, 'date:', dateStr);
 
             // Get user's birth chart
             const birthChart = await this.getBirthChartFromDB(userId);
@@ -222,7 +222,7 @@ class PersonalizationService {
             // Cache for 24 hours
             await redisService.set(cacheKey, personalizedHoroscope, this.config.dailyHoroscopeCacheDuration);
             
-            console.log('✅ Personalized horoscope generated for user:', userId);
+            // // console.log('✅ Personalized horoscope generated for user:', userId);
             return personalizedHoroscope;
 
         } catch (error) {
@@ -768,14 +768,8 @@ class PersonalizationService {
      * Get birth chart from database
      */
     async getBirthChartFromDB(userId) {
-        // This would query your PostgreSQL database
-        // For now, returning a mock structure
-        const pool = new Pool({
-            connectionString: process.env.DATABASE_URL
-        });
-
         try {
-            const result = await pool.query(`
+            const result = await db.query(`
                 SELECT bc.*, bd.birth_date, bd.birth_time, bd.birth_timezone, 
                        bd.birth_latitude, bd.birth_longitude
                 FROM user_birth_chart bc
@@ -798,12 +792,8 @@ class PersonalizationService {
      * Validate premium subscription for personalized features
      */
     async validatePremiumSubscription(userId) {
-        const pool = new Pool({
-            connectionString: process.env.DATABASE_URL
-        });
-
         try {
-            const result = await pool.query(`
+            const result = await db.query(`
                 SELECT subscription_status, subscription_expires_at
                 FROM users
                 WHERE id = $1 AND status = 'active'

@@ -55,8 +55,8 @@ const RECONNECT_DELAY_BASE = 1000;
  */
 function createPool() {
   if (!pool) {
-    console.log('🔄 Creating resilient database connection pool...');
-    console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
+    // // console.log('🔄 Creating resilient database connection pool...');
+    // // console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
 
     const poolConfig = {
       connectionString: process.env.DATABASE_URL,
@@ -65,7 +65,7 @@ function createPool() {
       } : false,
 
       // Enhanced connection pool settings
-      max: parseInt(process.env.DATABASE_POOL_MAX) || (process.env.NODE_ENV === 'production' ? 25 : 10),
+      max: parseInt(process.env.DATABASE_POOL_MAX) || (process.env.NODE_ENV === 'production' ? 15 : 10),
       min: parseInt(process.env.DATABASE_POOL_MIN) || (process.env.NODE_ENV === 'production' ? 5 : 2),
 
       // Timeout configuration
@@ -108,7 +108,7 @@ function createPool() {
     // Connection lifecycle events
     pool.on('connect', (client) => {
       reconnectAttempts = 0;
-      console.log('✅ Connected to PostgreSQL database');
+      // // console.log('✅ Connected to PostgreSQL database');
       logger.getLogger().info('Database client connected', {
         totalCount: pool.totalCount,
         idleCount: pool.idleCount,
@@ -201,7 +201,7 @@ async function testConnection() {
       const client = await getPool().connect();
       try {
         const result = await client.query('SELECT NOW() as now');
-        console.log('✅ Database connection test successful');
+        // // console.log('✅ Database connection test successful');
         logger.getLogger().info('Database connection test successful', {
           serverTime: result.rows[0].now
         });

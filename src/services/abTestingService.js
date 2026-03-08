@@ -13,16 +13,13 @@
  * - Multi-variate testing support
  */
 
-const { Pool } = require('pg');
+const db = require('../config/db');
 const crypto = require('crypto');
 const { loggingService } = require('./loggingService');
 
 class ABTestingService {
   constructor() {
-    this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
+    this.pool = db;
   }
 
   /**

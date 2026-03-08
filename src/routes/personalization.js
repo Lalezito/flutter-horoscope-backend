@@ -10,12 +10,7 @@ const router = express.Router();
 const personalizationService = require('../services/personalizationService');
 const authService = require('../services/authenticationService');
 const { validateInput, endpointLimits } = require('../middleware/security');
-const { Pool } = require('pg');
-
-// Initialize database pool
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL
-});
+const db = require('../config/db');
 
 // Apply rate limiting to personalization endpoints
 router.use(endpointLimits.premium);
@@ -127,7 +122,7 @@ router.post('/birth-data',
             );
 
             // Insert or update birth data
-            const client = await pool.connect();
+            const client = await db.connect();
             try {
                 await client.query('BEGIN');
 
@@ -246,7 +241,7 @@ router.get('/birth-chart/:userId',
             }
 
             // Get birth data first
-            const birthDataResult = await pool.query(
+            const birthDataResult = await db.query(
                 'SELECT * FROM user_birth_data WHERE user_id = $1',
                 [userId]
             );
@@ -264,7 +259,7 @@ router.get('/birth-chart/:userId',
             const birthChart = await personalizationService.calculateBirthChart(userId, birthData);
 
             // Store calculated birth chart in database
-            const client = await pool.connect();
+            const client = await db.connect();
             try {
                 await client.query('BEGIN');
 
@@ -367,7 +362,7 @@ router.get('/horoscope/:userId/:date',
             }
 
             // Check if user has birth data
-            const birthDataResult = await pool.query(
+            const birthDataResult = await db.query(
                 'SELECT id FROM user_birth_data WHERE user_id = $1',
                 [userId]
             );
@@ -383,12 +378,12 @@ router.get('/horoscope/:userId/:date',
             const personalizedHoroscope = await personalizationService.generatePersonalizedHoroscope(userId, new Date(date));
 
             // Store in database
-            const client = await pool.connect();
+            const client = await db.connect();
             try {
                 await client.query('BEGIN');
 
                 // Check if horoscope already exists
-                const existingHoroscope = await pool.query(
+                const existingHoroscope = await db.query(
                     'SELECT id FROM personalized_horoscopes WHERE user_id = $1 AND horoscope_date = $2 AND horoscope_type = $3',
                     [userId, date, 'daily']
                 );
@@ -537,7 +532,7 @@ router.put('/preferences/:userId',
             if (req.body.preferred_notification_time !== undefined) preferences.preferred_notification_time = req.body.preferred_notification_time;
 
             // Update or insert preferences
-            const client = await pool.connect();
+            const client = await db.connect();
             try {
                 await client.query('BEGIN');
 
@@ -644,7 +639,7 @@ router.get('/preferences/:userId',
                 });
             }
 
-            const result = await pool.query(
+            const result = await db.query(
                 'SELECT * FROM user_horoscope_preferences WHERE user_id = $1',
                 [userId]
             );
@@ -711,7 +706,7 @@ router.get('/status',
             const status = personalizationService.getStatus();
             
             // Get database statistics
-            const statsResult = await pool.query(`
+            const statsResult = await db.query(`
                 SELECT 
                     'birth_data' as table_name,
                     COUNT(*) as total_records,

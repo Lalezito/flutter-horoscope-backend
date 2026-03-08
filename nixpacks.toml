@@ -6,7 +6,7 @@ nixPkgs = ['nodejs_20', 'python3', 'gcc', 'gnumake']
 aptPkgs = ['build-essential', 'python3']
 
 [phases.install]
-cmds = ['npm ci --legacy-peer-deps && npm install -g pm2']
+cmds = ['npm ci --legacy-peer-deps']
 
 [phases.build]
 cmds = ['mkdir -p logs']

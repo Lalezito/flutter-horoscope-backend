@@ -15,7 +15,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const logger = require('./loggingService');
-const pool = require('../config/database');
+const db = require('../config/db');
 
 class CompatibilityReportGenerator {
   constructor() {
@@ -706,7 +706,7 @@ class CompatibilityReportGenerator {
         ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8, $9)
       `;
 
-      await pool.query(query, [
+      await db.query(query, [
         reportData.reportId,
         reportData.checkId,
         reportData.reportType,

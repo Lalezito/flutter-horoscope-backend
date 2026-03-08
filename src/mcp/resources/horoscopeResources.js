@@ -1,5 +1,5 @@
 const { z } = require("@modelcontextprotocol/sdk/server/mcp");
-const pool = require("../../config/database");
+const db = require("../../config/db");
 const monitoringController = require("../../controllers/monitoringController");
 
 // Definir signos zodiacales
@@ -44,7 +44,7 @@ async function registerHoroscopeResources(server) {
         
         // Consultar la base de datos para obtener el horóscopo
         const query = `SELECT * FROM daily_horoscopes WHERE sign = $1 AND language_code = $2 AND date = $3`;
-        const result = await pool.query(query, [sign, language, date]);
+        const result = await db.query(query, [sign, language, date]);
         
         if (result.rows.length === 0) {
           throw new Error(`No daily horoscope found for ${sign} in ${language} on ${date}`);
@@ -99,7 +99,7 @@ async function registerHoroscopeResources(server) {
         
         // Consultar la base de datos para obtener el horóscopo
         const query = `SELECT * FROM weekly_horoscopes WHERE sign = $1 AND language_code = $2 AND week_start = $3`;
-        const result = await pool.query(query, [sign, language, weekStart]);
+        const result = await db.query(query, [sign, language, weekStart]);
         
         if (result.rows.length === 0) {
           throw new Error(`No weekly horoscope found for ${sign} in ${language} starting on ${weekStart}`);
@@ -151,7 +151,7 @@ async function registerHoroscopeResources(server) {
           WHERE date = $1
         `;
         
-        const result = await pool.query(query, [date]);
+        const result = await db.query(query, [date]);
         const coverage = result.rows[0];
         
         // Calcular porcentaje de cobertura
@@ -201,7 +201,7 @@ async function registerHoroscopeResources(server) {
           WHERE week_start = $1
         `;
         
-        const result = await pool.query(query, [weekStart]);
+        const result = await db.query(query, [weekStart]);
         const coverage = result.rows[0];
         
         // Calcular porcentaje de cobertura
