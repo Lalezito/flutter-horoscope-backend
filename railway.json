@@ -16,7 +16,7 @@
         "REDIS_URL": "${RAILWAY_REDIS_URL}",
         "JWT_SECRET": "${JWT_SECRET}",
         "ADMIN_KEY": "${ADMIN_KEY}",
-        "CORS_ORIGINS": "https://apps.apple.com,https://zodiaclifecoach.app",
+        "ALLOWED_ORIGINS": "https://zodiaclifecoach.app,https://www.zodiaclifecoach.app,https://arcanapp.app,https://www.arcanapp.app,https://apps.apple.com",
         "RATE_LIMIT_REQUESTS": "1000",
         "RATE_LIMIT_WINDOW": "3600000",
         "LOG_LEVEL": "info",

@@ -151,13 +151,26 @@ app.use(compression());
 app.use(securityHeaders);
 app.use(requestValidation);
 
-// CORS configuration - Enhanced for Flutter app
+// CORS configuration - Enhanced for Flutter app + web app
+// Always allow the web app domains; merge with ALLOWED_ORIGINS env var if set
+const webAppOrigins = [
+  'https://zodiaclifecoach.app',
+  'https://www.zodiaclifecoach.app',
+  'https://arcanapp.app',
+  'https://www.arcanapp.app',
+];
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : [];
+const useWildcard = process.env.ALLOWED_ORIGINS === '*' || !process.env.ALLOWED_ORIGINS;
+const allowedOriginsList = useWildcard ? true : [...new Set([...webAppOrigins, ...envOrigins])];
+
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS === '*' ? true : process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true,
+  origin: allowedOriginsList,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
+    'Content-Type',
+    'Authorization',
     'Accept',
     'Accept-Language',
     'User-Agent',
