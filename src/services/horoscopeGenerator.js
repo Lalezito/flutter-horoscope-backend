@@ -30,6 +30,13 @@ class HoroscopeGeneratorService {
       { code: 'pt', name: 'português' }
     ];
 
+    // Biorhythm phases for personalized horoscopes
+    this.biorhythmPhases = [
+      { code: 'high', name: 'Peak Energy', description: 'User is in high energy phase - focus on action and achievement' },
+      { code: 'neutral', name: 'Balanced', description: 'User is in balanced phase - good for reflection and planning' },
+      { code: 'low', name: 'Recovery', description: 'User is in recovery phase - focus on rest and self-care' }
+    ];
+
     // Frases genéricas prohibidas (para validación de calidad)
     this.genericPhrases = [
       'today is a good day',
@@ -51,52 +58,58 @@ class HoroscopeGeneratorService {
    * Generate daily horoscopes for all signs and languages
    */
   async generateDailyHoroscopes() {
-    console.log('🌟 Starting daily horoscope generation...');
-    const date = moment().format('YYYY-MM-DD');
+    // // console.log('🌟 Starting daily horoscope generation...');
+    const today = moment().format('YYYY-MM-DD');
+    const tomorrow = moment().add(1, 'day').format('YYYY-MM-DD');
     const results = {
       success: 0,
       errors: 0,
       details: []
     };
 
-    // Clean old daily horoscopes (keep only last 7 days)
+    // Clean old daily horoscopes (keep yesterday, today, tomorrow)
     await this.cleanOldDailyHoroscopes();
 
-    // Paralelizar generación por signo (12 signos en paralelo)
-    const signPromises = this.signs.map(async (sign) => {
-      // Para cada signo, generar todos los idiomas en serie
-      for (const language of this.languages) {
-        try {
-          const horoscope = await this.generateDailyHoroscope(sign, language, date);
-          await this.storeDailyHoroscope(horoscope);
+    // Generate for today and tomorrow
+    for (const date of [today, tomorrow]) {
+      // Paralelizar generación por signo (12 signos en paralelo)
+      const signPromises = this.signs.map(async (sign) => {
+        // Para cada signo, generar todos los idiomas en serie
+        for (const language of this.languages) {
+          try {
+            const horoscope = await this.generateDailyHoroscope(sign, language, date);
+            await this.storeDailyHoroscope(horoscope);
 
-          results.success++;
-          results.details.push({
-            sign,
-            language: language.code,
-            status: 'generated'
-          });
+            results.success++;
+            results.details.push({
+              sign,
+              language: language.code,
+              date,
+              status: 'generated'
+            });
 
-          // Small delay between languages for same sign
-          await this.delay(100);
+            // Small delay between languages for same sign
+            await this.delay(100);
 
-        } catch (error) {
-          console.error(`Error generating daily horoscope for ${sign} ${language.code}:`, error.message);
-          results.errors++;
-          results.details.push({
-            sign,
-            language: language.code,
-            status: 'error',
-            error: error.message
-          });
+          } catch (error) {
+            console.error(`Error generating daily horoscope for ${sign} ${language.code} (${date}):`, error.message);
+            results.errors++;
+            results.details.push({
+              sign,
+              language: language.code,
+              date,
+              status: 'error',
+              error: error.message
+            });
+          }
         }
-      }
-    });
+      });
 
-    // Esperar que todos los signos terminen
-    await Promise.all(signPromises);
+      // Esperar que todos los signos terminen para esta fecha
+      await Promise.all(signPromises);
+    }
 
-    console.log(`✅ Daily generation completed: ${results.success} success, ${results.errors} errors`);
+    // // console.log(`✅ Daily generation completed: ${results.success} success, ${results.errors} errors`);
     return results;
   }
 
@@ -104,7 +117,7 @@ class HoroscopeGeneratorService {
    * Generate weekly horoscopes for all signs and languages
    */
   async generateWeeklyHoroscopes() {
-    console.log('📅 Starting weekly horoscope generation...');
+    // // console.log('📅 Starting weekly horoscope generation...');
     const weekStart = moment().startOf('isoWeek').format('YYYY-MM-DD');
     const weekEnd = moment().endOf('isoWeek').format('YYYY-MM-DD');
     const results = {
@@ -150,7 +163,7 @@ class HoroscopeGeneratorService {
     // Esperar que todos los signos terminen
     await Promise.all(signPromises);
 
-    console.log(`✅ Weekly generation completed: ${results.success} success, ${results.errors} errors`);
+    // // console.log(`✅ Weekly generation completed: ${results.success} success, ${results.errors} errors`);
     return results;
   }
 
@@ -169,7 +182,7 @@ class HoroscopeGeneratorService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`📝 Generating daily ${sign} ${language.code} (attempt ${attempt}/${maxRetries})`);
+        // // console.log(`📝 Generating daily ${sign} ${language.code} (attempt ${attempt}/${maxRetries})`);
 
         const response = await this.openai.chat.completions.create({
           model: 'gpt-4o-mini', // gpt-4o-mini: más rápido y barato, soporta json_object
@@ -190,7 +203,7 @@ class HoroscopeGeneratorService {
           console.warn(`⚠️ Quality issues in daily ${sign} ${language.code}:`, validation.issues);
           // Continuar de todos modos, pero loggear
         } else {
-          console.log(`✅ Daily ${sign} ${language.code} generated with high quality`);
+          // // console.log(`✅ Daily ${sign} ${language.code} generated with high quality`);
         }
 
         return {
@@ -213,7 +226,7 @@ class HoroscopeGeneratorService {
 
         // Exponential backoff: 1s, 2s, 4s
         const backoffMs = Math.pow(2, attempt - 1) * 1000;
-        console.log(`⏳ Retrying in ${backoffMs}ms...`);
+        // // console.log(`⏳ Retrying in ${backoffMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
       }
     }
@@ -236,7 +249,7 @@ class HoroscopeGeneratorService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`📅 Generating weekly ${sign} ${language.code} (attempt ${attempt}/${maxRetries})`);
+        // // console.log(`📅 Generating weekly ${sign} ${language.code} (attempt ${attempt}/${maxRetries})`);
 
         const response = await this.openai.chat.completions.create({
           model: 'gpt-4o-mini', // gpt-4o-mini: más rápido y barato, soporta json_object
@@ -257,7 +270,7 @@ class HoroscopeGeneratorService {
           console.warn(`⚠️ Quality issues in weekly ${sign} ${language.code}:`, validation.issues);
           // Continuar de todos modos, pero loggear
         } else {
-          console.log(`✅ Weekly ${sign} ${language.code} generated with high quality`);
+          // // console.log(`✅ Weekly ${sign} ${language.code} generated with high quality`);
         }
 
         return {
@@ -281,7 +294,7 @@ class HoroscopeGeneratorService {
 
         // Exponential backoff: 1s, 2s, 4s
         const backoffMs = Math.pow(2, attempt - 1) * 1000;
-        console.log(`⏳ Retrying in ${backoffMs}ms...`);
+        // // console.log(`⏳ Retrying in ${backoffMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
       }
     }
@@ -519,15 +532,15 @@ Tu salida debe ser **solo** ese JSON.`;
   }
 
   /**
-   * Clean old daily horoscopes (keep last 7 days)
+   * Clean old daily horoscopes (keep yesterday, today, and tomorrow only)
    */
   async cleanOldDailyHoroscopes() {
     try {
       const result = await db.query(`
-        DELETE FROM daily_horoscopes 
-        WHERE date < CURRENT_DATE - INTERVAL '7 days'
+        DELETE FROM daily_horoscopes
+        WHERE date < CURRENT_DATE - INTERVAL '1 day'
       `);
-      console.log(`🧹 Cleaned ${result.rowCount} old daily horoscopes`);
+      // // console.log(`🧹 Cleaned ${result.rowCount} old daily horoscopes`);
     } catch (error) {
       console.error('Error cleaning old daily horoscopes:', error);
     }
@@ -542,7 +555,7 @@ Tu salida debe ser **solo** ese JSON.`;
         DELETE FROM weekly_horoscopes 
         WHERE week_start < CURRENT_DATE - INTERVAL '28 days'
       `);
-      console.log(`🧹 Cleaned ${result.rowCount} old weekly horoscopes`);
+      // // console.log(`🧹 Cleaned ${result.rowCount} old weekly horoscopes`);
     } catch (error) {
       console.error('Error cleaning old weekly horoscopes:', error);
     }
@@ -637,6 +650,296 @@ Tu salida debe ser **solo** ese JSON.`;
       lucky_colors: ['Gold', 'Silver', 'Blue'][Math.floor(Math.random() * 3)],
       advice: 'Focus on your goals and trust the process this week.',
       keywords: 'Progress, Wisdom, Balance, Success, Harmony'
+    };
+  }
+
+  // ============================================
+  // BIORHYTHM-ENHANCED HOROSCOPE GENERATION
+  // ============================================
+
+  /**
+   * Generate daily horoscopes with biorhythm phases (36 base + translations)
+   * Cost optimization: Generate 36 in English, translate to 5 other languages with GPT-3.5
+   */
+  async generateDailyHoroscopesWithBiorhythm() {
+    console.log('🌟 Starting biorhythm-enhanced daily horoscope generation...');
+    const date = moment().format('YYYY-MM-DD');
+    const results = {
+      success: 0,
+      errors: 0,
+      translations: 0,
+      details: []
+    };
+
+    // Clean old daily horoscopes
+    await this.cleanOldDailyHoroscopes();
+
+    // STEP 1: Generate 36 horoscopes in English (12 signs × 3 phases)
+    const englishHoroscopes = [];
+
+    for (const sign of this.signs) {
+      for (const phase of this.biorhythmPhases) {
+        try {
+          const horoscope = await this.generateDailyHoroscopeWithPhase(sign, { code: 'en', name: 'english' }, date, phase);
+          englishHoroscopes.push(horoscope);
+          await this.storeDailyHoroscopeWithPhase(horoscope);
+
+          results.success++;
+          results.details.push({ sign, phase: phase.code, language: 'en', status: 'generated' });
+
+          await this.delay(100);
+        } catch (error) {
+          console.error(`Error generating ${sign} ${phase.code}:`, error.message);
+          results.errors++;
+        }
+      }
+    }
+
+    console.log(`✅ Generated ${englishHoroscopes.length} English horoscopes with biorhythm phases`);
+
+    // STEP 2: Translate to other 5 languages with GPT-3.5-turbo (cheaper)
+    const otherLanguages = this.languages.filter(l => l.code !== 'en');
+
+    for (const horoscope of englishHoroscopes) {
+      for (const targetLang of otherLanguages) {
+        try {
+          const translated = await this.translateHoroscope(horoscope, targetLang);
+          await this.storeDailyHoroscopeWithPhase(translated);
+
+          results.translations++;
+          results.details.push({
+            sign: horoscope.sign,
+            phase: horoscope.biorhythm_phase,
+            language: targetLang.code,
+            status: 'translated'
+          });
+
+          await this.delay(50); // Shorter delay for translations
+        } catch (error) {
+          console.error(`Error translating ${horoscope.sign} to ${targetLang.code}:`, error.message);
+          results.errors++;
+        }
+      }
+    }
+
+    console.log(`✅ Biorhythm generation completed: ${results.success} generated, ${results.translations} translated, ${results.errors} errors`);
+    return results;
+  }
+
+  /**
+   * Generate single horoscope with biorhythm phase context
+   */
+  async generateDailyHoroscopeWithPhase(sign, language, date, phase) {
+    if (!this.enabled || !this.openai) {
+      return this.getMockDailyHoroscopeWithPhase(sign, language, date, phase);
+    }
+
+    const prompt = this.getDailyPromptWithBiorhythm(sign, language.name, date, phase);
+
+    const response = await this.openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: prompt },
+        { role: 'user', content: `Generate biorhythm-aware daily horoscope for ${sign} in ${phase.name} phase` }
+      ],
+      temperature: 0.8,
+      max_tokens: 900,
+      response_format: { type: 'json_object' }
+    });
+
+    const content = JSON.parse(response.choices[0].message.content);
+
+    return {
+      sign,
+      language_code: language.code,
+      date,
+      biorhythm_phase: phase.code,
+      content
+    };
+  }
+
+  /**
+   * Translate horoscope using GPT-3.5-turbo (cheaper model)
+   */
+  async translateHoroscope(horoscope, targetLanguage) {
+    if (!this.enabled || !this.openai) {
+      return { ...horoscope, language_code: targetLanguage.code };
+    }
+
+    const contentToTranslate = JSON.stringify(horoscope.content);
+
+    const response = await this.openai.chat.completions.create({
+      model: 'gpt-3.5-turbo', // Cheaper model for translations
+      messages: [
+        {
+          role: 'system',
+          content: `You are a professional translator specializing in astrology content.
+Translate the following JSON horoscope content to ${targetLanguage.name}.
+Keep all JSON keys in English, only translate the VALUES.
+Maintain the mystical and empathetic tone of astrology.
+Return ONLY valid JSON, no other text.`
+        },
+        { role: 'user', content: contentToTranslate }
+      ],
+      temperature: 0.3, // Lower temperature for more consistent translations
+      max_tokens: 1000,
+      response_format: { type: 'json_object' }
+    });
+
+    const translatedContent = JSON.parse(response.choices[0].message.content);
+
+    return {
+      sign: horoscope.sign,
+      language_code: targetLanguage.code,
+      date: horoscope.date,
+      biorhythm_phase: horoscope.biorhythm_phase,
+      content: translatedContent
+    };
+  }
+
+  /**
+   * Daily prompt WITH biorhythm context
+   */
+  getDailyPromptWithBiorhythm(sign, languageName, date, phase) {
+    const signTraits = {
+      'Aries': 'elemento Fuego, planeta Marte, cualidades: valentía, liderazgo, impulsividad, energía pionera',
+      'Tauro': 'elemento Tierra, planeta Venus, cualidades: estabilidad, sensualidad, determinación, resistencia',
+      'Géminis': 'elemento Aire, planeta Mercurio, cualidades: comunicación, curiosidad, versatilidad, dualidad',
+      'Cáncer': 'elemento Agua, planeta Luna, cualidades: emotividad, intuición, protección, nostalgia',
+      'Leo': 'elemento Fuego, planeta Sol, cualidades: creatividad, generosidad, orgullo, liderazgo natural',
+      'Virgo': 'elemento Tierra, planeta Mercurio, cualidades: perfeccionismo, análisis, servicio, atención al detalle',
+      'Libra': 'elemento Aire, planeta Venus, cualidades: equilibrio, diplomacia, estética, búsqueda de justicia',
+      'Escorpio': 'elemento Agua, planeta Plutón, cualidades: intensidad, transformación, profundidad emocional',
+      'Sagitario': 'elemento Fuego, planeta Júpiter, cualidades: expansión, filosofía, aventura, optimismo',
+      'Capricornio': 'elemento Tierra, planeta Saturno, cualidades: disciplina, ambición, responsabilidad, paciencia',
+      'Acuario': 'elemento Aire, planeta Urano, cualidades: innovación, independencia, humanitarismo, originalidad',
+      'Piscis': 'elemento Agua, planeta Neptuno, cualidades: compasión, intuición espiritual, creatividad'
+    };
+
+    const phaseGuidance = {
+      'high': `The user is in PEAK ENERGY phase (biorhythm cycles above 50%).
+Focus your advice on: taking action, starting projects, physical activities,
+important decisions, social interactions, and maximizing productivity.
+Tone: Motivating, energetic, encouraging bold moves.`,
+      'neutral': `The user is in BALANCED phase (biorhythm cycles between -20% and 50%).
+Focus your advice on: reflection, planning, moderate activities,
+maintaining routines, and preparing for future opportunities.
+Tone: Balanced, thoughtful, steady guidance.`,
+      'low': `The user is in RECOVERY phase (biorhythm cycles below -20%).
+Focus your advice on: rest, self-care, avoiding major decisions,
+introspection, healing, and conserving energy for better days ahead.
+Tone: Compassionate, gentle, supportive, reassuring.`
+    };
+
+    return `You are "Cosmic Coach", a professional astrologer creating PERSONALIZED horoscopes.
+
+📌 ASTROLOGICAL PROFILE FOR ${sign.toUpperCase()}:
+${signTraits[sign] || signTraits['Aries']}
+
+🔋 BIORHYTHM ENERGY CONTEXT (CRITICAL):
+${phaseGuidance[phase.code]}
+
+Your task: Generate a daily coaching message for ${sign} in ${languageName} for ${date}.
+The advice MUST be specifically tailored to someone in ${phase.name} energy phase.
+
+⚠️ IMPORTANT RULES:
+1. NEVER use generic phrases that work for any sign or any energy level
+2. ALWAYS connect advice to the user's current biorhythm phase
+3. Mention ${sign}'s natural qualities and how to use them TODAY given their energy
+4. Be practical, specific, and relevant to their energy state
+
+Respond ONLY with this JSON (no additional text):
+
+{
+  "sign": "${sign}",
+  "language_code": "en",
+  "date": "${date}",
+  "biorhythm_phase": "${phase.code}",
+  "energy_insight": "15-20 words about how ${sign}'s natural energy combines with ${phase.name} phase today",
+  "coaching_focus": "3-5 words - theme of the day based on sign + energy phase",
+  "content": "100-130 words of coaching SPECIFICALLY for ${sign} in ${phase.name} phase. Include actionable advice matching their energy level.",
+  "energy_tip": "15-20 words - specific tip for managing ${phase.name} energy as a ${sign}",
+  "rating": "integer 3-5 based on how favorable the day is for ${sign} in this phase",
+  "lucky_numbers": [int, int, int],
+  "lucky_colors": ["color1", "color2"],
+  "best_activity": "5-10 words - ideal activity for ${sign} in ${phase.name} phase",
+  "content_type": "biorhythm_cosmic_coaching",
+  "generated_at": "${date}"
+}`;
+  }
+
+  /**
+   * Store horoscope with biorhythm phase
+   */
+  async storeDailyHoroscopeWithPhase(horoscope) {
+    // First, try to create the column if it doesn't exist (safe migration)
+    try {
+      await db.query(`
+        ALTER TABLE daily_horoscopes
+        ADD COLUMN IF NOT EXISTS biorhythm_phase VARCHAR(20) DEFAULT 'neutral'
+      `);
+    } catch (e) {
+      // Column might already exist, ignore
+    }
+
+    const query = `
+      INSERT INTO daily_horoscopes (sign, language_code, date, biorhythm_phase, content)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (sign, language_code, date, biorhythm_phase)
+      DO UPDATE SET content = $5, updated_at = NOW()
+    `;
+
+    await db.query(query, [
+      horoscope.sign,
+      horoscope.language_code,
+      horoscope.date,
+      horoscope.biorhythm_phase || 'neutral',
+      JSON.stringify(horoscope.content)
+    ]);
+  }
+
+  /**
+   * Get horoscope by sign, language, date, and biorhythm phase
+   */
+  async getDailyHoroscopeWithPhase(sign, languageCode, date, biorhythmPhase = 'neutral') {
+    const query = `
+      SELECT * FROM daily_horoscopes
+      WHERE sign = $1 AND language_code = $2 AND date = $3 AND biorhythm_phase = $4
+    `;
+
+    const result = await db.query(query, [sign, languageCode, date, biorhythmPhase]);
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Mock horoscope with biorhythm phase (for development)
+   */
+  getMockDailyHoroscopeWithPhase(sign, language, date, phase) {
+    const phaseMessages = {
+      'high': `Your ${sign} energy is at peak levels today! This is the perfect time to take action.`,
+      'neutral': `As a ${sign}, today offers balanced energy for reflection and steady progress.`,
+      'low': `Dear ${sign}, today calls for gentle self-care and rest. Honor your body's need to recover.`
+    };
+
+    return {
+      sign,
+      language_code: language.code,
+      date,
+      biorhythm_phase: phase.code,
+      content: {
+        sign,
+        date,
+        biorhythm_phase: phase.code,
+        energy_insight: `Mock insight for ${sign} in ${phase.name} phase`,
+        coaching_focus: `${phase.name} Focus`,
+        content: phaseMessages[phase.code],
+        energy_tip: `Tip for ${sign} in ${phase.code} energy`,
+        rating: phase.code === 'high' ? 5 : phase.code === 'neutral' ? 4 : 3,
+        lucky_numbers: [7, 14, 21],
+        lucky_colors: ['Gold', 'Silver'],
+        best_activity: `Best activity for ${phase.code} phase`,
+        content_type: 'biorhythm_cosmic_coaching'
+      }
     };
   }
 }

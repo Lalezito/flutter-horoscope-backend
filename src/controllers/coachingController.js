@@ -7,7 +7,7 @@ const { normalizeSignName } = require("../utils/signTranslations");
 
 class CoachingController {
   async getDailyHoroscope(req, res) {
-    const { sign, language, lang } = req.query;
+    const { sign, language, lang, date: requestedDate } = req.query;
 
     // Support both 'language' and 'lang' parameters for compatibility
     const languageCode = language || lang;
@@ -18,11 +18,11 @@ class CoachingController {
     try {
       const query = `
         SELECT * FROM daily_horoscopes
-        WHERE date = CURRENT_DATE
+        WHERE date = COALESCE($3::date, CURRENT_DATE)
         AND sign ILIKE $1 AND language_code = $2
         LIMIT 1;
       `;
-      const result = await db.query(query, [normalizedSign, languageCode]);
+      const result = await db.query(query, [normalizedSign, languageCode, requestedDate || null]);
 
       if (result.rows.length === 0) {
         return res.status(404).json({ error: "No horoscope found" });
@@ -406,7 +406,7 @@ class CoachingController {
         const results = await weeklyController.storeWeeklyHoroscopes(
           horoscopes
         );
-        console.log(
+        // // console.log(
           `✅ Processed ${results.success} weekly horoscopes, ${results.errors} errors`
         );
 
@@ -420,7 +420,7 @@ class CoachingController {
       } else if (type === "daily" || !type) {
         // Process daily horoscopes (existing behavior)
         const horoscopeData = req.body;
-        console.log("✅ Received daily horoscopes from n8n:", horoscopeData);
+        // // console.log("✅ Received daily horoscopes from n8n:", horoscopeData);
 
         res.status(200).json({
           success: true,
