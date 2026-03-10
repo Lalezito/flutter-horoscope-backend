@@ -381,6 +381,7 @@ Tu tarea: Generar un coaching diario **altamente personalizado** para ${sign} en
 3. Conectar el consejo con las cualidades naturales del signo
 4. Ser práctico, específico y aplicable al día actual
 5. Tono empático pero profesional, como un astrólogo experto
+6. SIEMPRE escribir en PRESENTE, como si el lector estuviera viviendo ese día AHORA. Nunca decir "mañana", "tomorrow", "demain", etc. Escribe como si la fecha ${date} fuera HOY para quien lee.
 
 Responde SOLO con este JSON (sin texto adicional):
 
@@ -847,6 +848,7 @@ The advice MUST be specifically tailored to someone in ${phase.name} energy phas
 2. ALWAYS connect advice to the user's current biorhythm phase
 3. Mention ${sign}'s natural qualities and how to use them TODAY given their energy
 4. Be practical, specific, and relevant to their energy state
+5. ALWAYS write in PRESENT TENSE as if the reader is living this day RIGHT NOW. Never say "tomorrow" or "yesterday" — write as if ${date} is TODAY for the reader.
 
 Respond ONLY with this JSON (no additional text):
 
