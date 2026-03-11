@@ -330,9 +330,7 @@ class WeeklyController {
                 continue; // Skip this one, already exists
               }
             }
-            console.log(
-              `Generating weekly horoscope for ${sign} in ${langName}...`
-            );
+            // console.log(`Generating weekly horoscope for ${sign} in ${langName}...`);
 
             const prompt = `Generate a detailed weekly horoscope for ${sign} for the week of ${weekStart} to ${weekEnd}.
 

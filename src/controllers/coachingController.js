@@ -406,9 +406,7 @@ class CoachingController {
         const results = await weeklyController.storeWeeklyHoroscopes(
           horoscopes
         );
-        // // console.log(
-          `✅ Processed ${results.success} weekly horoscopes, ${results.errors} errors`
-        );
+        // console.log(`✅ Processed ${results.success} weekly horoscopes, ${results.errors} errors`);
 
         res.status(200).json({
           success: true,
